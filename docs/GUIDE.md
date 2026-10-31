@@ -110,7 +110,7 @@ Every logged-in user can create adventures (**Lobby → New adventure**). A play
 
 ## 8. Playing
 
-- **The table:** your sheet on the left (tabs for the rest of the party), the zone board in the middle (scene image, positions and ranges, dice tray), the story log on the right with the choice boxes at the bottom. On a phone the three panes are swipeable tabs.
+- **The table:** your sheet on the left (tabs for the rest of the party), the zone board in the middle (scene image, positions and ranges), the story log on the right with the dice and the choice boxes at the bottom. A phone shows the same game on one screen; only the full sheet sits behind the **Stats** button.
 - **Turns:** every seated player picks one of 4 choices or writes their own ("Other"). The DM always waits for everyone; there's no timer. In combat the actions go in initiative order.
 - **Ask the DM:** an out-of-turn question (rules, what your character knows). It never moves the story and never blocks the turn.
 - **Robustness:** a HiveMind crash, timeout or invalid output is retried automatically (3 tries, no reroll used). If it still fails, the turn stays exactly as it was and anyone at the table can press **Retry**. A server restart mid-turn does the same.
@@ -180,7 +180,7 @@ Every turn runs on the server, step by step, and every step is in the story log:
 
 ## 14. Phones
 
-The whole app works on a phone: the table's three panes become swipeable tabs (Sheet · Board · Story), inputs don't zoom on iOS, the bottom respects the home-indicator area, and **Add to Home Screen** installs it like an app (web manifest). The Android app (below) wraps the same pages.
+The whole app works on a phone: the board, story, dice and choices share one screen (the full sheet opens with **Stats**), inputs don't zoom on iOS, the bottom respects the home-indicator area, and **Add to Home Screen** installs it like an app (web manifest). The Android app (below) wraps the same pages.
 
 ## 15. Android
 

@@ -8,18 +8,27 @@ import { Narration } from './Narration';
 function Board({ g }: { g: GameDetail }) {
   return (
     <div className="space-y-3">
-      <Approvals g={g} />
       <Initiative g={g} />
       <ZoneBoard g={g} />
+    </div>
+  );
+}
+
+/** What needs doing now, always in view right under the story. */
+function Dock({ g }: { g: GameDetail }) {
+  return (
+    <>
+      <Approvals g={g} />
       <DiceTray g={g} />
       <HostTools g={g} />
-    </div>
+    </>
   );
 }
 
 /** M6: the dice tray, zone board, initiative, approvals and host tools on the table. */
 export function registerBookkeeping() {
   tableExtras.board = Board;
+  tableExtras.dock = Dock;
   tableExtras.sheet = SheetActions;
   tableExtras.top = RerollBar;
   tableExtras.narration = Narration;

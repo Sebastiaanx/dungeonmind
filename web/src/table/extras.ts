@@ -7,6 +7,7 @@ import type { ComponentType } from 'react';
  */
 export const tableExtras: {
   board?: ComponentType<{ g: GameDetail }>;
+  dock?: ComponentType<{ g: GameDetail }>;
   sheet?: ComponentType<{ g: GameDetail; c: GameCharacter }>;
   narration?: ComponentType<{ g: GameDetail; e: LogEntry; last: boolean }>;
   top?: ComponentType<{ g: GameDetail }>;

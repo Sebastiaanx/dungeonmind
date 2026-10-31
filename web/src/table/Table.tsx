@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { GameDetail } from '@dungeonmind/shared';
 import { api } from '../api';
 import { Sheet } from '../components/Sheet';
@@ -81,7 +81,7 @@ function BoardPane({ g }: { g: GameDetail }) {
   const Board = tableExtras.board;
   return (
     <div className="scroll-thin flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
-      {g.state.sceneImage && <img src={g.state.sceneImage} alt="The scene" className="dm-pop w-full rounded-lg border border-[#30363d] object-cover" />}
+      {g.state.sceneImage && <img src={g.state.sceneImage} alt="The scene" className="dm-pop max-h-28 w-full shrink-0 rounded-lg border border-[#30363d] object-cover lg:max-h-none" />}
       {Board ? (
         <Board g={g} />
       ) : (
@@ -99,19 +99,34 @@ function BoardPane({ g }: { g: GameDetail }) {
   );
 }
 
-type Pane = 'sheet' | 'board' | 'story';
-const PANES: [Pane, string][] = [
-  ['sheet', 'Sheet'],
-  ['board', 'Board'],
-  ['story', 'Story'],
-];
+/** Phones: the party in one line, with the full sheet one tap away. */
+function PartyStrip({ g, onStats }: { g: GameDetail; onStats: () => void }) {
+  const me = useMe();
+  const party = [...g.characters].sort((a, b) => Number(b.userId === me.id) - Number(a.userId === me.id));
+  return (
+    <div className="flex shrink-0 items-center gap-2 lg:hidden">
+      <div className="scroll-thin flex min-w-0 flex-1 gap-3 overflow-x-auto whitespace-nowrap text-xs">
+        {party.map((c) => (
+          <span key={c.id}>
+            <b className={c.userId === me.id ? 'text-indigo-200' : 'text-slate-300'}>{c.name}</b> {c.hp}/{c.maxHp} HP
+            {c.userId === me.id && ` · AC ${g.derived[c.id]?.ac}`}
+            {c.absent && ' (away)'}
+            {c.levelUpPending && c.userId === me.id && <span className="text-amber-300"> ★</span>}
+          </span>
+        ))}
+      </div>
+      <button className="btn-ghost shrink-0 px-2 py-0.5 text-xs" onClick={onStats}>
+        Stats
+      </button>
+    </div>
+  );
+}
 
 export function Table({ id }: { id: string }) {
   const { g } = useGame(id);
   const { log, streaming, loadOlder } = useLog(id);
-  const [pane, setPane] = useState<Pane>('story');
+  const [stats, setStats] = useState(false);
   const [campaign, setCampaign] = useState(false);
-  const touch = useRef<{ x: number; y: number } | undefined>(undefined);
   useEffect(() => {
     if (g && g.status === 'setup' && g.myRole !== 'spectator') navigate(`/games/${id}`);
   }, [g?.status]);
@@ -120,19 +135,8 @@ export function Table({ id }: { id: string }) {
   const host = g.myRole === 'host';
   const Narr = tableExtras.narration;
   const Top = tableExtras.top;
-
-  // Swipe between panes on phones.
-  const onTouchStart = (e: React.TouchEvent) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY });
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (!touch.current) return;
-    const dx = e.changedTouches[0].clientX - touch.current.x;
-    const dy = e.changedTouches[0].clientY - touch.current.y;
-    touch.current = undefined;
-    if (Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx)) return;
-    const i = PANES.findIndex(([p]) => p === pane);
-    const next = PANES[Math.max(0, Math.min(PANES.length - 1, i + (dx < 0 ? 1 : -1)))][0];
-    setPane(next);
-  };
+  const Dock = tableExtras.dock;
+  const hasBoard = !!g.state.sceneImage || g.state.zones.length > 0 || !!g.state.combat;
 
   return (
     <div className="flex h-[100dvh] flex-col">
@@ -158,28 +162,28 @@ export function Table({ id }: { id: string }) {
         )}
       </header>
       <PhaseBanner g={g} />
-      <nav className="flex border-b border-[#30363d] lg:hidden">
-        {PANES.map(([p, label]) => (
-          <button key={p} onClick={() => setPane(p)} className={`flex-1 py-2 text-sm ${pane === p ? 'border-b-2 border-indigo-400 text-white' : 'text-slate-400'}`}>
-            {label}
+      <main className="dm-safe-bottom flex min-h-0 flex-1 flex-col gap-2 p-2 sm:p-3 lg:grid lg:grid-cols-[320px_1fr_minmax(360px,34%)] lg:gap-3">
+        <PartyStrip g={g} onStats={() => setStats(true)} />
+        <section className={`card min-h-0 flex-col p-3 lg:static lg:z-auto lg:flex ${stats ? 'fixed inset-0 z-20 flex' : 'hidden'}`}>
+          <button className="btn-ghost mb-2 self-end text-xs lg:hidden" onClick={() => setStats(false)}>
+            ✕ Back to the game
           </button>
-        ))}
-      </nav>
-      <main className="dm-safe-bottom grid min-h-0 flex-1 gap-3 p-2 sm:p-3 lg:grid-cols-[320px_1fr_minmax(360px,34%)]" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-        <section className={`card min-h-0 flex-col p-3 ${pane === 'sheet' ? 'flex' : 'hidden'} lg:flex`}>
           <SheetPane g={g} />
         </section>
-        <section className={`card min-h-0 flex-col p-3 ${pane === 'board' ? 'flex' : 'hidden'} lg:flex`}>
+        <section className={`card max-h-[18dvh] shrink-0 flex-col p-2 lg:flex lg:max-h-none lg:min-h-0 lg:shrink lg:p-3 ${hasBoard ? 'flex' : 'hidden'}`}>
           <BoardPane g={g} />
         </section>
-        <section className={`card min-h-0 flex-col gap-2 p-3 ${pane === 'story' ? 'flex' : 'hidden'} lg:flex`}>
+        <section className="card flex min-h-0 flex-1 flex-col gap-2 p-2 lg:p-3">
           <StoryLog log={log} streaming={streaming} onOlder={loadOlder} renderNarration={Narr ? (e, last) => <Narr g={g} e={e} last={last} /> : undefined} />
-          {g.myRole !== 'spectator' && (
-            <>
-              <ChoiceBox g={g} />
-              <AskBox g={g} />
-            </>
-          )}
+          <div className="scroll-thin max-h-[42dvh] shrink-0 space-y-2 overflow-y-auto">
+            {Dock && <Dock g={g} />}
+            {g.myRole !== 'spectator' && (
+              <>
+                <ChoiceBox g={g} />
+                <AskBox g={g} />
+              </>
+            )}
+          </div>
         </section>
       </main>
       {campaign && <CampaignModal g={g} onClose={() => setCampaign(false)} />}

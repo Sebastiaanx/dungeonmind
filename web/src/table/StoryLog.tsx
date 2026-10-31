@@ -39,9 +39,21 @@ export function StoryLog({ log, streaming, renderNarration, onOlder }: { log: Lo
   const end = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const [stick, setStick] = useState(true);
+  const sticking = useRef(stick);
+  sticking.current = stick;
   useEffect(() => {
     if (stick) end.current?.scrollIntoView({ block: 'end' });
   }, [log.length, streaming, stick]);
+  // Choices and dice take room from the log: keep its last lines in view.
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      if (sticking.current) el.scrollTop = el.scrollHeight;
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const scenes = log.filter((e) => e.kind === 'narration');
   const lastNarration = scenes.at(-1)?.id;
   return (

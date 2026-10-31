@@ -46,7 +46,7 @@ const SECTIONS: { id: string; title: string; img?: string; body: React.ReactNode
     body: (
       <>
         <p>
-          <b>Left:</b> your sheet (tabs for the rest of the party). <b>Middle:</b> the scene picture, the initiative order, the zone board with ranges, and the dice. <b>Right:</b> the story, always readable from the start, with your choices at the bottom. On a phone these are three tabs you can swipe.
+          <b>Left:</b> your sheet (tabs for the rest of the party). <b>Middle:</b> the scene picture, the initiative order and the zone board with ranges. <b>Right:</b> the story, always readable from the start, with the dice and your choices at the bottom. A phone shows all of this on one screen; only your full sheet sits behind the Stats button.
         </p>
         <p>The DM always waits for everyone. In a fight, actions happen in initiative order. If you're away, the host can skip you: your character stays quietly with the group.</p>
       </>
