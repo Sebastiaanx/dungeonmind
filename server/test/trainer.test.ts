@@ -466,4 +466,19 @@ describe('the DM model picker', () => {
     // good-model had 100% valid JSON over ≥ 20 eval turns? Only sims of ≥ 20 turns count.
     expect(r.options.filter((o: any) => o.why === 'tested').every((o: any) => o.jsonValid >= 90 && o.turns >= 20)).toBe(true);
   });
+
+  it('offers Harbinger, finds an installed copy of any size, and always lists the current DM', async () => {
+    const harbinger = 'hf.co/LatitudeGames/Harbinger-24B-GGUF:Q4_K_M';
+    hm.models = [{ providerId: 'ollama', id: harbinger }, { providerId: 'ollama', id: 'my-own-model' }];
+    await as(admin, 'PUT', '/api/settings/hivemind', { models: { story: { providerId: 'ollama', model: 'my-own-model' }, json: { providerId: 'ollama', model: 'my-own-model' } } });
+    const r = (await as(admin, 'GET', '/api/trainer/dm-models')).json();
+    expect(r.options.find((o: any) => o.model === harbinger)).toMatchObject({ why: 'curated', label: 'Harbinger 24B', installed: true });
+    expect(r.options.find((o: any) => o.model === 'my-own-model')).toMatchObject({ why: 'current', installed: true });
+
+    // A current DM that is already in another group is not listed twice.
+    await as(admin, 'PUT', '/api/settings/hivemind', { models: { story: { providerId: 'ollama', model: harbinger }, json: { providerId: 'ollama', model: harbinger } } });
+    const again = (await as(admin, 'GET', '/api/trainer/dm-models')).json();
+    expect(again.options.filter((o: any) => o.model === harbinger)).toHaveLength(1);
+    expect(again.options.some((o: any) => o.why === 'current')).toBe(false);
+  });
 });

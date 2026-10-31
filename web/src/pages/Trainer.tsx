@@ -66,7 +66,7 @@ interface Sim {
   scoreboard: Board[];
 }
 interface DmOption extends ModelRef {
-  why: 'trained' | 'curated' | 'tested';
+  why: 'trained' | 'curated' | 'tested' | 'current';
   label: string;
   installed: boolean;
 }
@@ -639,7 +639,7 @@ function ReportSection({ picked, watch }: { picked: string[]; watch: (stream: st
   );
 }
 
-/** The restricted DM model picker (M9): trained dungeonmind-* models, the curated list, and models that proved themselves in the simulator. */
+/** The restricted DM model picker (M9): trained dungeonmind-* models, the curated list, models that proved themselves in the simulator, and the current DM. */
 export function DmModelPicker({ onDone }: { onDone?: () => void }) {
   const [data, setData] = useState<{ current: ModelRef | null; options: DmOption[] }>();
   const [pick, setPick] = useState('');
@@ -654,6 +654,7 @@ export function DmModelPicker({ onDone }: { onDone?: () => void }) {
     ['trained', 'Trained here'],
     ['curated', 'Recommended'],
     ['tested', 'Passed the simulator (≥ 90% valid JSON over ≥ 20 turns)'],
+    ['current', 'Current DM'],
   ];
   return (
     <div className="space-y-2">

@@ -28,6 +28,7 @@ import { allSimStats, deleteSim, isRunning, scoreboard, simRow, startSim, stopSi
 /** The curated DM models the picker always offers (M9 §3 DM model). */
 export const CURATED_MODELS = [
   { model: 'hf.co/LatitudeGames/Wayfarer-2-12B-GGUF:Q4_K_M', name: 'Wayfarer 2 12B', match: /^hf\.co\/LatitudeGames\/Wayfarer-2-12B-GGUF:Q4_K_M$/i },
+  { model: 'hf.co/LatitudeGames/Harbinger-24B-GGUF:IQ1_S', name: 'Harbinger 24B', match: /^hf\.co\/LatitudeGames\/Harbinger-24B-GGUF:/i },
   { model: 'qwen3:8b', name: 'Qwen3 8B', match: /^qwen3[:-]8b/i },
   { model: 'qwen3.5:9b', name: 'Qwen3.5 9B', match: /^qwen3\.5[:-]9b/i },
 ];
@@ -286,7 +287,7 @@ export function trainerRoutes(app: FastifyInstance) {
   app.get('/api/trainer/dm-models', { preHandler: requireAdmin }, async () => {
     const available = await listModels().catch(() => []);
     const ollama = available.find((m) => /ollama/i.test(m.providerId))?.providerId ?? available[0]?.providerId ?? 'ollama';
-    const options: { providerId: string; model: string; why: 'trained' | 'curated' | 'tested'; label: string; installed: boolean; jsonValid?: number; turns?: number }[] = [];
+    const options: { providerId: string; model: string; why: 'trained' | 'curated' | 'tested' | 'current'; label: string; installed: boolean; jsonValid?: number; turns?: number }[] = [];
     const add = (o: (typeof options)[number]) => !options.some((x) => x.model === o.model && x.providerId === o.providerId) && options.push(o);
     for (const m of available) if (/dungeonmind-/i.test(m.model)) add({ ...m, why: 'trained', label: `${m.model} (trained here)`, installed: true });
     for (const c of CURATED_MODELS) {
@@ -300,7 +301,10 @@ export function trainerRoutes(app: FastifyInstance) {
       const m = { providerId: key.slice(0, i), model: key.slice(i + 1) };
       add({ ...m, why: 'tested', label: `${m.model} (${Math.round(valid)}% JSON valid over ${s.turns} sim turns)`, installed: available.some((a) => a.providerId === m.providerId && a.model === m.model), jsonValid: Math.round(valid), turns: s.turns });
     }
-    return { current: hivemindSettings().models.story ?? null, options };
+    // The current DM is always listed, so a model set elsewhere can still be simulated and compared.
+    const current = hivemindSettings().models.story ?? null;
+    if (current) add({ ...current, why: 'current', label: `${current.model} (current DM)`, installed: available.some((a) => a.providerId === current.providerId && a.model === current.model) });
+    return { current, options };
   });
 
   // ---- Watch the AI ----
