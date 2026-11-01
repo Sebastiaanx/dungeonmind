@@ -125,6 +125,27 @@ export function gameRoutes(app: FastifyInstance) {
     return { id };
   });
 
+  /** A new adventure in the same style after an ended one: same rules and wishes, same players invited, fresh pitches. */
+  app.post('/api/games/:id/similar', { preHandler: requireUser }, async (req, reply) => {
+    const r = await gameFor(req, reply, 'host');
+    if (!r) return;
+    const { g } = r;
+    const own = (db.prepare("SELECT COUNT(*) AS n FROM games WHERE host_id = ? AND status != 'ended'").get(req.user!.id) as { n: number }).n;
+    if (own >= 20) return reply.code(400).send({ error: 'You host 20 open games already; end one first' });
+    const { pitch, pitches: _pitches, form: _form, formValues: _values, ...kept } = g.settings;
+    const wishes = [g.settings.wishes, pitch && `Similar to "${pitch.title}": ${pitch.hook}`].filter(Boolean).join('\n\n');
+    const settings = cleanSettings({ wishes }, kept);
+    const visibility = (db.prepare('SELECT visibility FROM games WHERE id = ?').get(g.id) as { visibility: string }).visibility;
+    const id = newId();
+    tx(() => {
+      db.prepare('INSERT INTO games (id, host_id, name, ruleset, visibility, settings, state) VALUES (?, ?, ?, ?, ?, ?, ?)').run(id, req.user!.id, `${g.name.slice(0, 74)} (new)`, g.ruleset, visibility, JSON.stringify(settings), JSON.stringify(freshState(settings.rerolls)));
+      db.prepare("INSERT INTO game_members (game_id, user_id, role, status) VALUES (?, ?, 'host', 'joined')").run(id, req.user!.id);
+      db.prepare("INSERT INTO game_members (game_id, user_id, role, status) SELECT ?, user_id, 'player', 'invited' FROM game_members WHERE game_id = ? AND role = 'player' AND status = 'joined'").run(id, g.id);
+    });
+    emitToLobby('games:changed', {});
+    return { id };
+  });
+
   /** The tutorial: a private solo game with a scripted DM (no HiveMind needed), with your character or a ready-made one. */
   app.post('/api/tutorial', { preHandler: requireUser }, async (req, reply) => {
     const src = (req.body as { characterId?: string })?.characterId ? loadCharacter((req.body as { characterId: string }).characterId) : undefined;

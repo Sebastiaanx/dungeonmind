@@ -141,6 +141,21 @@ describe('the game loop', () => {
     expect(last.vars.actions).toContain('I hold my breath');
   }, 30_000);
 
+  it('keeps a game going after it ended, or starts a similar one', async () => {
+    const turnBefore = (await game()).state.turn;
+    await t.as(t.host, 'POST', `/api/games/${t.id}/status`, { status: 'ended' });
+    const similar = await t.as(t.host, 'POST', `/api/games/${t.id}/similar`);
+    expect(similar.statusCode).toBe(200);
+    const next = (await t.as(t.host, 'GET', `/api/games/${similar.json().id}`)).json();
+    expect(next.status).toBe('setup');
+    expect(next.settings.pitch).toBeUndefined();
+    expect(next.settings.pitches).toBeUndefined();
+    expect(next.members.some((m: any) => m.status === 'invited')).toBe(true);
+    expect((await t.as(t.pl, 'POST', `/api/games/${t.id}/status`, { status: 'playing' })).statusCode).toBe(403);
+    expect((await t.as(t.host, 'POST', `/api/games/${t.id}/status`, { status: 'playing' })).statusCode).toBe(200);
+    expect((await game())).toMatchObject({ status: 'playing', state: { phase: 'collect', turn: turnBefore } });
+  });
+
   it('recognises a story that turned into nonsense', async () => {
     const { garbled } = await import('../src/game/text.js');
     expect(garbled('You step into the hall. The air tastes of ozone and old blood, and in 1492 the 3 doors were sealed.')).toBe(false);

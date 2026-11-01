@@ -81,8 +81,13 @@ export function tableRoutes(app: FastifyInstance) {
     if (!r) return;
     const { g } = r;
     const to = (req.body as { status?: string })?.status;
-    if (g.status === 'setup' || g.status === 'ended') return reply.code(400).send({ error: 'The game is not running' });
-    if (to === 'paused' && g.status === 'playing') {
+    if (g.status === 'setup' || (g.status === 'ended' && to !== 'playing')) return reply.code(400).send({ error: 'The game is not running' });
+    if (to === 'playing' && g.status === 'ended') {
+      // The story picks up where it stopped: at the opening, or waiting for actions (those already in stay).
+      g.status = 'playing';
+      g.state.phase = g.state.turn === 0 ? 'opening' : 'collect';
+      addLog(g.id, g.state.turn, 'system', 'The host reopened the game. The story goes on.');
+    } else if (to === 'paused' && g.status === 'playing') {
       g.status = 'paused';
       addLog(g.id, g.state.turn, 'system', 'The host paused the game.');
     } else if (to === 'playing' && g.status === 'paused') {
@@ -95,6 +100,7 @@ export function tableRoutes(app: FastifyInstance) {
     } else return reply.code(400).send({ error: 'Status is playing, paused or ended' });
     saveGame(g);
     broadcast(g);
+    if (g.status === 'playing' && g.state.phase === 'opening') resolveLater(g.id);
     // Resuming a game whose actions were all in: resolve now.
     if (g.status === 'playing' && g.state.phase === 'collect') {
       const chars = gameCharacters(g.id);

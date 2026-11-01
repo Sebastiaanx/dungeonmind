@@ -29,7 +29,17 @@ export function PhaseBanner({ g }: { g: GameDetail }) {
     return (
       <div className="flex flex-wrap items-center justify-center gap-2 bg-slate-800 px-3 py-1 text-center text-sm">
         This game has ended. The story stays readable.
-        <button className="btn py-0.5" onClick={() => navigate('/')}>
+        {g.myRole === 'host' && !g.settings.tutorial && (
+          <>
+            <button className="btn py-0.5" onClick={() => api(`/api/games/${g.id}/status`, { body: { status: 'playing' } })}>
+              Keep playing
+            </button>
+            <button className="btn-ghost py-0.5" title="A new adventure with the same rules and players, and ideas in the same style" onClick={async () => navigate(`/games/${(await api<{ id: string }>(`/api/games/${g.id}/similar`, { method: 'POST' })).id}`)}>
+              Start a similar game
+            </button>
+          </>
+        )}
+        <button className="btn-ghost py-0.5" onClick={() => navigate('/')}>
           Back to the lobby
         </button>
       </div>
