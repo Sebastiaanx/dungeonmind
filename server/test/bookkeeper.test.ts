@@ -51,7 +51,7 @@ describe('counters and resources', () => {
     expect(ok.refused).toEqual([]);
     expect(bk.applySpend([c], ok.spend)).toEqual(['Esva: Channel Divinity 1/1 → 0/1', 'Esva: Spell slot L1 3/3 → 2/3']);
     const no = bk.checkResources([c], [{ pc: 'Esva', name: 'Channel Divinity', amount: 1 }]);
-    expect(no.refused).toEqual([{ characterId: 'c1', reason: 'Channel Divinity is at 0/1 (used up).' }]);
+    expect(no.refused).toEqual([{ characterId: 'c1', reason: expect.stringMatching(/^Channel Divinity is at 0\/1 \(used up\)\./) }]);
     expect(no.spend).toEqual([]);
   });
 

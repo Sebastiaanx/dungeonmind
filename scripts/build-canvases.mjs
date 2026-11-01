@@ -6,6 +6,9 @@ import { writeFileSync } from 'node:fs';
 const NUMBERS = `THE NUMBERS ARE THE SERVER'S. Never invent dice results, hit points, spell slots, gold or XP totals. Use only the results and party state you are given. If something needs a roll that wasn't made, don't resolve it.`;
 const TONE = `Tone: dark, mature, grounded fantasy. Vivid but concise. Always give distances in metres, never in feet. Second person for the party ("you"), third person for NPCs. Players may write with typos; understand what they mean. Everything you write is in English.`;
 
+// One size per role: Ollama reloads a model when its size changes, and smaller sizes let two models share a GPU.
+const STORY_CTX = 16384;
+const JSON_CTX = 12288;
 // A small or thinking model can go on writing forever and hold the GPU: every block has a ceiling and skips thinking.
 const limit = (maxTokens) => ({ maxTokens, think: false });
 const node = (id, type, label, x, config = {}) => ({ id, type, label, position: { x, y: id.length * 20 }, config });
@@ -31,7 +34,7 @@ const canvases = [
       node('pitch', 'llm', 'pitch', 300, {
         ...limit(2000),
         json: true,
-        numCtx: 16384,
+        numCtx: JSON_CTX,
         temperature: 0.9,
         jsonSchema: `stage "pitches": {"pitches":[{"title":string,"hook":string,"tone":string,"themes":[string]}]} (exactly 4)
 stage "form": {"title":string,"summary":string,"fields":[{"id":string,"label":string,"type":"select"|"slider"|"text"|"multi","options"?:[string],"min"?:number,"max"?:number,"default":string|number|[string],"help"?:string}]} (5-9 fields)`,
@@ -58,7 +61,7 @@ If the stage is "form": design a setup form for THIS adventure: the questions th
       node('rolls', 'llm', 'rolls', 500, {
         ...limit(800),
         json: true,
-        numCtx: 16384,
+        numCtx: JSON_CTX,
         temperature: 0.2,
         jsonSchema: `{"rolls":[{"id":string,"actor":string,"kind":"attack"|"save"|"check"|"damage"|"heal","ability"?:"str"|"dex"|"con"|"int"|"wis"|"cha","skill"?:string,"dc"?:number,"target"?:string,"targetAc"?:number,"adv"?:"adv"|"dis"|"none","dice"?:string,"bonus"?:number,"damageType"?:string,"weapon"?:string,"spell"?:string,"onHit"?:string,"onFail"?:string,"half"?:boolean,"reason":string}],
 "resources":[{"pc":string,"name":string,"amount":number}],
@@ -100,7 +103,7 @@ Rules:
       node('rules', 'memory', 'rules', 250, { mode: 'search', key: 'rules:{{vars.ruleset}}', query: '{{vars.actions}}', limit: 4 }),
       node('narration', 'llm', 'narration', 500, {
         ...limit(1000),
-        numCtx: 32768,
+        numCtx: STORY_CTX,
         temperature: 0.85,
         system: `You are the Dungeon Master of an ongoing D&D 5e campaign ({{vars.ruleset}}). ${TONE}
 ${NUMBERS}
@@ -125,7 +128,7 @@ ${PARTY_CONTEXT}
       node('state', 'llm', 'state', 750, {
         ...limit(1600),
         json: true,
-        numCtx: 32768,
+        numCtx: JSON_CTX,
         temperature: 0.2,
         jsonSchema: `{"deltas":[{"pc":string,"hp"?:number,"tempHp"?:number,"gold"?:number,"counters"?:{[name:string]:number},"addItems"?:[string],"removeItems"?:[string],"addConditions"?:[{"name":string,"rounds"?:number,"source"?:string}],"removeConditions"?:[string],"concentration"?:string|null}],
 "xp":[{"pc":string,"amount":number,"reason":string}],
@@ -175,7 +178,7 @@ Reply with JSON only.`,
       node('patches', 'llm', 'patches', 300, {
         ...limit(1500),
         json: true,
-        numCtx: 32768,
+        numCtx: JSON_CTX,
         temperature: 0.2,
         jsonSchema: `{"patches":[{"section":"How to run"|"Story so far"|"Current scene"|"NPCs"|"Locations"|"Quests and open threads"|"Loot and items"|"Rulings made"|"Timeline","op":"replace"|"append","text":string}]}`,
         system: `You are the Chronicler. You keep the campaign file (markdown) accurate so the Dungeon Master never forgets anything. Return only the sections that change, as patches.
@@ -208,7 +211,7 @@ Reply with JSON only.`,
       node('memory', 'memory', 'campaign memory', 250, { mode: 'search', key: 'dnd:{{vars.tableId}}', limit: 5 }),
       node('answer', 'llm', 'answer', 500, {
         ...limit(600),
-        numCtx: 32768,
+        numCtx: STORY_CTX,
         temperature: 0.4,
         system: `You are the Dungeon Master answering an out-of-turn question from {{vars.asker}}: a rules question, or what their character knows or notices. ${TONE}
 - Answer briefly and accurately. Quote the rule when it's a rules question ({{vars.ruleset}}).
@@ -234,7 +237,7 @@ Reply with JSON only.`,
       node('sheet', 'llm', 'sheet', 500, {
         ...limit(2500),
         json: true,
-        numCtx: 16384,
+        numCtx: JSON_CTX,
         temperature: 0.6,
         jsonSchema: `{"name":string,"species":string,"subspecies"?:string,"class":string,"subclass"?:string,"background":string,"level":number,"abilities":{"str":number,"dex":number,"con":number,"int":number,"wis":number,"cha":number},"abilityMethod":"standard"|"pointbuy","backgroundBonus"?:{[ability:string]:number},"skills":[string],"cantrips":[string],"spells":[string],"equipment":[string],"alignment"?:string,"appearance":string,"personality":string,"backstory":string}`,
         system: `You build legal D&D 5e ({{vars.ruleset}}) player characters at level {{vars.level}}. Use only the options listed. Base ability scores BEFORE species/background bonuses, using the standard array (15,14,13,12,10,8) or 27-point buy. Skills: the class's allowed choices (ids like "stealth"). Spells: ids from the class list, within the character's slot levels and counts. Reply with JSON only.`,

@@ -48,6 +48,15 @@ export interface Spend {
   item?: boolean;
 }
 
+/** A used-up resource the player names in their action, for when the adjudicator didn't list it. */
+export function usedUpIn(c: GameCharacter, text: string): string | undefined {
+  const said = text.toLowerCase();
+  const counter = c.counters.find((k) => k.current === 0 && k.name.length > 3 && said.includes(k.name.toLowerCase()));
+  return counter && usedUp(counter);
+}
+
+const usedUp = (c: Counter) => `${c.name} is at 0/${c.max} (used up).${c.recharge === 'short' ? ' It comes back after a short rest.' : c.recharge === 'long' || c.recharge === 'dawn' ? ' It comes back after a long rest.' : ''}`;
+
 /**
  * Is every resource the actions need available? Returns what to spend, or why a character's action is refused.
  * Nothing is spent here.
@@ -66,7 +75,7 @@ export function checkResources(chars: GameCharacter[], wanted: { pc: string; nam
       const key = `${c.id}|${counter.name}`;
       const total = (need.get(key) ?? 0) + amount;
       if (total > counter.current) {
-        refused.push({ characterId: c.id, reason: `${counter.name} is at ${counter.current}/${counter.max}${counter.current === 0 ? ' (used up)' : ''}.` });
+        refused.push({ characterId: c.id, reason: counter.current === 0 ? usedUp(counter) : `${counter.name} is at ${counter.current}/${counter.max}.` });
         continue;
       }
       need.set(key, total);

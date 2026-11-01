@@ -83,6 +83,14 @@ describe('the full turn loop', () => {
     combat = null;
   });
 
+  it('sees a used-up resource in the action even when the adjudicator forgot it', async () => {
+    const { usedUpIn } = await import('../src/game/bookkeeper.js');
+    const c = { counters: [{ name: 'Lay on Hands', current: 0, max: 5, recharge: 'long' }, { name: 'Divine Sense', current: 1, max: 1, recharge: 'long' }] } as any;
+    expect(usedUpIn(c, 'Cast Lay on Hands to heal the wolf')).toBe('Lay on Hands is at 0/5 (used up). It comes back after a long rest.');
+    expect(usedUpIn(c, 'Use Divine Sense')).toBeUndefined();
+    expect(usedUpIn(c, 'Run for the door')).toBeUndefined();
+  });
+
   it('refuses an action whose resource is used up; nothing is spent, the player picks again', async () => {
     const e = await esva();
     await t.as(t.host, 'PATCH', `/api/games/${t.id}/characters/${t.plChar}/override`, { counters: { 'Channel Divinity': 0 } });

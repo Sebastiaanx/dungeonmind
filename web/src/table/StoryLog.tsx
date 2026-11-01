@@ -55,22 +55,28 @@ export function Entry({ e, children }: { e: LogEntry; children?: React.ReactNode
 }
 
 /** The narration while it comes in, written out at the ink's pace: the finished narration carries on from here. */
-function StreamingText({ text }: { text: string }) {
+function StreamingText({ text, written }: { text: string; written: boolean }) {
   const paced = animated(useMe().prefs);
   const [shown, setShown] = useState(0);
-  // The last word may still be growing.
-  const total = Math.max(0, text.split(/\s+/).filter(Boolean).length - 1);
+  // The last word may still be growing, until the story is written.
+  const words = text.split(/\s+/).filter(Boolean).length;
+  const total = written ? words : Math.max(0, words - 1);
   useEffect(() => {
     streamInk.words = shown;
     if (shown >= total) return;
     const t = setTimeout(() => setShown((n) => n + 1), INK_MS);
     return () => clearTimeout(t);
   }, [shown, total]);
-  return <div className="story dm-breathe whitespace-pre-wrap">{paced ? (text.match(new RegExp(`^\\s*(?:\\S+\\s+){${shown}}`))?.[0] ?? '') : text}</div>;
+  return (
+    <div>
+      <div className="story whitespace-pre-wrap">{paced ? (`${text} `.match(new RegExp(`^\\s*(?:\\S+\\s+){${shown}}`))?.[0] ?? '') : text}</div>
+      {written && <p className="dm-breathe mt-2 text-xs text-indigo-300">The story is written. The DM is updating the game, and your choices follow…</p>}
+    </div>
+  );
 }
 
 /** The full, always-readable history, with jump-to-scene. */
-export function StoryLog({ log, streaming, renderNarration, onOlder }: { log: LogEntry[]; streaming: string; renderNarration?: (e: LogEntry, last: boolean) => React.ReactNode; onOlder?: () => Promise<number | undefined> }) {
+export function StoryLog({ log, streaming, written, renderNarration, onOlder }: { log: LogEntry[]; streaming: string; written: boolean; renderNarration?: (e: LogEntry, last: boolean) => React.ReactNode; onOlder?: () => Promise<number | undefined> }) {
   const end = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
@@ -124,7 +130,7 @@ export function StoryLog({ log, streaming, renderNarration, onOlder }: { log: Lo
               {e.kind === 'narration' && renderNarration ? renderNarration(e, e.id === lastNarration) : undefined}
             </Entry>
           ))}
-          {streaming && <StreamingText text={streaming} />}
+          {streaming && <StreamingText text={streaming} written={written} />}
           <div ref={end} />
         </div>
       </div>

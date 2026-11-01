@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameDetail, LogEntry } from '@dungeonmind/shared';
+import { api } from '../api';
 import { useMe } from '../me';
 import { animated, INK_MS, streamInk } from './ink';
 import { SIDE_TEXT, useSides, wordSides } from './sides';
-import { playNarration, readAloud, skip, stop, useNowPlaying, type NarratorPrefs } from './narrator';
+import { playNarration, readAloud, setVolume, skip, stop, useNowPlaying, type NarratorPrefs } from './narrator';
 import { useVotes } from './votes';
 
 const prefsOf = (p: Record<string, unknown>): NarratorPrefs => (p.narrator as NarratorPrefs) ?? {};
@@ -85,6 +86,36 @@ function Thumbs({ gameId, logId }: { gameId: string; logId: number }) {
         👎{v?.down ? ` ${v.down}` : ''}
       </button>
     </div>
+  );
+}
+
+/** The narrator's volume, right at the table. It changes what's playing now and is remembered for next time. */
+export function VolumeSlider() {
+  const me = useMe();
+  const [v, setV] = useState(prefsOf(me.prefs).volume ?? 1);
+  const save = async () => {
+    const narrator = { ...prefsOf(me.prefs), volume: v };
+    Object.assign(me.prefs, await api('/api/me/prefs', { method: 'PUT', body: { narrator } }));
+  };
+  return (
+    <label className="flex items-center gap-1 text-xs text-slate-400" title={`Narrator volume: ${Math.round(v * 100)}%`}>
+      🔊
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.05}
+        value={v}
+        aria-label="Narrator volume"
+        className="w-16 accent-indigo-500 sm:w-24"
+        onChange={(e) => {
+          setV(Number(e.target.value));
+          setVolume(Number(e.target.value));
+        }}
+        onPointerUp={save}
+        onKeyUp={save}
+      />
+    </label>
   );
 }
 

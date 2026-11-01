@@ -2,10 +2,10 @@ import type { GameCharacter, PendingRoll } from '@dungeonmind/shared';
 import { tx } from '../db.js';
 import { outputJson } from '../hivemind.js';
 import { rules } from '../rules/index.js';
-import { applyDamage, applyDeltas, applyHeal, applySpend, applyXp, checkResources, damageNpc, deathSave, healNpc, levelCheck, rechargeTurn, tickConditions } from './bookkeeper.js';
+import { applyDamage, applyDeltas, applyHeal, applySpend, applyXp, checkResources, damageNpc, usedUpIn, deathSave, healNpc, levelCheck, rechargeTurn, tickConditions } from './bookkeeper.js';
 import { derive } from './character.js';
 import { rollInitiative, nextRound, pruneCombat } from './initiative.js';
-import { addLog } from './log.js';
+import { addLog, readLog } from './log.js';
 import { campaignFor, partyJson, recentTurns } from './prompt.js';
 import { buildRolls, ready, resolveRoll, rollEffects, type Adjudication } from './rolls.js';
 import { broadcast, gameCharacters, loadGame, saveGame, saveGameCharacter, type GameRow } from './store.js';
@@ -67,12 +67,20 @@ async function beforeNarrate(g: GameRow): Promise<boolean> {
       .map((r) => ({ characterId: chars.find((c) => sameName(c.name, r?.pc))?.id ?? '', reason: clip(String(r?.reason ?? 'Not possible right now.'), 200) }))
       .filter((r) => r.characterId && g.state.actions[r.characterId]),
     ...check.refused,
+    // A used-up resource the adjudicator forgot: the story must not hand it out anyway.
+    ...orderedActions(g, chars).flatMap((a) => {
+      const c = chars.find((x) => x.id === a.characterId);
+      const reason = c && usedUpIn(c, a.text);
+      return reason ? [{ characterId: c.id, reason }] : [];
+    }),
   ];
   if (refused.length) {
     // Nothing is spent; the refused players pick again, the others keep their action.
     for (const r of refused) {
       delete g.state.actions[r.characterId];
-      addLog(g.id, g.state.turn, 'refused', r.reason, chars.find((c) => c.id === r.characterId)?.name);
+      // Trying the same thing again doesn't need a second line in the story; the choices show it.
+      const last = readLog(g.id, { limit: 1, kinds: ['refused'] }).at(-1);
+      if (last?.text !== r.reason || last.turn !== g.state.turn) addLog(g.id, g.state.turn, 'refused', r.reason, chars.find((c) => c.id === r.characterId)?.name);
     }
     g.state.refused = refused.filter((r, i, a) => a.findIndex((x) => x.characterId === r.characterId) === i);
     setPhase(g, 'collect');
@@ -147,7 +155,7 @@ function applyState(g: GameRow, chars: GameCharacter[], state: StateJson) {
   rechargeTurn(chars);
   for (const line of levelCheck(chars, g.settings.endLevel)) addLog(g.id, g.state.turn, 'levelup', line);
   if (changes.length) addLog(g.id, g.state.turn, 'change', changes.join(' · '));
-  for (const n of notes) addLog(g.id, g.state.turn, 'note', n, 'Bookkeeper');
+  for (const n of notes) addLog(g.id, g.state.turn, 'note', n.replace(/^Bookkeeper (\w)/, (_, c: string) => c.toUpperCase()), 'Bookkeeper');
 }
 
 let registered = false;

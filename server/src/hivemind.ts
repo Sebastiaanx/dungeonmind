@@ -284,7 +284,9 @@ export const cancelActiveRuns = () => Promise.allSettled([...active].map((id) =>
 export async function runCanvas(canvasId: string, question: string, opts: RunOptions = {}): Promise<RunResult> {
   const { timeoutMs } = hivemindSettings();
   const vars = Object.fromEntries(Object.entries(opts.vars ?? {}).map(([k, v]) => [k, String(v ?? '')]));
-  const { runId } = await call<{ runId: string }>('/api/runs', { method: 'POST', body: JSON.stringify({ canvasId, question: question || '-', vars, ...(opts.models ? { models: opts.models } : {}) }) });
+  // HiveMind stops the run by itself when this server goes away, so it can't hold the GPU.
+  const alone = (await features()).includes('cancelWhenAlone') ? { cancelWhenAlone: true } : {};
+  const { runId } = await call<{ runId: string }>('/api/runs', { method: 'POST', body: JSON.stringify({ canvasId, question: question || '-', vars, ...(opts.models ? { models: opts.models } : {}), ...alone }) });
 
   const timeout = AbortSignal.timeout(timeoutMs);
   const signal = opts.signal ? AbortSignal.any([opts.signal, timeout]) : timeout;

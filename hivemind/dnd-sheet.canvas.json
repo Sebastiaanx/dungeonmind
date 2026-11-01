@@ -40,7 +40,7 @@
         "maxTokens": 2500,
         "think": false,
         "json": true,
-        "numCtx": 16384,
+        "numCtx": 12288,
         "temperature": 0.6,
         "jsonSchema": "{\"name\":string,\"species\":string,\"subspecies\"?:string,\"class\":string,\"subclass\"?:string,\"background\":string,\"level\":number,\"abilities\":{\"str\":number,\"dex\":number,\"con\":number,\"int\":number,\"wis\":number,\"cha\":number},\"abilityMethod\":\"standard\"|\"pointbuy\",\"backgroundBonus\"?:{[ability:string]:number},\"skills\":[string],\"cantrips\":[string],\"spells\":[string],\"equipment\":[string],\"alignment\"?:string,\"appearance\":string,\"personality\":string,\"backstory\":string}",
         "system": "You build legal D&D 5e ({{vars.ruleset}}) player characters at level {{vars.level}}. Use only the options listed. Base ability scores BEFORE species/background bonuses, using the standard array (15,14,13,12,10,8) or 27-point buy. Skills: the class's allowed choices (ids like \"stealth\"). Spells: ids from the class list, within the character's slot levels and counts. Reply with JSON only.",

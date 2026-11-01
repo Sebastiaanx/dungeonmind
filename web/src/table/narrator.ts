@@ -48,6 +48,12 @@ export function useNowPlaying() {
 }
 
 let audio: HTMLAudioElement | null = null;
+/** The table's volume slider wins over the volume that came with the prefs. */
+let volume: number | undefined;
+export function setVolume(v: number) {
+  volume = v;
+  if (audio) audio.volume = v;
+}
 let token = 0;
 let skipPart: (() => void) | null = null;
 
@@ -126,7 +132,7 @@ async function playParts(key: string, label: string, fullText: string, load: (up
     await new Promise<void>((done) => {
       const a = new Audio(`/api/audio/${part.clip!.file}`);
       audio = a;
-      a.volume = Math.max(0, Math.min(1, prefs.volume ?? 1));
+      a.volume = Math.max(0, Math.min(1, volume ?? prefs.volume ?? 1));
       skipPart = () => {
         a.pause();
         done();

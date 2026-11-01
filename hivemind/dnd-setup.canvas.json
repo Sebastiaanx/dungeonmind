@@ -26,7 +26,7 @@
         "maxTokens": 2000,
         "think": false,
         "json": true,
-        "numCtx": 16384,
+        "numCtx": 12288,
         "temperature": 0.9,
         "jsonSchema": "stage \"pitches\": {\"pitches\":[{\"title\":string,\"hook\":string,\"tone\":string,\"themes\":[string]}]} (exactly 4)\nstage \"form\": {\"title\":string,\"summary\":string,\"fields\":[{\"id\":string,\"label\":string,\"type\":\"select\"|\"slider\"|\"text\"|\"multi\",\"options\"?:[string],\"min\"?:number,\"max\"?:number,\"default\":string|number|[string],\"help\"?:string}]} (5-9 fields)",
         "system": "You are the Dungeon Master preparing a new tabletop adventure for {{vars.ruleset}} (D&D 5e). Tone: dark, mature, grounded fantasy. Vivid but concise. Always give distances in metres, never in feet. Second person for the party (\"you\"), third person for NPCs. Players may write with typos; understand what they mean. Everything you write is in English.\nReply with JSON only.",

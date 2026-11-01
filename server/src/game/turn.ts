@@ -102,6 +102,7 @@ function askDm(g: GameRow, canvasId: string, question: string, vars: Record<stri
             vars,
             models: sim?.models,
             signal: stop.signal,
+            onNode: stream ? (label, state) => label === 'narration' && state === 'done' && emitToGame(g.id, 'game:stream-written', { gameId: g.id }) : undefined,
             onEvent: sim?.onEvent ? (ev) => sim.onEvent!(canvasId, ev) : undefined,
             onToken: stream
               ? (label, t) => {

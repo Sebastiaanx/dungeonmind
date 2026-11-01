@@ -13,7 +13,7 @@ import { AskBox, ChoiceBox } from './ChoiceBox';
 import { StoryLog } from './StoryLog';
 import { useLog } from './useLog';
 import { tableExtras } from './extras';
-import { NowPlayingBar, ReadSelection } from './Narration';
+import { NowPlayingBar, ReadSelection, VolumeSlider } from './Narration';
 import { DiceOverlay } from './DiceOverlay';
 
 const PHASE: Record<string, string> = {
@@ -154,7 +154,7 @@ function PartyStrip({ g, onStats }: { g: GameDetail; onStats: () => void }) {
 
 export function Table({ id }: { id: string }) {
   const { g } = useGame(id);
-  const { log, streaming, loadOlder } = useLog(id);
+  const { log, streaming, written, loadOlder } = useLog(id);
   const [stats, setStats] = useState(false);
   const [campaign, setCampaign] = useState(false);
   useEffect(() => {
@@ -179,6 +179,7 @@ export function Table({ id }: { id: string }) {
       <header className="flex flex-wrap items-center justify-end gap-2 border-b border-[#30363d] px-3 py-1.5">
         <h1 className="hidden min-w-0 flex-1 truncate font-serif text-lg text-indigo-100 lg:block">{g.name}</h1>
         {g.myRole === 'spectator' && <span className="chip">spectating</span>}
+        <VolumeSlider />
         {Top && <Top g={g} />}
         {g.myRole !== 'spectator' && g.settings.sceneImages !== false && g.status === 'playing' && (
           <button className="btn-ghost text-xs" disabled={painting} title="Paints the current scene. This takes about 50 seconds and slows the game down while it runs." onClick={() => api(`/api/games/${g.id}/scene-image`, { method: 'POST' })}>
@@ -218,7 +219,7 @@ export function Table({ id }: { id: string }) {
           <BoardPane g={g} />
         </section>
         <section className="card flex min-h-0 flex-1 flex-col gap-2 p-2 lg:p-3">
-          <StoryLog log={log} streaming={streaming} onOlder={loadOlder} renderNarration={Narr ? (e, last) => <Narr g={g} e={e} last={last} /> : undefined} />
+          <StoryLog log={log} streaming={streaming} written={written} onOlder={loadOlder} renderNarration={Narr ? (e, last) => <Narr g={g} e={e} last={last} /> : undefined} />
           <div className="scroll-thin max-h-[32dvh] shrink-0 space-y-2 overflow-y-auto lg:max-h-[42dvh]">
             {Dock && <Dock g={g} />}
             {g.myRole !== 'spectator' && (
