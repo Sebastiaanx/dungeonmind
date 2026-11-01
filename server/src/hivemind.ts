@@ -144,6 +144,9 @@ export function canvasFiles(): CanvasFile[] {
     .map((f) => JSON.parse(readFileSync(join(dir, f), 'utf8')) as CanvasFile);
 }
 
+/** The simulator's fake players and judge: they aren't the DM, so changing the DM leaves them alone. */
+const TRAINER_CANVASES = new Set(['dnd-judge', 'dnd-player', 'dnd-report', 'dnd-scenarios']);
+
 /** narration (and the free-text answer) → the story model; JSON blocks → the JSON model; images → the image model. */
 export function roleOf(n: CanvasNode): keyof ModelRoles | undefined {
   if (n.type === 'image') return 'image';
@@ -152,8 +155,8 @@ export function roleOf(n: CanvasNode): keyof ModelRoles | undefined {
 }
 
 /**
- * Installs (or updates) every DungeonMind canvas with PUT /api/canvases/:id. Models already picked in HiveMind
- * are kept; new nodes get the models from Settings → HiveMind.
+ * Installs (or updates) every DungeonMind canvas with PUT /api/canvases/:id. The game's blocks get the models
+ * from Settings → HiveMind; the AI Trainer's own blocks keep the model picked in HiveMind.
  */
 export async function installCanvases(): Promise<{ id: string; ok: boolean; error?: string; needsModel?: string[] }[]> {
   const { models } = hivemindSettings();
@@ -166,7 +169,8 @@ export async function installCanvases(): Promise<{ id: string; ok: boolean; erro
         const role = roleOf(n);
         if (!role) return n;
         const kept = existing?.nodes.find((e) => e.id === n.id)?.config.model;
-        const model = kept?.providerId ? kept : models[role];
+        const picked = kept?.providerId ? kept : undefined;
+        const model = TRAINER_CANVASES.has(c.id) ? (picked ?? models[role]) : (models[role] ?? picked);
         if (!model) needsModel.push(n.label ?? n.id);
         return model ? { ...n, config: { ...n.config, model } } : n;
       });

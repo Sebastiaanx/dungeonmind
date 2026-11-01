@@ -66,12 +66,12 @@ const norm = (w: string) => w.toLowerCase().replace(/[^a-z0-9']/g, '');
 /** Words of a text as the story log renders them (split on whitespace). */
 export const textWords = (text: string) => text.split(/\s+/).filter(Boolean);
 
-async function fetchRendered(url: string, body?: object, onProgress?: (p: number) => void): Promise<Rendered> {
+/** Waits until part `upTo` has its audio; the parts after it may still be in the making. */
+async function fetchRendered(url: string, upTo: number, body?: object): Promise<Rendered> {
   for (let i = 0; i < 400; i++) {
     const r = await api<Rendered>(url, body ? { body, quiet: true } : { quiet: true });
-    if (r.ready) return r;
-    onProgress?.(r.progress);
-    await new Promise((ok) => setTimeout(ok, 1200));
+    if (r.ready || r.parts[upTo]?.clip) return r;
+    await new Promise((ok) => setTimeout(ok, 800));
   }
   throw new Error('The narrator took too long');
 }
@@ -79,29 +79,41 @@ async function fetchRendered(url: string, body?: object, onProgress?: (p: number
 /**
  * Plays the parts in order (narrator and NPC voices), highlighting the spoken word in `fullText`.
  */
-async function playParts(key: string, label: string, fullText: string, load: () => Promise<Rendered>, prefs: NarratorPrefs) {
+async function playParts(key: string, label: string, fullText: string, load: (upTo: number) => Promise<Rendered>, prefs: NarratorPrefs) {
   stop();
   const my = ++token;
   now = { key, label, word: -1, loading: true };
   emit();
-  let r: Rendered;
-  try {
-    r = await load();
-  } catch (err) {
-    if (my === token) {
-      toast((err as Error).message);
-      stop();
+  let r: Rendered = { ready: false, progress: 0, parts: [] };
+  const wait = async (upTo: number) => {
+    try {
+      r = await load(upTo);
+      return my === token;
+    } catch (err) {
+      if (my === token) {
+        toast((err as Error).message);
+        stop();
+      }
+      return false;
     }
-    return;
-  }
-  if (my !== token) return;
-  now = { ...now!, loading: false };
-  emit();
+  };
+  if (!(await wait(0))) return;
   // Map each part's words onto the words of the full text.
   const words = textWords(fullText).map(norm);
   let cursor = 0;
-  for (const part of r.parts) {
-    if (my !== token || !part.clip) continue;
+  for (let p = 0; p < r.parts.length; p++) {
+    if (my !== token) return;
+    if (!r.parts[p].clip) {
+      now = { ...now!, loading: true };
+      emit();
+      if (!(await wait(p))) return;
+    }
+    now = { ...now!, loading: false };
+    emit();
+    const part = r.parts[p];
+    if (!part.clip) continue;
+    const coming = r.parts[p + 1]?.clip;
+    if (coming) new Audio(`/api/audio/${coming.file}`).preload = 'auto';
     const offsets = part.clip.words.map((x) => {
       const w = norm(x.w);
       for (let i = cursor; i < Math.min(words.length, cursor + 6); i++)
@@ -138,9 +150,9 @@ async function playParts(key: string, label: string, fullText: string, load: () 
 
 export function playNarration(gameId: string, logId: number, text: string, prefs: NarratorPrefs) {
   const q = new URLSearchParams({ ...(prefs.voice ? { voice: prefs.voice } : {}), speed: String(prefs.speed ?? 1) });
-  return playParts(`log-${logId}`, 'Narration', text, () => fetchRendered(`/api/games/${gameId}/narration/${logId}?${q}`), prefs);
+  return playParts(`log-${logId}`, 'Narration', text, (upTo) => fetchRendered(`/api/games/${gameId}/narration/${logId}?${q}`, upTo), prefs);
 }
 
 export function readAloud(text: string, prefs: NarratorPrefs) {
-  return playParts('selection', 'Reading aloud', text, () => fetchRendered('/api/tts/speak', { text, voice: prefs.voice, speed: prefs.speed ?? 1 }), prefs);
+  return playParts('selection', 'Reading aloud', text, (upTo) => fetchRendered('/api/tts/speak', upTo, { text, voice: prefs.voice, speed: prefs.speed ?? 1 }), prefs);
 }

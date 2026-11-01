@@ -51,6 +51,13 @@ describe('voice casting', () => {
     ]);
   });
 
+  it('finds the narrator sentences that are safe to speak while the text still comes in', () => {
+    expect(cast.narratorSentences('The rain falls. The door')).toEqual(['The rain falls.']);
+    expect(cast.narratorSentences('The rain falls. The hag hisses, "Closer, lamb." Old Tam shakes. He')).toEqual(['The rain falls.', 'The hag hisses,', 'Old Tam shakes.']);
+    expect(cast.narratorSentences('The rain falls. She says, "Clo')).toEqual(['The rain falls.', 'She says,']);
+    expect(cast.narratorSentences('"Run!" ')).toEqual([]);
+  });
+
   it('casts fitting voices once and keeps them', () => {
     const c: Record<string, import('../src/tts/cast.js').Casting> = {};
     const hag = cast.castVoice(c, speakers[1]);
@@ -110,11 +117,16 @@ describe('narrator audio', () => {
       await new Promise((ok) => setTimeout(ok, 50));
     }
     expect(r.ready).toBe(true);
-    expect(r.parts.map((p: any) => p.speaker)).toEqual(['narrator', 'Ferryman', 'narrator']);
+    expect(r.parts.map((p: any) => [p.speaker, p.text])).toEqual([
+      ['narrator', 'Mist.'],
+      ['narrator', 'The ferryman mutters,'],
+      ['Ferryman', 'Not after dark.'],
+      ['narrator', 'Silence.'],
+    ]);
     expect(r.parts[0].voice).toBe('bf_emma');
-    expect(r.parts[1].voice).not.toBe('bf_emma');
+    expect(r.parts[2].voice).not.toBe('bf_emma');
     const g = (await t.as(t.pl, 'GET', `/api/games/${t.id}`)).json();
-    expect(g.state.voices.Ferryman.voice).toBe(r.parts[1].voice);
+    expect(g.state.voices.Ferryman.voice).toBe(r.parts[2].voice);
     const audio = await t.as(t.pl, 'GET', `/api/audio/${r.parts[0].clip.file}`);
     expect(audio.statusCode).toBe(200);
     expect(audio.headers['content-type']).toMatch(/audio/);

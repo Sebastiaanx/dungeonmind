@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { sameName } from '../game/text.js';
+import { sentences } from './engine.js';
 import { DEFAULT_NARRATOR, VOICES, voiceById, type Fx, type Voice } from './voices.js';
 
 export interface Speaker {
@@ -93,6 +94,19 @@ export function segments(text: string, speakers: Speaker[]): Segment[] {
   }
   push('narrator', text.slice(last));
   return out;
+}
+
+/**
+ * The finished narrator sentences of a narration that is still coming in. Quotes wait: who speaks them is
+ * only known once the state arrives. The last sentence may still grow, so it waits too.
+ */
+export function narratorSentences(text: string): string[] {
+  const pieces = text.split(/["“][^"”]{2,}["”]/);
+  const tail = pieces.pop() ?? '';
+  const open = tail.search(/["“]/);
+  const done = pieces.flatMap((p) => sentences(p));
+  // Before an open quote the text is complete; otherwise the last sentence may still grow.
+  return open >= 0 ? [...done, ...sentences(tail.slice(0, open))] : [...done, ...sentences(tail).slice(0, -1)];
 }
 
 export const voiceName = (id: string) => voiceById(id)?.name ?? id;

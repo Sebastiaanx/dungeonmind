@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameDetail, LogEntry } from '@dungeonmind/shared';
 import { useMe } from '../me';
+import { animated, INK_MS, streamInk } from './ink';
 import { playNarration, readAloud, skip, stop, useNowPlaying, type NarratorPrefs } from './narrator';
 import { useVotes } from './votes';
 
@@ -21,16 +22,19 @@ export function Narration({ g, e, last }: { g: GameDetail; e: LogEntry; last: bo
     autoplayed.add(e.id);
     playNarration(g.id, e.id, e.text, prefs);
   }, [last, e.id]);
-  // Ink: a fresh narration writes itself out word by word, keeping pace with the narrator when it speaks.
+  // Ink: a fresh narration writes itself out word by word, slowly enough for the audio to get made, and follows the narrator when it speaks.
   const total = e.text.split(/\s+/).filter(Boolean).length;
-  const fresh = last && !inked.has(e.id) && Date.now() - new Date(e.at.replace(' ', 'T') + 'Z').getTime() < 60_000 && (me.prefs as { animations?: boolean }).animations !== false;
-  const [shown, setShown] = useState(fresh ? 0 : total);
+  const fresh = last && !inked.has(e.id) && Date.now() - new Date(e.at.replace(' ', 'T') + 'Z').getTime() < 60_000 && animated(me.prefs);
+  const [shown, setShown] = useState(fresh ? Math.min(streamInk.words, total) : total);
+  useEffect(() => void (streamInk.words = 0), []);
   useEffect(() => {
     if (shown >= total) {
       inked.add(e.id);
       return;
     }
-    const t = setTimeout(() => setShown((n) => Math.min(total, playing && now && now.word >= 0 ? Math.max(n + 1, Math.min(now.word + 4, n + 6)) : n + 1)), playing && !now?.loading ? 90 : 45);
+    const spoken = playing && now && now.word >= 0 ? now.word + 4 : -1;
+    if (spoken >= 0 && spoken <= shown) return; // ahead of the voice: wait for it
+    const t = setTimeout(() => setShown((n) => Math.min(total, Math.max(n + 1, spoken))), INK_MS);
     return () => clearTimeout(t);
   }, [shown, total, playing, now?.word]);
   let i = -1;
@@ -44,9 +48,9 @@ export function Narration({ g, e, last }: { g: GameDetail; e: LogEntry; last: bo
         {playing ? (now?.loading ? '…' : '■') : '▶'}
       </button>
       {e.text.split(/\n{2,}/).map((para, p) => (
-        <p key={p} className="mb-3 last:mb-0">
+        <p key={p} className={`mb-3 last:mb-0 ${i + 1 >= shown ? 'dm-ink-hidden' : ''}`}>
           {para.split(/(\s+)/).map((tok, k) => {
-            if (!tok.trim()) return tok;
+            if (!tok.trim()) return i < shown ? tok : null;
             i++;
             const lit = playing && now?.word === i;
             const ink = i >= shown ? 'dm-ink-hidden' : shown < total && i >= shown - 3 ? 'dm-ink' : '';

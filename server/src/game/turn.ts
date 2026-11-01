@@ -33,6 +33,8 @@ export interface TurnHooks {
   beforeNarrate?: (g: GameRow) => Promise<boolean>;
   /** Inside the turn's transaction: apply the state JSON to characters and the game state. */
   applyState?: (g: GameRow, chars: GameCharacter[], state: StateJson, results: string) => void;
+  /** While the narration streams in: the text so far (real games only). */
+  onNarrationText?: (g: GameRow, text: string) => void;
   /** After the turn is saved and broadcast. */
   afterTurn?: (g: GameRow, narration: string, state: StateJson, logId: number) => void;
 }
@@ -90,6 +92,7 @@ function askDm(g: GameRow, canvasId: string, question: string, vars: Record<stri
                   if (label !== 'narration') return;
                   text += t;
                   emitToGame(g.id, 'game:stream', { gameId: g.id, text: t, full: text.length < 200 ? text : undefined });
+                  if (!sim) for (const h of hooks) h.onNarrationText?.(g, text);
                 }
               : undefined,
           });

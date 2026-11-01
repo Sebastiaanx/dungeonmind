@@ -81,7 +81,7 @@ html[data-dyslexia='1'] .story, html[data-dyslexia='1'] .readable { font-family:
 /* ---- M9: animations ---- */
 @keyframes dm-ink-in { from { opacity: 0; filter: blur(3px); color: #a5b4fc; text-shadow: 0 0 10px #818cf8; } to { opacity: 1; filter: none; } }
 .dm-ink { animation: dm-ink-in 0.5s ease-out both; }
-.dm-ink-hidden { opacity: 0; }
+.dm-ink-hidden { display: none; }
 
 @keyframes dm-hit { 0%, 100% { transform: none; } 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-2px); } }
 @keyframes dm-hit-flash { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); } 30% { box-shadow: 0 0 18px 4px rgba(220, 38, 38, 0.55); } 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); } }
@@ -107,7 +107,6 @@ html[data-dyslexia='1'] .story, html[data-dyslexia='1'] .readable { font-family:
 
 @media (prefers-reduced-motion: reduce) {
   .dm-ink, .dm-hp-hit, .dm-hp-hit .dm-hp-bar, .dm-hp-heal .dm-hp-bar, .dm-pip-spent, .dm-levelup-burst, .dm-reveal, .dm-face, .dm-levelup { animation: none !important; }
-  .dm-ink-hidden { opacity: 1; }
 }
 
 /* ---- M10: mobile polish ---- */

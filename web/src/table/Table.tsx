@@ -3,6 +3,7 @@ import type { GameDetail } from '@dungeonmind/shared';
 import { api } from '../api';
 import { Sheet } from '../components/Sheet';
 import { useMe } from '../me';
+import { setOpenGame } from '../openGame';
 import { navigate } from '../router';
 import { useGame } from '../useGame';
 import { CampaignModal } from './CampaignModal';
@@ -23,7 +24,15 @@ const PHASE: Record<string, string> = {
 
 export function PhaseBanner({ g }: { g: GameDetail }) {
   if (g.status === 'paused') return <div className="bg-amber-900/60 px-3 py-1 text-center text-sm">The host paused the game.</div>;
-  if (g.status === 'ended') return <div className="bg-slate-800 px-3 py-1 text-center text-sm">This game has ended. The story stays readable.</div>;
+  if (g.status === 'ended')
+    return (
+      <div className="flex flex-wrap items-center justify-center gap-2 bg-slate-800 px-3 py-1 text-center text-sm">
+        This game has ended. The story stays readable.
+        <button className="btn py-0.5" onClick={() => navigate('/')}>
+          Back to the lobby
+        </button>
+      </div>
+    );
   if (g.state.phase === 'error')
     return (
       <div className="flex flex-wrap items-center justify-center gap-2 bg-red-950 px-3 py-1 text-center text-sm text-red-100">
@@ -130,6 +139,11 @@ export function Table({ id }: { id: string }) {
   useEffect(() => {
     if (g && g.status === 'setup' && g.myRole !== 'spectator') navigate(`/games/${id}`);
   }, [g?.status]);
+  // The top bar shows the game you're in, and keeps it as a tab while you look elsewhere.
+  useEffect(() => {
+    if (g === null) setOpenGame(null);
+    else if (g && g.status !== 'setup') setOpenGame({ id: g.id, name: g.name, ended: g.status === 'ended' });
+  }, [g?.id, g?.name, g?.status, g === null]);
   if (g === null) return <p className="p-4 text-slate-400">This table doesn't exist, or it's private.</p>;
   if (!g) return null;
   const host = g.myRole === 'host';
@@ -139,12 +153,9 @@ export function Table({ id }: { id: string }) {
   const hasBoard = !!g.state.sceneImage || g.state.zones.length > 0 || !!g.state.combat;
 
   return (
-    <div className="flex h-[100dvh] flex-col">
-      <header className="flex flex-wrap items-center gap-2 border-b border-[#30363d] px-3 py-2">
-        <button onClick={() => navigate('/')} title="Back to the lobby">
-          <img src="/icon.svg" className="h-7 w-7" alt="Lobby" />
-        </button>
-        <h1 className="min-w-0 flex-1 truncate font-serif text-lg text-indigo-100">{g.name}</h1>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <header className="flex flex-wrap items-center justify-end gap-2 border-b border-[#30363d] px-3 py-1.5">
+        <h1 className="hidden min-w-0 flex-1 truncate font-serif text-lg text-indigo-100 lg:block">{g.name}</h1>
         {g.myRole === 'spectator' && <span className="chip">spectating</span>}
         {Top && <Top g={g} />}
         <button className="btn-ghost text-xs" onClick={() => setCampaign(true)}>

@@ -56,7 +56,7 @@ DungeonMind does no AI itself. Everything goes through your [HiveMind](https://g
 2. In HiveMind, create an API token (Settings → API tokens) as a **member** account (viewers can't install canvases).
 3. In DungeonMind → **Settings → HiveMind**, enter the URL (LAN IP, e.g. `http://192.168.1.10:4820`) and the token. The token is stored encrypted.
 4. Pick the **models**: a story model for narration and Ask the DM, a JSON model for rules/state/chronicle/sheets, and an image model (ComfyUI) for portraits and scenes.
-5. Click **Install / update canvases**. It writes these canvases into your HiveMind (fixed ids, so a reinstall overwrites them but keeps models you picked in HiveMind):
+5. Click **Install / update canvases**. It writes these canvases into your HiveMind (fixed ids, so a reinstall overwrites them with the models from these settings; only the AI Trainer's test blocks keep the model picked in HiveMind):
 
 | Canvas | Does |
 |---|---|
@@ -157,7 +157,7 @@ Every turn runs on the server, step by step, and every step is in the story log:
 - **Chatterbox (optional):** the `ghcr.io/turkushan490/dungeonmind:full` image adds Python, CPU torch and [Chatterbox](https://github.com/resemble-ai/chatterbox) (MIT) as a sidecar on `127.0.0.1:4831`. Pick it in **Settings → Narrator voice → Engine**. It clones a short reference clip per voice (DungeonMind records these with Kokoro into `/data/voices/<voice>.wav`; you can drop in your own). It's much slower on a CPU; with an NVIDIA GPU run the container with `--gpus all`. The `:full` image is built on version tags or by hand (Actions → build → Run workflow).
 - **Listening test:** Settings → Narrator voice has a test box. Try both engines on real story text; the admin picks the default engine and narrator voice there.
 - **Voice casting:** the narrator speaks in each listener's own chosen voice. The State LLM tags who speaks; quoted lines go to that NPC, who gets a fitting voice from the library (gender, age, monster) the first time and keeps it for the whole game. Monsters, giants, ghosts and tiny creatures get **effects** (pitch, distortion, reverb) with ffmpeg.
-- **Per user:** voice, speed, volume, auto-read of new narration, and highlighting of the spoken word. Select any text in the story and press **Read this aloud**. Stop and Skip are always visible while something plays.
+- **Per user:** voice, speed, volume, auto-read of new narration, and highlighting of the spoken word. Audio is made sentence by sentence while the text appears, in the voice and speed of each player who is online. Select any text in the story and press **Read this aloud**. Stop and Skip are always visible while something plays.
 - **Audio cache:** each narration is spoken once per voice and stored (`/data/audio`), so every listener with that voice plays the same file. New narration is pre-spoken in the default voice right after the turn. Audio unplayed for the retention period (default 14 days) is deleted.
 
 ## 11. Portraits and scene images

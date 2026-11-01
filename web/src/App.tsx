@@ -16,6 +16,7 @@ import { GameSetup } from './pages/GameSetup';
 import { Table } from './table/Table';
 import { NewAdventure } from './pages/NewAdventure';
 import { CharacterLibrary, CharacterView, NewCharacter } from './pages/Characters';
+import { useOpenGame } from './openGame';
 import { match, navigate, usePath } from './router';
 import { closeSocket, getSocket } from './socket';
 import { isNative } from './native';
@@ -33,6 +34,7 @@ export function App() {
   const [auth, setAuth] = useState<{ mode: AuthMode; registration: boolean }>({ mode: 'login', registration: true });
   const [adminLogin, setAdminLogin] = useState(false);
   const path = usePath();
+  const openGame = useOpenGame();
 
   const load = async () => {
     setAuth(await api('/api/auth/config', { quiet: true }).catch(() => ({ mode: 'login' as AuthMode, registration: true })));
@@ -95,28 +97,38 @@ export function App() {
   const rulesPage = match('/rules/:ruleset', path) as { ruleset: 'srd51' | 'srd52' } | null;
   const charView = match('/characters/:id', path);
   const charEdit = match('/characters/:id/edit', path);
+  const inGame = !!openGame && openGame.id === table?.id;
 
   return (
     <MeContext.Provider value={me}>
-      <div className={`mx-auto ${table ? 'max-w-none' : 'dm-page max-w-7xl p-3 sm:p-4'}`}>
-        {!table && (
-          <header className="mb-4 flex flex-wrap items-center gap-2">
-            <button onClick={() => navigate('/')} className="flex items-center gap-2">
-              <img src="/icon.svg" className="h-8 w-8" alt="" />
-              <span className="font-serif text-xl font-semibold tracking-wide text-indigo-100">DungeonMind</span>
-            </button>
-            <nav className="dm-topnav order-last flex w-full gap-1 overflow-x-auto sm:order-none sm:ml-4 sm:w-auto">
-              {nav.map(([to, label]) => (
-                <button
-                  key={to}
-                  onClick={() => navigate(to)}
-                  className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm ${(to === '/' ? path === '/' : path.startsWith(to)) ? 'bg-[#21262d] text-white' : 'text-slate-400 hover:text-white'}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </nav>
-            <span className="ml-auto text-sm text-slate-400">
+      <div className={`mx-auto ${table ? 'flex h-[100dvh] max-w-none flex-col' : 'dm-page max-w-7xl p-3 sm:p-4'}`}>
+        <header className={`flex items-center gap-2 ${table ? 'shrink-0 border-b border-[#30363d] px-3 py-1' : 'mb-4 flex-wrap'}`}>
+          <button onClick={() => navigate('/')} className="flex shrink-0 items-center gap-2">
+            <img src="/icon.svg" className="h-8 w-8" alt="" />
+            <span className={`font-serif text-xl font-semibold tracking-wide text-indigo-100 ${table ? 'hidden lg:inline' : ''}`}>DungeonMind</span>
+          </button>
+          <nav className={`dm-topnav flex gap-1 overflow-x-auto ${table ? 'min-w-0 flex-1 [scrollbar-width:none]' : 'order-last w-full sm:order-none sm:ml-4 sm:w-auto'}`}>
+            {openGame && (!openGame.ended || inGame) && (
+              <button
+                onClick={() => navigate(`/table/${openGame.id}`)}
+                title={inGame ? `You're in ${openGame.name}` : `Back to ${openGame.name}`}
+                className={`max-w-[12rem] shrink-0 truncate whitespace-nowrap rounded-md border px-3 py-1.5 text-sm ${inGame ? 'border-indigo-400 bg-indigo-950 text-white' : 'border-indigo-700 text-indigo-200 hover:text-white'}`}
+              >
+                🎲 {openGame.name}
+              </button>
+            )}
+            {nav.map(([to, label]) => (
+              <button
+                key={to}
+                onClick={() => navigate(to)}
+                className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm ${(to === '/' ? path === '/' : path.startsWith(to)) ? 'bg-[#21262d] text-white' : 'text-slate-400 hover:text-white'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
+          <div className={`ml-auto items-center gap-2 ${table ? 'hidden shrink-0 lg:flex' : 'flex'}`}>
+            <span className="text-sm text-slate-400">
               {me.username}
               {me.role === 'admin' && <span className="ml-1.5 rounded bg-[#21262d] px-1.5 py-0.5 text-xs">admin</span>}
             </span>
@@ -133,8 +145,8 @@ export function App() {
             <button className="btn-ghost" onClick={logout}>
               Log out
             </button>
-          </header>
-        )}
+          </div>
+        </header>
         {path === '/' && <Lobby />}
         {path === '/settings' && <SettingsPage />}
         {path === '/homebrew' && <HomebrewPage />}
@@ -151,6 +163,11 @@ export function App() {
       </div>
       {!table && isNative() && (
         <nav className="dm-bottomnav fixed inset-x-0 bottom-0 z-30 flex border-t border-[#30363d] bg-[#161b22]">
+          {openGame && !openGame.ended && (
+            <button onClick={() => navigate(`/table/${openGame.id}`)} className="flex-1 py-3 text-xs text-indigo-300">
+              🎲 Game
+            </button>
+          )}
           {nav.map(([to, label]) => (
             <button key={to} onClick={() => navigate(to)} className={`flex-1 py-3 text-xs ${(to === '/' ? path === '/' : path.startsWith(to)) ? 'text-indigo-300' : 'text-slate-400'}`}>
               {label}

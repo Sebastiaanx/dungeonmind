@@ -36,7 +36,7 @@ describe('HiveMind connection', () => {
     hm.features = before;
   });
 
-  it('installs every canvas, filling models by role and keeping models picked in HiveMind', async () => {
+  it('installs every canvas, with the models from Settings by role', async () => {
     await as('PUT', '/api/settings/hivemind', { models: { story: { providerId: 'ollama', model: 'story-24b' }, json: { providerId: 'ollama', model: 'json-20b' } } });
     const r = (await as('POST', '/api/hivemind/install')).json();
     expect(r.canvases.every((c: any) => c.ok)).toBe(true);
@@ -47,10 +47,12 @@ describe('HiveMind connection', () => {
     // The image node has no image model yet: reported, not failed.
     expect(r.canvases.find((c: any) => c.id === 'dnd-portrait').needsModel).toEqual(['portraits']);
 
-    // The user picks another narration model in HiveMind; a reinstall keeps it.
-    narrate.nodes.find((n: any) => n.label === 'narration').config.model = { providerId: 'groq', model: 'mine' };
+    // A model left in a DM block gives way to the one in Settings; the Trainer's blocks keep theirs.
+    narrate.nodes.find((n: any) => n.label === 'narration').config.model = { providerId: 'ollama', model: 'old-dm' };
+    hm.canvases.get('dnd-judge').nodes.find((n: any) => n.label === 'verdict').config.model = { providerId: 'ollama', model: 'strict-judge' };
     await as('POST', '/api/hivemind/install');
-    expect(hm.canvases.get('dnd-narrate').nodes.find((n: any) => n.label === 'narration').config.model.model).toBe('mine');
+    expect(hm.canvases.get('dnd-narrate').nodes.find((n: any) => n.label === 'narration').config.model.model).toBe('story-24b');
+    expect(hm.canvases.get('dnd-judge').nodes.find((n: any) => n.label === 'verdict').config.model.model).toBe('strict-judge');
   });
 
   it('imports the SRD into memory under rules:<ruleset>, in chunks', async () => {

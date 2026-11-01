@@ -123,7 +123,7 @@ function HiveMindSettings() {
 
       <div>
         <h3 className="label">Models</h3>
-        <p className="mb-2 text-xs text-slate-500">Used for new canvas blocks. Models you already picked in HiveMind are kept when you reinstall.</p>
+        <p className="mb-2 text-xs text-slate-500">The game uses these models after Install / update canvases. The AI Trainer's test players and judge keep their own.</p>
         <div className="grid gap-3 sm:grid-cols-3">
           {(
             [

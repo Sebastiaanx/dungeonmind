@@ -1,11 +1,14 @@
 import { createReadStream, existsSync, utimesSync } from 'node:fs';
 import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
-import { requireAdmin, requireUser } from '../auth/index.js';
+import { prefsOf, requireAdmin, requireUser } from '../auth/index.js';
 import { db, setSetting } from '../db.js';
 import { addTurnHooks } from '../game/turn.js';
 import { loadGame, saveGame } from '../game/store.js';
-import { castVoice, segments, type Casting, type Speaker } from '../tts/cast.js';
+import { isOnline } from '../realtime.js';
+import { simContext } from '../trainer/context.js';
+import { castVoice, narratorSentences, segments, type Casting, type Speaker } from '../tts/cast.js';
+import { sentences } from '../tts/engine.js';
 import { hasFfmpeg } from '../tts/fx.js';
 import { audioDir, cachedClip, cleanupAudio, speak, ttsSettings, type Clip } from '../tts/index.js';
 import { FX, VOICES, voiceById, type Fx } from '../tts/voices.js';
@@ -38,8 +41,27 @@ function partsFor(gameId: string, text: string, speakers: Speaker[], narrator: s
 
 const speakersOf = (data: unknown): Speaker[] => (Array.isArray((data as { speakers?: unknown })?.speakers) ? ((data as { speakers: Speaker[] }).speakers ?? []) : []);
 
-/** Ready parts get their audio; missing ones are made in the background (the client polls). */
-function render(parts: Part[], speed: number) {
+/** Who audio is made for up front: everyone at the table who is online, in their own voice and speed. */
+function listeners(gameId: string) {
+  const s = ttsSettings();
+  const out = new Map<string, { voice: string; speed: number }>();
+  for (const m of db.prepare("SELECT user_id FROM game_members WHERE game_id = ? AND status = 'joined'").all(gameId) as { user_id: string }[]) {
+    if (!isOnline(m.user_id)) continue;
+    const n = (prefsOf(m.user_id).narrator ?? {}) as { voice?: string; speed?: number };
+    const voice = voiceById(n.voice) ? n.voice! : s.narrator;
+    const speed = Number(n.speed) || 1;
+    out.set(`${voice}|${speed}`, { voice, speed });
+  }
+  if (!out.size) out.set('default', { voice: s.narrator, speed: 1 });
+  return [...out.values()];
+}
+
+/**
+ * Sentence by sentence: the listener hears the first one as soon as it's made, while the rest follow.
+ * Ready sentences get their audio; missing ones are made in the background (the client polls).
+ */
+function render(whole: Part[], speed: number) {
+  const parts = whole.flatMap((p) => sentences(p.text).map((text) => ({ ...p, text })));
   const clips = parts.map((p) => cachedClip(p.text, p.voice, speed, p.fx));
   const missing = parts.filter((_, i) => !clips[i]);
   if (missing.length) {
@@ -55,17 +77,28 @@ function render(parts: Part[], speed: number) {
 }
 
 let hooked = false;
+/** How many sentences of the narration coming in now were already sent off to be spoken, per game. */
+const streamed = new Map<string, number>();
 
 export function ttsRoutes(app: FastifyInstance) {
   if (!hooked) {
     hooked = true;
-    // Pre-speak every new narration in the default narrator voice, so most listeners get it instantly.
+    // Speak the narration while it comes in, for the people listening, so ▶ has it ready.
   addTurnHooks({
+    onNarrationText: (g, text) => {
+      if (ttsSettings().engine === 'off') return;
+      const list = narratorSentences(text);
+      const done = streamed.get(g.id) ?? 0;
+      const from = list.length < done ? 0 : done;
+      if (list.length === from) return;
+      streamed.set(g.id, list.length);
+      for (const l of listeners(g.id)) for (const s of list.slice(from)) speak(s, l.voice, l.speed).catch(() => {});
+    },
+    // Now the speakers are known: the quotes get their voices, and whatever is still missing is made.
     afterTurn: (g, narration, state) => {
-      const s = ttsSettings();
-      if (s.engine === 'off') return;
-      const parts = partsFor(g.id, narration, (state.speakers ?? []) as Speaker[], s.narrator);
-      render(parts, 1);
+      streamed.delete(g.id);
+      if (simContext() || ttsSettings().engine === 'off') return;
+      for (const l of listeners(g.id)) render(partsFor(g.id, narration, (state.speakers ?? []) as Speaker[], l.voice), l.speed);
     },
   });
   }
