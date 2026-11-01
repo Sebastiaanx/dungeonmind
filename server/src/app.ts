@@ -1,3 +1,4 @@
+import { APP_VERSION } from '@dungeonmind/shared';
 import cookie from '@fastify/cookie';
 import staticFiles from '@fastify/static';
 import Fastify, { type FastifyInstance } from 'fastify';
@@ -51,7 +52,7 @@ export async function buildApp(opts: { logger?: boolean; web?: boolean; realtime
     }
   });
 
-  app.get('/api/health', async () => ({ ok: true, app: 'dungeonmind', version: VERSION, authMode: config.authMode }));
+  app.get('/api/health', async () => ({ ok: true, app: 'dungeonmind', version: VERSION, release: APP_VERSION, authMode: config.authMode }));
   app.get('/api/presence', { preHandler: requireUser }, async () => presenceList());
 
   registerEngine();

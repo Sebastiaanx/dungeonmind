@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { AuthMode, Me } from '@dungeonmind/shared';
+import { APP_VERSION, type AuthMode, type Me } from '@dungeonmind/shared';
 import { api } from './api';
 import { Modal } from './components/Modal';
 import { Toasts } from './components/Toasts';
@@ -107,6 +107,9 @@ export function App() {
             <img src="/icon.svg" className="h-8 w-8" alt="" />
             <span className={`font-serif text-xl font-semibold tracking-wide text-indigo-100 ${table ? 'hidden lg:inline' : ''}`}>DungeonMind</span>
           </button>
+          <span className="shrink-0 rounded-full border border-amber-500 px-2 py-0.5 text-xs text-amber-200" title="DungeonMind is still in beta">
+            Beta v{APP_VERSION}
+          </span>
           <nav className={`dm-topnav flex gap-1 overflow-x-auto ${table ? 'min-w-0 flex-1 [scrollbar-width:none]' : 'order-last w-full sm:order-none sm:ml-4 sm:w-auto'}`}>
             {openGame && (!openGame.ended || inGame) && (
               <button

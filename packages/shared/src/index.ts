@@ -1,5 +1,8 @@
 // Types shared by the server, the web UI and the Android app.
 
+/** The version on top of the site. Raise it with every release, and tag that release v<this>. */
+export const APP_VERSION = '1.0.3';
+
 export type Role = 'admin' | 'user';
 export type AuthMode = 'login' | 'portal';
 
