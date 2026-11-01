@@ -1,5 +1,5 @@
-/** Milliseconds per word: slow enough that the narrator's audio is made by the time the text has run out. */
-export const INK_MS = 150;
+/** Milliseconds per word: a calm pace that still gives the narrator's audio a head start. */
+export const INK_MS = 75;
 
 /** How many words of the narration coming in are on screen; the finished narration carries on from there. */
 export const streamInk = { words: 0 };

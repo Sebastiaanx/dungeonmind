@@ -10,7 +10,7 @@ import { addLog, lastLogId } from './log.js';
 import { campaignFor, partyJson, recentTurns } from './prompt.js';
 import { think } from './queue.js';
 import { broadcast, gameCharacters, loadGame, members, saveGame, saveGameCharacter, type GameRow } from './store.js';
-import { clip, sameName } from './text.js';
+import { clip, garbled, sameName } from './text.js';
 import { tutorialRun } from './tutorial.js';
 
 /** The state JSON the dnd-narrate canvas returns (see hivemind/dnd-narrate.canvas.json). */
@@ -65,6 +65,16 @@ export function setPhase(g: GameRow, phase: GameState['phase'], extra: Partial<G
   broadcast(g);
 }
 
+/** The narration being written now, per game, so a player can stop it. */
+const writing = new Map<string, AbortController>();
+
+/** "Start over": stops the narration being written; the automatic retry writes it again, with the same dice. */
+export function redoNarration(gameId: string) {
+  const run = writing.get(gameId);
+  run?.abort();
+  return !!run;
+}
+
 /** Every DM call goes through the queue, retries on failure, and streams narration to the table. */
 export async function dm(g: GameRow, canvasId: string, question: string, vars: Record<string, string>, stream = false, turn = g.state.turn): Promise<RunResult> {
   // The tutorial has its own scripted DM: no HiveMind, no queue.
@@ -82,21 +92,29 @@ function askDm(g: GameRow, canvasId: string, question: string, vars: Record<stri
     g.id,
     () =>
       withRetry(
-        () => {
+        async () => {
           let text = '';
-          return runCanvas(canvasId, question, {
+          const nonsense = (raw: string) => new HiveMindError('The DM wrote nonsense. If this keeps happening, pick a bigger model (not an IQ1 or IQ2 version).', 0, true, raw);
+          const stop = new AbortController();
+          if (stream) writing.set(g.id, stop);
+          const result = await runCanvas(canvasId, question, {
             vars,
             models: sim?.models,
+            signal: stop.signal,
             onEvent: sim?.onEvent ? (ev) => sim.onEvent!(canvasId, ev) : undefined,
             onToken: stream
               ? (label, t) => {
                   if (label !== 'narration') return;
                   text += t;
                   emitToGame(g.id, 'game:stream', { gameId: g.id, text: t, full: text.length < 200 ? text : undefined });
+                  if (garbled(text)) throw nonsense(text);
                   if (!sim) for (const h of hooks) h.onNarrationText?.(g, text);
                 }
               : undefined,
-          });
+          }).finally(() => writing.get(g.id) === stop && writing.delete(g.id));
+          const told = result.outputs.narration?.text;
+          if (stream && told && garbled(told)) throw nonsense(told);
+          return result;
         },
         {
           onRetry: (attempt, err) => {

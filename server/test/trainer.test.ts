@@ -467,9 +467,9 @@ describe('the DM model picker', () => {
     expect(r.options.filter((o: any) => o.why === 'tested').every((o: any) => o.jsonValid >= 90 && o.turns >= 20)).toBe(true);
   });
 
-  it('offers Harbinger, finds an installed copy of any size, and always lists the current DM', async () => {
-    const harbinger = 'hf.co/LatitudeGames/Harbinger-24B-GGUF:Q4_K_M';
-    hm.models = [{ providerId: 'ollama', id: harbinger }, { providerId: 'ollama', id: 'my-own-model' }];
+  it('offers a usable Harbinger, never its 1-bit copy, and always lists the current DM', async () => {
+    const harbinger = 'hf.co/LatitudeGames/Harbinger-24B-GGUF:Q4_K_S';
+    hm.models = [{ providerId: 'ollama', id: 'hf.co/LatitudeGames/Harbinger-24B-GGUF:IQ1_S' }, { providerId: 'ollama', id: harbinger }, { providerId: 'ollama', id: 'my-own-model' }];
     await as(admin, 'PUT', '/api/settings/hivemind', { models: { story: { providerId: 'ollama', model: 'my-own-model' }, json: { providerId: 'ollama', model: 'my-own-model' } } });
     const r = (await as(admin, 'GET', '/api/trainer/dm-models')).json();
     expect(r.options.find((o: any) => o.model === harbinger)).toMatchObject({ why: 'curated', label: 'Harbinger 24B', installed: true });

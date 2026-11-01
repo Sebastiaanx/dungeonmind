@@ -6,7 +6,7 @@ import { addLog, readLog } from '../game/log.js';
 import { campaignFor, partyJson, recentTurns } from '../game/prompt.js';
 import { think } from '../game/queue.js';
 import { broadcast, gameCharacters, saveGame, saveGameCharacter } from '../game/store.js';
-import { playersOf, resolveLater, retry, startGame, submitAction, activeCharacters } from '../game/turn.js';
+import { activeCharacters, playersOf, redoNarration, resolveLater, retry, startGame, submitAction } from '../game/turn.js';
 import { HiveMindError, outputText, runCanvas, withRetry } from '../hivemind.js';
 import { emitToGame } from '../realtime.js';
 import { recordCall } from '../trainer/records.js';
@@ -63,6 +63,15 @@ export function tableRoutes(app: FastifyInstance) {
     const r = await gameFor(req, reply, 'member');
     if (!r) return;
     if (!retry(r.g)) return reply.code(400).send({ error: 'Nothing to retry' });
+    return { ok: true };
+  });
+
+  /** The story comes out wrong: stop the DM and write it again. Same dice, and no reroll used. */
+  app.post('/api/games/:id/redo', { preHandler: requireUser }, async (req, reply) => {
+    const r = await gameFor(req, reply, 'member');
+    if (!r) return;
+    if (!redoNarration(r.g.id)) return reply.code(400).send({ error: "The DM isn't writing right now" });
+    addLog(r.g.id, r.g.state.turn, 'system', `${req.user!.username} asked the DM to start over.`);
     return { ok: true };
   });
 

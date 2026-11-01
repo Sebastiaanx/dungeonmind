@@ -124,6 +124,7 @@ function HiveMindSettings() {
       <div>
         <h3 className="label">Models</h3>
         <p className="mb-2 text-xs text-slate-500">The game uses these models after Install / update canvases. The AI Trainer's test players and judge keep their own.</p>
+        {[s.models.story, s.models.json].some((m) => /:IQ[12]_/i.test(m?.model ?? '')) && <p className="mb-2 text-xs text-amber-300">IQ1 and IQ2 versions are squeezed so hard that the story can turn into nonsense. Pick Q4 if it fits on your GPU.</p>}
         <div className="grid gap-3 sm:grid-cols-3">
           {(
             [

@@ -141,6 +141,14 @@ describe('the game loop', () => {
     expect(last.vars.actions).toContain('I hold my breath');
   }, 30_000);
 
+  it('recognises a story that turned into nonsense', async () => {
+    const { garbled } = await import('../src/game/text.js');
+    expect(garbled('You step into the hall. The air tastes of ozone and old blood, and in 1492 the 3 doors were sealed.')).toBe(false);
+    expect(garbled('you -10,000 6060 199:90a 30159 303 an1999 996,90 1959 10099 30 9x1 3639 96 340 92 34149 359 39')).toBe(true);
+    expect(garbled(`The door opens and then ${'door '.repeat(8)}`)).toBe(true);
+    expect(turn.redoNarration('no-such-game')).toBe(false);
+  });
+
   it('answers Ask the DM without moving the story', async () => {
     const before = (await game()).state;
     await t.as(t.pl, 'POST', `/api/games/${t.id}/ask`, { question: 'How does grappling work?' });

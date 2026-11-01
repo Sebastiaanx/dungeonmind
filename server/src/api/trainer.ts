@@ -28,7 +28,7 @@ import { allSimStats, deleteSim, isRunning, scoreboard, simRow, startSim, stopSi
 /** The curated DM models the picker always offers (M9 §3 DM model). */
 export const CURATED_MODELS = [
   { model: 'hf.co/LatitudeGames/Wayfarer-2-12B-GGUF:Q4_K_M', name: 'Wayfarer 2 12B', match: /^hf\.co\/LatitudeGames\/Wayfarer-2-12B-GGUF:Q4_K_M$/i },
-  { model: 'hf.co/LatitudeGames/Harbinger-24B-GGUF:IQ1_S', name: 'Harbinger 24B', match: /^hf\.co\/LatitudeGames\/Harbinger-24B-GGUF:/i },
+  { model: 'hf.co/LatitudeGames/Harbinger-24B-GGUF:Q4_K_S', name: 'Harbinger 24B', match: /^hf\.co\/LatitudeGames\/Harbinger-24B-GGUF:Q4_K_S$/i },
   { model: 'qwen3:8b', name: 'Qwen3 8B', match: /^qwen3[:-]8b/i },
   { model: 'qwen3.5:9b', name: 'Qwen3.5 9B', match: /^qwen3\.5[:-]9b/i },
 ];

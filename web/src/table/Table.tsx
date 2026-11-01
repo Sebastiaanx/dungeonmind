@@ -47,9 +47,15 @@ export function PhaseBanner({ g }: { g: GameDetail }) {
     );
   const msg = PHASE[g.state.phase];
   if (!msg) return null;
+  const canRedo = (g.state.phase === 'opening' || g.state.phase === 'narrating') && g.myRole !== 'spectator' && !g.state.queue;
   return (
-    <div className="dm-breathe bg-indigo-950/70 px-3 py-1 text-center text-sm text-indigo-100">
-      {g.state.queue ? `The DM is thinking… (#${g.state.queue} in queue)` : msg}
+    <div className="flex flex-wrap items-center justify-center gap-2 bg-indigo-950/70 px-3 py-1 text-center text-sm text-indigo-100">
+      <span className="dm-breathe">{g.state.queue ? `The DM is thinking… (#${g.state.queue} in queue)` : msg}</span>
+      {canRedo && (
+        <button className="btn-ghost py-0.5 text-xs" title="Does the story look wrong? This stops the DM and writes it again. Your dice stay the same and no reroll is used." onClick={() => api(`/api/games/${g.id}/redo`, { method: 'POST' })}>
+          Story looks wrong? Start over
+        </button>
+      )}
     </div>
   );
 }

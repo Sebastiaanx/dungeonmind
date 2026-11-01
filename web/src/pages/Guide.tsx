@@ -88,6 +88,9 @@ const SECTIONS: { id: string; title: string; img?: string; body: React.ReactNode
           <b>Ask the DM</b> (under the choices): a rules question or "what does my character know about…". It never moves the story or holds up the turn.
         </p>
         <p>
+          <b>Start over</b> (while the DM writes): does the story come out as nonsense? This stops the DM and writes it again, with the same dice and without using a reroll. DungeonMind also catches most nonsense by itself.
+        </p>
+        <p>
           <b>Reroll</b> (top bar): don't like how the DM told it? Ask for a reroll. If most players agree, the DM tells that moment again with the same dice. The group has a limited number.
         </p>
         <p>
