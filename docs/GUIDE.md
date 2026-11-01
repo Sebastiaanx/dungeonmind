@@ -167,7 +167,7 @@ Every turn runs on the server, step by step, and every step is in the story log:
 ## 11. Portraits and scene images
 
 - **Portraits:** on a character's page, **Make 4 portraits** runs the `dnd-portrait` canvas (an LLM writes the image prompt from the appearance, then one image block makes 4 variants with `batch: 4`). Pick one, **Regenerate**, or **Upload my own** (PNG/JPEG/WebP/GIF up to 8 MB; the server checks the bytes, not the file name). The portrait also updates that character's copies in games.
-- **Scene images:** when the State LLM describes a new scene (`image` in the state JSON), DungeonMind runs `dnd-scene` in the background and shows the picture above the zone board and in the story. Hosts can turn this off per game ("Illustrate new scenes").
+- **Scene images:** a player or the host presses **Make a picture** at the table, and DungeonMind runs `dnd-scene` for the current scene (`image` in the state JSON, or the last narration) and shows the picture above the zone board and in the story. Everyone sees a timer while it paints, usually about 50 seconds. Nothing is painted without that button, because images slow the game down. Hosts can turn it off per game ("Allow scene pictures").
 - Every image from HiveMind is **copied into DungeonMind's appdata** (`/data/images`), so games keep their pictures even if HiveMind's files are cleaned up.
 - Images need an image model (ComfyUI through HiveMind) on those canvases; without one, DungeonMind says so and the game goes on without pictures.
 

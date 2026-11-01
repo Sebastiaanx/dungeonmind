@@ -75,17 +75,20 @@ describe('portraits', () => {
 });
 
 describe('scene images', () => {
-  it('illustrates a new scene in the background', async () => {
+  it('paints the scene only when someone at the table asks for it', async () => {
     await t.as(t.host, 'POST', `/api/games/${t.id}/start`);
     const turn = await import('../src/game/turn.js');
     await turn.settled(t.id);
+    expect(hm.callsOf('dnd-scene')).toHaveLength(0);
+    expect((await t.as(t.pl, 'POST', `/api/games/${t.id}/scene-image`)).statusCode).toBe(200);
     let g: any;
     for (let i = 0; i < 40; i++) {
       g = (await t.as(t.pl, 'GET', `/api/games/${t.id}`)).json();
-      if (g.state.sceneImage) break;
+      if (g.state.sceneImage && !g.state.paintingSince) break;
       await new Promise((r) => setTimeout(r, 50));
     }
     expect(g.state.sceneImage).toMatch(/^\/api\/images\/scene-/);
+    expect(g.state.paintingSince).toBeUndefined();
     expect(hm.callsOf('dnd-scene')[0].question).toBe('A storm over the marsh');
     const log = (await t.as(t.pl, 'GET', `/api/games/${t.id}/log`)).json();
     expect(log.some((e: any) => e.kind === 'image' && e.data.url === g.state.sceneImage)).toBe(true);

@@ -3,6 +3,7 @@ import type { GameDetail } from '@dungeonmind/shared';
 import { api } from '../api';
 import { Sheet } from '../components/Sheet';
 import { useMe } from '../me';
+import { Busy } from '../components/Busy';
 import { setOpenGame } from '../openGame';
 import { navigate } from '../router';
 import { useGame } from '../useGame';
@@ -150,6 +151,7 @@ export function Table({ id }: { id: string }) {
   const Narr = tableExtras.narration;
   const Top = tableExtras.top;
   const Dock = tableExtras.dock;
+  const painting = !!g.state.paintingSince && Date.now() - g.state.paintingSince < 10 * 60_000;
   const hasBoard = !!g.state.sceneImage || g.state.zones.length > 0 || !!g.state.combat;
 
   return (
@@ -158,6 +160,11 @@ export function Table({ id }: { id: string }) {
         <h1 className="hidden min-w-0 flex-1 truncate font-serif text-lg text-indigo-100 lg:block">{g.name}</h1>
         {g.myRole === 'spectator' && <span className="chip">spectating</span>}
         {Top && <Top g={g} />}
+        {g.myRole !== 'spectator' && g.settings.sceneImages !== false && g.status === 'playing' && (
+          <button className="btn-ghost text-xs" disabled={painting} title="Paints the current scene. This takes about 50 seconds and slows the game down while it runs." onClick={() => api(`/api/games/${g.id}/scene-image`, { method: 'POST' })}>
+            🖼 Make a picture <span className="hidden sm:inline">(about 50 sec)</span>
+          </button>
+        )}
         <button className="btn-ghost text-xs" onClick={() => setCampaign(true)}>
           Campaign
         </button>
@@ -173,6 +180,11 @@ export function Table({ id }: { id: string }) {
         )}
       </header>
       <PhaseBanner g={g} />
+      {painting && (
+        <div className="shrink-0 px-2 pt-2 sm:px-3">
+          <Busy since={g.state.paintingSince} text="Painting the scene. This can take about 50 seconds." />
+        </div>
+      )}
       <main className="dm-safe-bottom flex min-h-0 flex-1 flex-col gap-2 p-2 sm:p-3 lg:grid lg:grid-cols-[320px_1fr_minmax(360px,34%)] lg:gap-3">
         <PartyStrip g={g} onStats={() => setStats(true)} />
         <section className={`card min-h-0 flex-col p-3 lg:static lg:z-auto lg:flex ${stats ? 'fixed inset-0 z-20 flex' : 'hidden'}`}>

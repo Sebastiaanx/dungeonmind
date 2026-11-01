@@ -1,15 +1,16 @@
 import type { FastifyInstance } from 'fastify';
 import { requireUser } from '../auth/index.js';
 import { db } from '../db.js';
-import { addTurnHooks } from '../game/turn.js';
-import { addLog } from '../game/log.js';
+import { addLog, readLog } from '../game/log.js';
 import { broadcast, gameCharacters, loadGame, saveGame, saveGameCharacter } from '../game/store.js';
 import { titleCase } from '../game/text.js';
 import { fetchFile, HiveMindError, imagePaths, runCanvas, withRetry } from '../hivemind.js';
 import { saveImage } from '../images.js';
 import { background } from '../jobs.js';
 import { think } from '../game/queue.js';
+import { logProblem } from '../problems.js';
 import { loadCharacter, saveCharacter } from './characters.js';
+import { gameFor } from './games.js';
 
 const STYLES = ['painterly dark fantasy', 'ink and watercolor', 'grim oil painting', 'charcoal sketch', 'heroic illustration'];
 
@@ -42,29 +43,42 @@ function setPortrait(characterId: string, url: string) {
   return c;
 }
 
-let hooked = false;
+/** A picture that takes longer than this was lost (a restart): someone may ask again. */
+const PAINTING_MS = 10 * 60_000;
 
 export function portraitRoutes(app: FastifyInstance) {
-  // Scene images: when the State LLM describes a new scene, illustrate it in the background.
-  if (!hooked) {
-    hooked = true;
-    addTurnHooks({
-      afterTurn: (g, _narration, state) => {
-        if (!state.image || g.settings.sceneImages === false) return;
-        const prompt = String(state.image).slice(0, 600);
-        void think(g.id, () => generateImages('dnd-scene', 'scene', prompt, { tableId: g.id }, 'scene'))
-          .then(([url]) => {
-            const fresh = loadGame(g.id);
-            if (!fresh) return;
-            fresh.state.sceneImage = url;
-            saveGame(fresh);
-            addLog(g.id, fresh.state.turn - 1, 'image', prompt, undefined, { url });
-            broadcast(fresh);
-          })
-          .catch((err) => addLog(g.id, g.state.turn, 'note', `No scene image this time (${(err as Error).message}).`));
-      },
-    });
-  }
+  /** Scene pictures slow the game down, so they're only made when someone at the table asks for one. */
+  app.post('/api/games/:id/scene-image', { preHandler: requireUser }, async (req, reply) => {
+    const r = await gameFor(req, reply, 'member');
+    if (!r) return;
+    const { g } = r;
+    if (g.settings.sceneImages === false) return reply.code(409).send({ error: 'The host turned scene pictures off for this game' });
+    if (g.state.paintingSince && Date.now() - g.state.paintingSince < PAINTING_MS) return reply.code(409).send({ error: 'A picture is already being painted' });
+    const prompt = g.state.scenePrompt || readLog(g.id, { limit: 20, kinds: ['narration'] }).at(-1)?.text.slice(0, 600);
+    if (!prompt) return reply.code(409).send({ error: 'Nothing has happened yet to paint' });
+    g.state.paintingSince = Date.now();
+    saveGame(g);
+    broadcast(g);
+    const finish = (url?: string) => {
+      const fresh = loadGame(g.id);
+      if (!fresh) return;
+      fresh.state.paintingSince = undefined;
+      if (url) {
+        fresh.state.sceneImage = url;
+        addLog(g.id, fresh.state.turn - 1, 'image', prompt, undefined, { url });
+      }
+      saveGame(fresh);
+      broadcast(fresh);
+    };
+    void think(g.id, () => generateImages('dnd-scene', 'scene', prompt, { tableId: g.id }, 'scene'))
+      .then(([url]) => finish(url))
+      .catch((err) => {
+        logProblem('image', err, `Game "${g.name}" (${g.id})`);
+        addLog(g.id, g.state.turn, 'note', `No picture this time (${(err as Error).message}).`);
+        finish();
+      });
+    return { ok: true };
+  });
 
   /** Four portrait options from HiveMind (dnd-portrait). Not saved until one is picked. */
   app.post('/api/characters/:id/portraits', { preHandler: requireUser }, async (req, reply) => {

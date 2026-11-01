@@ -47,7 +47,7 @@ export function SettingsFields({ v, set, locked }: { v: Record<string, any>; set
       </label>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" className="accent-indigo-500" checked={v.sceneImages !== false} onChange={(e) => set({ sceneImages: e.target.checked })} />
-        Illustrate new scenes (HiveMind images)
+        Allow scene pictures (a button at the table; about 50 seconds each)
       </label>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" className="accent-indigo-500" checked={!!v.noTraining} onChange={(e) => set({ noTraining: e.target.checked })} />

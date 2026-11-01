@@ -301,6 +301,7 @@ export async function finishNarration(gameId: string, r: RunResult, results: str
       g.state.choices[c.id] = (Array.isArray(list) ? list : []).map((x) => clip(String(x), 200)).filter(Boolean).slice(0, 4);
     }
     g.state.speakers = Array.isArray(state.speakers) ? state.speakers.slice(0, 12) : [];
+    g.state.scenePrompt = state.image ? clip(String(state.image), 600) : undefined;
     for (const c of chars) saveGameCharacter(g.id, c);
     g.state.turn += 1;
     g.state.actions = {};

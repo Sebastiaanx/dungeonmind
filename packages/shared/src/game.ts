@@ -204,6 +204,10 @@ export interface GameState {
   rerollsLeft: number;
   rerollVote?: { by: string; votes: Record<string, boolean>; turn: number };
   sceneImage?: string;
+  /** How the DM described the current scene, for the picture a player can ask for. */
+  scenePrompt?: string;
+  /** When the picture being painted now was asked for (ms). */
+  paintingSince?: number;
   /** Live narration while it streams. */
   streaming?: string;
   speakers?: { name: string; kind: string; gender?: string; age?: string }[];

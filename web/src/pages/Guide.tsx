@@ -48,6 +48,7 @@ const SECTIONS: { id: string; title: string; img?: string; body: React.ReactNode
         <p>
           <b>Left:</b> your sheet (tabs for the rest of the party). <b>Middle:</b> the scene picture, the initiative order and the zone board with ranges. <b>Right:</b> the story, always readable from the start, with the dice and your choices at the bottom. A phone shows all of this on one screen; only your full sheet sits behind the Stats button.
         </p>
+        <p>Press <b>Make a picture</b> at the top to have the current scene painted. It takes about 50 seconds and slows the game down while it runs, so it only happens when someone asks.</p>
         <p>The menu stays on top, with a tab for the game you're in, so you can look at something else and go straight back.</p>
         <p>The DM always waits for everyone. In a fight, actions happen in initiative order. If you're away, the host can skip you: your character stays quietly with the group.</p>
       </>
