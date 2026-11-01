@@ -8,6 +8,7 @@ import { setOpenGame } from '../openGame';
 import { navigate } from '../router';
 import { useGame } from '../useGame';
 import { CampaignModal } from './CampaignModal';
+import { SidesProvider } from './sides';
 import { AskBox, ChoiceBox } from './ChoiceBox';
 import { StoryLog } from './StoryLog';
 import { useLog } from './useLog';
@@ -107,7 +108,6 @@ function BoardPane({ g }: { g: GameDetail }) {
   const Board = tableExtras.board;
   return (
     <div className="scroll-thin flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
-      {g.state.sceneImage && <img src={g.state.sceneImage} alt="The scene" className="dm-pop max-h-28 w-full shrink-0 rounded-lg border border-[#30363d] object-cover lg:max-h-none" />}
       {Board ? (
         <Board g={g} />
       ) : (
@@ -121,6 +121,7 @@ function BoardPane({ g }: { g: GameDetail }) {
             ))}
         </ul>
       )}
+      {g.state.sceneImage && <img src={g.state.sceneImage} alt="The scene" className="dm-pop max-h-28 w-full shrink-0 rounded-lg border border-[#30363d] object-cover lg:max-h-72" />}
     </div>
   );
 }
@@ -134,7 +135,7 @@ function PartyStrip({ g, onStats }: { g: GameDetail; onStats: () => void }) {
       <div className="scroll-thin flex min-w-0 flex-1 gap-3 overflow-x-auto whitespace-nowrap text-xs">
         {party.map((c) => (
           <span key={c.id}>
-            <b className={c.userId === me.id ? 'text-indigo-200' : 'text-slate-300'}>{c.name}</b> {c.hp}/{c.maxHp} HP
+            <b className={c.userId === me.id ? 'text-emerald-300' : 'text-amber-300'}>{c.name}</b> {c.hp}/{c.maxHp} HP
             {c.userId === me.id && ` · AC ${g.derived[c.id]?.ac}`}
             {c.absent && ' (away)'}
             {c.levelUpPending && c.userId === me.id && <span className="text-amber-300"> ★</span>}
@@ -196,6 +197,7 @@ export function Table({ id }: { id: string }) {
         )}
       </header>
       <PhaseBanner g={g} />
+      <SidesProvider g={g}>
       {painting && (
         <div className="shrink-0 px-2 pt-2 sm:px-3">
           <Busy since={g.state.paintingSince} text="Painting the scene. This can take about 50 seconds." />
@@ -209,12 +211,12 @@ export function Table({ id }: { id: string }) {
           </button>
           <SheetPane g={g} />
         </section>
-        <section className={`card max-h-[18dvh] shrink-0 flex-col p-2 lg:flex lg:max-h-none lg:min-h-0 lg:shrink lg:p-3 ${hasBoard ? 'flex' : 'hidden'}`}>
+        <section className={`card max-h-[24dvh] shrink-0 flex-col p-2 lg:flex lg:max-h-none lg:min-h-0 lg:shrink lg:p-3 ${hasBoard ? 'flex' : 'hidden'}`}>
           <BoardPane g={g} />
         </section>
         <section className="card flex min-h-0 flex-1 flex-col gap-2 p-2 lg:p-3">
           <StoryLog log={log} streaming={streaming} onOlder={loadOlder} renderNarration={Narr ? (e, last) => <Narr g={g} e={e} last={last} /> : undefined} />
-          <div className="scroll-thin max-h-[42dvh] shrink-0 space-y-2 overflow-y-auto">
+          <div className="scroll-thin max-h-[32dvh] shrink-0 space-y-2 overflow-y-auto lg:max-h-[42dvh]">
             {Dock && <Dock g={g} />}
             {g.myRole !== 'spectator' && (
               <>
@@ -226,6 +228,7 @@ export function Table({ id }: { id: string }) {
         </section>
       </main>
       {campaign && <CampaignModal g={g} onClose={() => setCampaign(false)} />}
+      </SidesProvider>
       <NowPlayingBar />
       <DiceOverlay gameId={g.id} />
       <ReadSelection />

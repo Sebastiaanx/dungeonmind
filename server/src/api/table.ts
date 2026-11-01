@@ -1,3 +1,4 @@
+import { toMetric } from '@dungeonmind/shared';
 import type { FastifyInstance } from 'fastify';
 import { requireUser } from '../auth/index.js';
 import { db } from '../db.js';
@@ -159,7 +160,7 @@ export function tableRoutes(app: FastifyInstance) {
     };
     void think(g.id, () => withRetry(() => runCanvas('dnd-ask', q, { vars })))
       .then(async (res) => {
-        addLog(g.id, g.state.turn, 'answer', outputText(res, 'answer'), 'DM', { to: req.user!.username });
+        addLog(g.id, g.state.turn, 'answer', toMetric(outputText(res, 'answer')), 'DM', { to: req.user!.username });
         await recordCall(g, 'dnd-ask', q, vars, res);
       })
       .catch((err) => addLog(g.id, g.state.turn, 'answer', `The DM couldn't answer right now (${(err as Error).message}). Ask again in a moment.`, 'DM', { to: req.user!.username, failed: true }));

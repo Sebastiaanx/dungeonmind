@@ -1,3 +1,4 @@
+import { metres } from '@dungeonmind/shared';
 import { useEffect, useMemo, useState } from 'react';
 import { ABILITIES, RULESET_NAMES, type Abilities, type Ability, type Character, type CharacterBuild, type Derived, type Ruleset } from '@dungeonmind/shared';
 import { api } from '../api';
@@ -136,7 +137,7 @@ export function Builder({ initial, characterId, lockRuleset, minLevel, maxLevel,
           </div>
           {sp && (
             <p className="text-xs text-slate-400">
-              Speed {sp.speed} ft · {sp.size} · {sp.traits.join(', ')}
+              Speed {metres(sp.speed)} · {sp.size} · {sp.traits.join(', ')}
               {Object.keys(sp.abilityBonuses).length > 0 && ` · ${Object.entries(sp.abilityBonuses).map(([a, v]) => `${a.toUpperCase()} +${v}`).join(', ')}`}
             </p>
           )}

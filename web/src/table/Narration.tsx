@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { GameDetail, LogEntry } from '@dungeonmind/shared';
 import { useMe } from '../me';
 import { animated, INK_MS, streamInk } from './ink';
+import { SIDE_TEXT, useSides, wordSides } from './sides';
 import { playNarration, readAloud, skip, stop, useNowPlaying, type NarratorPrefs } from './narrator';
 import { useVotes } from './votes';
 
@@ -16,6 +17,8 @@ export function Narration({ g, e, last }: { g: GameDetail; e: LogEntry; last: bo
   const now = useNowPlaying();
   const prefs = prefsOf(me.prefs);
   const playing = now?.key === `log-${e.id}`;
+  const sides = useSides();
+  const named = wordSides(sides, e.text);
   // A new narration plays by itself for listeners who turned autoplay on.
   useEffect(() => {
     if (!last || !prefs.autoplay || autoplayed.has(e.id) || Date.now() - new Date(e.at.replace(' ', 'T') + 'Z').getTime() > 120_000) return;
@@ -53,9 +56,10 @@ export function Narration({ g, e, last }: { g: GameDetail; e: LogEntry; last: bo
             if (!tok.trim()) return i < shown ? tok : null;
             i++;
             const lit = playing && now?.word === i;
+            const side = named.get(i);
             const ink = i >= shown ? 'dm-ink-hidden' : shown < total && i >= shown - 3 ? 'dm-ink' : '';
             return (
-              <span key={k} className={`${ink} ${lit ? 'dm-word-lit rounded bg-indigo-500/30 text-white' : ''}`}>
+              <span key={k} className={`${ink} ${lit ? 'dm-word-lit rounded bg-indigo-500/30 text-white' : side ? `font-semibold ${SIDE_TEXT[side]}` : ''}`}>
                 {tok}
               </span>
             );

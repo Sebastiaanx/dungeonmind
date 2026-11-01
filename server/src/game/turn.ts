@@ -1,4 +1,5 @@
 import type { GameCharacter, GameState, Npc } from '@dungeonmind/shared';
+import { toMetric } from '@dungeonmind/shared';
 import { db, json, tx } from '../db.js';
 import { logProblem } from '../problems.js';
 import { simContext } from '../trainer/context.js';
@@ -301,7 +302,7 @@ export function loadSnapshot(gameId: string, turn: number): { state: GameState; 
 
 /** Narration + state JSON in: one transaction applies everything, then the Chronicler updates campaign.md. */
 export async function finishNarration(gameId: string, r: RunResult, results: string) {
-  const narration = outputText(r, 'narration');
+  const narration = toMetric(outputText(r, 'narration'));
   const state = outputJson<StateJson>(r, 'state');
   const g = loadGame(gameId)!;
   let logId = 0;

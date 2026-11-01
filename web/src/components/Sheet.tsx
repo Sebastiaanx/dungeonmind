@@ -1,3 +1,4 @@
+import { metres } from '@dungeonmind/shared';
 import { useEffect, useRef, useState } from 'react';
 import { ABILITIES, SKILLS, type Character, type Counter, type Derived } from '@dungeonmind/shared';
 import { signed, titleCase } from '../rules';
@@ -89,7 +90,7 @@ export function Sheet({ c, d, compact, children }: { c: Character; d: Derived; c
           [
             ['AC', d.ac],
             ['Init', signed(d.initiative)],
-            ['Speed', d.speed],
+            ['Speed', metres(d.speed)],
             ['Prof', signed(d.profBonus)],
             ['Pass.', d.passivePerception],
           ] as const

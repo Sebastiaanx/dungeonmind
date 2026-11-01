@@ -156,6 +156,14 @@ describe('the game loop', () => {
     expect((await game())).toMatchObject({ status: 'playing', state: { phase: 'collect', turn: turnBefore } });
   });
 
+  it('tells every distance in metres', async () => {
+    const { metres, toMetric } = await import('@dungeonmind/shared');
+    expect(metres(5)).toBe('1.5 m');
+    expect(metres(50)).toBe('15 m');
+    expect(toMetric('A 20-foot cone, 30 ft. away, and ten feet of rope. Range 1,000 ft.')).toBe('A 6 m cone, 9 m away, and 3 m of rope. Range 300 m.');
+    expect(toMetric('He stands on one foot, on foot soldiers.')).toBe('He stands on one foot, on foot soldiers.');
+  });
+
   it('recognises a story that turned into nonsense', async () => {
     const { garbled } = await import('../src/game/text.js');
     expect(garbled('You step into the hall. The air tastes of ozone and old blood, and in 1492 the 3 doors were sealed.')).toBe(false);

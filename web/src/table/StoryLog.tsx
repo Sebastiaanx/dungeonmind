@@ -2,10 +2,27 @@ import { useEffect, useRef, useState } from 'react';
 import type { LogEntry } from '@dungeonmind/shared';
 import { useMe } from '../me';
 import { animated, INK_MS, streamInk } from './ink';
+import { Names, SIDE_TEXT, useSides } from './sides';
 
 const ICON: Partial<Record<LogEntry['kind'], string>> = { roll: '🎲', change: '⚖', refused: '⛔', system: '✦', note: '✎', ask: '?', answer: '☾', levelup: '★', image: '🖼' };
 
+/** A dice line: the sum stands out, and how it ended is green or red. */
+function RollLine({ e }: { e: LogEntry }) {
+  const split = e.text.lastIndexOf(' — ');
+  const sum = split > 0 ? e.text.slice(0, split) : e.text;
+  const outcome = split > 0 ? e.text.slice(split + 3) : '';
+  const color = e.data?.crit ? 'border-amber-400' : e.data?.success === true ? 'border-emerald-500' : e.data?.success === false ? 'border-red-500' : 'border-indigo-500';
+  return (
+    <p className={`rounded border-l-4 bg-[#0d1117] px-2 py-1 font-mono text-sm text-sky-200 ${color}`}>
+      <span className="mr-1">{ICON.roll}</span>
+      <Names text={sum} />
+      {outcome && <b className={`ml-2 ${e.data?.crit ? 'text-amber-300' : e.data?.success === false ? 'text-red-400' : e.data?.success === true ? 'text-emerald-300' : 'text-slate-200'}`}>{outcome}</b>}
+    </p>
+  );
+}
+
 export function Entry({ e, children }: { e: LogEntry; children?: React.ReactNode }) {
+  const { side } = useSides();
   if (e.kind === 'narration')
     return (
       <div className="dm-entry" data-turn={e.turn} id={`log-${e.id}`}>
@@ -15,7 +32,7 @@ export function Entry({ e, children }: { e: LogEntry; children?: React.ReactNode
   if (e.kind === 'action')
     return (
       <p className="border-l-2 border-indigo-500 pl-2 text-sm">
-        <b className="text-indigo-200">{e.actor}</b> <span className="text-slate-300">{e.text}</span>
+        <b className={SIDE_TEXT[side(e.actor ?? '')]}>{e.actor}</b> <span className="text-slate-300">{e.text}</span>
       </p>
     );
   if (e.kind === 'ask' || e.kind === 'answer')
@@ -26,12 +43,13 @@ export function Entry({ e, children }: { e: LogEntry; children?: React.ReactNode
         {e.text}
       </p>
     );
+  if (e.kind === 'roll') return <RollLine e={e} />;
   if (e.kind === 'image' && typeof e.data?.url === 'string') return <img src={e.data.url} alt={e.text} className="dm-pop w-full rounded-md border border-[#30363d]" />;
   return (
-    <p className={`text-xs ${e.kind === 'refused' ? 'text-red-300' : e.kind === 'levelup' ? 'text-amber-300' : e.kind === 'roll' ? 'font-mono text-slate-300' : 'text-slate-400'}`}>
+    <p className={`text-xs ${e.kind === 'refused' ? 'text-red-300' : e.kind === 'levelup' ? 'text-amber-300' : e.kind === 'change' ? 'font-mono text-sky-200' : 'text-slate-400'}`}>
       <span className="mr-1">{ICON[e.kind] ?? '·'}</span>
-      {e.actor && e.kind !== 'roll' && <b>{e.actor}: </b>}
-      {e.text}
+      {e.actor && <b>{e.actor}: </b>}
+      <Names text={e.text} />
     </p>
   );
 }
