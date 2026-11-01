@@ -66,10 +66,10 @@ export function setPhase(g: GameRow, phase: GameState['phase'], extra: Partial<G
   broadcast(g);
 }
 
-/** The narration being written now, per game, so a player can stop it. */
+/** What the DM is working on for this turn, per game, so a player can stop it. */
 const writing = new Map<string, AbortController>();
 
-/** "Start over": stops the narration being written; the automatic retry writes it again, with the same dice. */
+/** "Start over": stops the DM's current step; the automatic retry does it again, with the same dice. */
 export function redoNarration(gameId: string) {
   const run = writing.get(gameId);
   run?.abort();
@@ -97,7 +97,7 @@ function askDm(g: GameRow, canvasId: string, question: string, vars: Record<stri
           let text = '';
           const nonsense = (raw: string) => new HiveMindError('The DM wrote nonsense. If this keeps happening, pick a bigger model (not an IQ1 or IQ2 version).', 0, true, raw);
           const stop = new AbortController();
-          if (stream) writing.set(g.id, stop);
+          if (stream || canvasId === 'dnd-adjudicate') writing.set(g.id, stop);
           const result = await runCanvas(canvasId, question, {
             vars,
             models: sim?.models,

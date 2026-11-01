@@ -23,6 +23,8 @@
         "y": 100
       },
       "config": {
+        "maxTokens": 2000,
+        "think": false,
         "json": true,
         "numCtx": 16384,
         "temperature": 0.9,

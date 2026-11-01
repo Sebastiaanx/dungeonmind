@@ -1,6 +1,7 @@
 import { buildApp } from './app.js';
 import { ensureAdmin } from './auth/index.js';
 import { config } from './config.js';
+import { cancelActiveRuns } from './hivemind.js';
 import { moveImagesToHiveMind } from './images.js';
 import { recoverInterrupted } from './game/turn.js';
 import { startScheduler } from './jobs.js';
@@ -21,6 +22,7 @@ void moveImagesToHiveMind();
 
 // Clean stop (docker stop, Unraid update): Node as PID 1 ignores SIGTERM unless handled.
 const stop = async () => {
+  await cancelActiveRuns();
   await app.close().catch(() => {});
   process.exit(0);
 };

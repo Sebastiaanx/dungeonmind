@@ -274,6 +274,13 @@ export async function followSse(path: string, signal: AbortSignal, onEvent: (eve
 }
 
 /** Starts a canvas run, follows its SSE stream until the end, then reads the per-node outputs. */
+/** Runs this server is following; nobody would be left to stop them after a restart. */
+const active = new Set<string>();
+const SLOW_MS = 3 * 60_000;
+
+/** On shutdown: a run left behind keeps the GPU, and everyone else waits behind it. */
+export const cancelActiveRuns = () => Promise.allSettled([...active].map((id) => call(`/api/runs/${id}/cancel`, { method: 'POST', timeoutMs: 3000 })));
+
 export async function runCanvas(canvasId: string, question: string, opts: RunOptions = {}): Promise<RunResult> {
   const { timeoutMs } = hivemindSettings();
   const vars = Object.fromEntries(Object.entries(opts.vars ?? {}).map(([k, v]) => [k, String(v ?? '')]));
@@ -283,6 +290,9 @@ export async function runCanvas(canvasId: string, question: string, opts: RunOpt
   const signal = opts.signal ? AbortSignal.any([opts.signal, timeout]) : timeout;
   const labels = new Map<string, string>();
   let failed: string | undefined;
+  active.add(runId);
+  const slow = setTimeout(() => logProblem('slow', new Error(`${canvasId} is still running after ${SLOW_MS / 60_000} minutes`), `HiveMind run ${runId}. It may be stuck, or waiting behind another run on the GPU.`), SLOW_MS);
+  slow.unref();
   try {
     await followSse(`/api/runs/${runId}/events`, signal, (event, data) => {
       if (event === 'error') throw new HiveMindError(json<{ error?: string }>(data, {}).error ?? 'Run failed');
@@ -301,6 +311,9 @@ export async function runCanvas(canvasId: string, question: string, opts: RunOpt
     call(`/api/runs/${runId}/cancel`, { method: 'POST' }).catch(() => {});
     if (err instanceof HiveMindError) throw err;
     throw new HiveMindError(timeout.aborted ? `HiveMind run timed out after ${Math.round(timeoutMs / 1000)} s` : `HiveMind run stopped: ${(err as Error).message}`);
+  } finally {
+    clearTimeout(slow);
+    active.delete(runId);
   }
   const run = await call<{ status: string; final?: string; outputs?: RunResult['outputs']; error?: string }>(`/api/runs/${runId}`);
   if (run.status === 'error' || failed) throw new HiveMindError(`HiveMind run failed: ${failed ?? run.error ?? 'unknown error'}`);

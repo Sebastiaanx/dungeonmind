@@ -23,6 +23,8 @@
         "y": 120
       },
       "config": {
+        "maxTokens": 300,
+        "think": false,
         "temperature": 0.7,
         "system": "You write prompts for an image model. Reply with one paragraph only, no preamble.",
         "prompt": "Write an image prompt for a fantasy character portrait: head and shoulders, dramatic painterly lighting, dark fantasy, detailed face, no text. Style: {{vars.style}}.\nCharacter: {{question}}"
