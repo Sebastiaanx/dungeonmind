@@ -370,7 +370,7 @@ export async function fetchFile(path: string): Promise<{ data: Buffer; type: str
 
 /** Stores a file in HiveMind's files folder; returns the path it got. */
 export const putFile = async (name: string, data: Buffer) =>
-  (await call<{ path: string }>(`/api/files?name=${encodeURIComponent(name)}`, { method: 'POST', body: data as unknown as BodyInit, headers: { 'content-type': 'application/octet-stream' }, timeoutMs: 60_000 })).path;
+  (await call<{ path: string }>(`/api/files?name=${encodeURIComponent(name)}`, { method: 'POST', body: data as unknown as RequestInit['body'], headers: { 'content-type': 'application/octet-stream' }, timeoutMs: 60_000 })).path;
 
 export const deleteFile = (path: string) => call(`/api/files?path=${encodeURIComponent(path)}`, { method: 'DELETE' });
 
