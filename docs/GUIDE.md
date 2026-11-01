@@ -81,7 +81,7 @@ DungeonMind does no AI itself. Everything goes through your [HiveMind](https://g
 | 12–16 GB VRAM | 12–14B (e.g. Gemma 12B, Qwen 14B) | gpt-oss 20B | 32K |
 | 24 GB VRAM | Cydonia / Mistral Small 24B | gpt-oss 20B | 32K |
 
-More context means more VRAM: roughly +1 GB per 8K tokens for an 8B model, +2 GB for 24B. The narration node asks for 32K (`numCtx: 32768`); lower it in HiveMind if your GPU can't hold it.
+More context means more VRAM: roughly +1 GB per 8K tokens for an 8B model, +2 GB for 24B. The story blocks ask for 16K (`numCtx: 16384`) and the JSON blocks for 12K (`numCtx: 12288`). Each role keeps one size, because Ollama reloads a model when its size changes.
 
 ## 5. Rules data (SRD 5.1 and 5.2)
 

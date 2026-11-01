@@ -140,7 +140,7 @@ describe('canvas files', () => {
       for (const e of c.edges) expect(ids.has(e.source) && ids.has(e.target)).toBe(true);
     }
     const narrate = JSON.parse(readFileSync('../hivemind/dnd-narrate.canvas.json', 'utf8'));
-    expect(narrate.nodes.find((n: any) => n.label === 'narration').config.numCtx).toBe(32768);
+    expect(narrate.nodes.find((n: any) => n.label === 'narration').config.numCtx).toBe(16384);
     expect(narrate.nodes.find((n: any) => n.label === 'state').config.json).toBe(true);
     expect(narrate.nodes.find((n: any) => n.type === 'memory' && n.config.mode === 'save').config.key).toBe('dnd:{{vars.tableId}}');
   });

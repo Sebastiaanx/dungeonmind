@@ -155,7 +155,7 @@ function applyState(g: GameRow, chars: GameCharacter[], state: StateJson) {
   rechargeTurn(chars);
   for (const line of levelCheck(chars, g.settings.endLevel)) addLog(g.id, g.state.turn, 'levelup', line);
   if (changes.length) addLog(g.id, g.state.turn, 'change', changes.join(' · '));
-  for (const n of notes) addLog(g.id, g.state.turn, 'note', n.replace(/^Bookkeeper (\w)/, (_, c: string) => c.toUpperCase()), 'Bookkeeper');
+  for (const n of notes) addLog(g.id, g.state.turn, 'note', n, 'Bookkeeper');
 }
 
 let registered = false;

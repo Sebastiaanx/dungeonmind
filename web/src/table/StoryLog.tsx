@@ -49,7 +49,7 @@ export function Entry({ e, children }: { e: LogEntry; children?: React.ReactNode
     <p className={`text-xs ${e.kind === 'refused' ? 'text-red-300' : e.kind === 'levelup' ? 'text-amber-300' : e.kind === 'change' ? 'font-mono text-sky-200' : 'text-slate-400'}`}>
       <span className="mr-1">{ICON[e.kind] ?? '·'}</span>
       {e.actor && <b>{e.actor}: </b>}
-      <Names text={e.text} />
+      <Names text={e.actor === 'Bookkeeper' ? e.text.replace(/^Bookkeeper (\w)/, (_, c: string) => c.toUpperCase()) : e.text} />
     </p>
   );
 }
