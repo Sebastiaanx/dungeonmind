@@ -199,6 +199,9 @@ export interface ActionInput {
   text?: string;
 }
 
+/** At 0 HP and still fighting for their life: death saves, no normal actions. */
+export const isDying = (c: GameCharacter) => c.seated && !c.absent && c.hp <= 0 && !c.conditions.some((x) => x.name === 'dead' || x.name === 'stable');
+
 /** A player declares what their character does. When every active character has acted, the turn resolves. */
 export function submitAction(g: GameRow, userId: string, input: ActionInput, isHost: boolean): { error?: string; resolving?: boolean } {
   if (g.status !== 'playing') return { error: g.status === 'paused' ? 'The game is paused' : 'The game is not running' };
@@ -207,11 +210,14 @@ export function submitAction(g: GameRow, userId: string, input: ActionInput, isH
   const c = chars.find((x) => x.id === input.characterId);
   if (!c) return { error: 'No such character at this table' };
   if (c.userId !== userId && !(isHost && c.absent)) return { error: "That's not your character" };
-  if (!activeCharacters(chars).includes(c)) return { error: `${c.name} is not taking part right now` };
+  // With nobody left standing, the turn would never start: the dying character's action moves it on to the death saves.
+  const lastHope = !activeCharacters(chars).length && isDying(c);
+  if (!activeCharacters(chars).includes(c) && !lastHope) return { error: c.hp <= 0 ? `${c.name} is down and can't act` : `${c.name} is not taking part right now` };
   if (g.state.combat && !g.state.combat.order.some((o) => o.characterId === c.id)) return { error: `${c.name} is not in the initiative order` };
   const options = g.state.choices[c.id] ?? [];
   let text: string;
-  if (input.choice !== undefined && input.choice !== null) {
+  if (lastHope) text = `${c.name} lies dying and fights to stay alive.`;
+  else if (input.choice !== undefined && input.choice !== null) {
     text = options[input.choice];
     if (!text) return { error: 'That choice is not on the list' };
   } else {

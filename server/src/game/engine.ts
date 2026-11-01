@@ -93,7 +93,9 @@ async function beforeNarrate(g: GameRow): Promise<boolean> {
     for (const c of chars) saveGameCharacter(g.id, c);
     g.state.spent = check.spend;
     const r = rules(g.ruleset);
-    g.state.rolls = [...buildRolls(r, chars, g.state.npcs, adj), ...deathRolls(chars, 1)];
+    // Someone at 0 HP only makes death saves.
+    const standing = buildRolls(r, chars, g.state.npcs, adj).filter((x) => !chars.some((c) => c.hp <= 0 && c.name === x.actor));
+    g.state.rolls = [...standing, ...deathRolls(chars, 1)];
     g.state.adjudicated = true;
     if (spent.length) addLog(g.id, g.state.turn, 'change', spent.join(' · '));
     autoResolve(g, chars);

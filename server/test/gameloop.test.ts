@@ -175,6 +175,14 @@ describe('the game loop', () => {
     expect(toMetric('He stands on one foot, on foot soldiers.')).toBe('He stands on one foot, on foot soldiers.');
   });
 
+  it('knows who is dying', () => {
+    const c = (hp: number, ...names: string[]) => ({ seated: true, absent: false, hp, conditions: names.map((name) => ({ name })) }) as any;
+    expect(turn.isDying(c(0))).toBe(true);
+    expect(turn.isDying(c(3))).toBe(false);
+    expect(turn.isDying(c(0, 'stable'))).toBe(false);
+    expect(turn.isDying(c(0, 'dead'))).toBe(false);
+  });
+
   it('recognises a story that turned into nonsense', async () => {
     const { garbled } = await import('../src/game/text.js');
     expect(garbled('You step into the hall. The air tastes of ozone and old blood, and in 1492 the 3 doors were sealed.')).toBe(false);

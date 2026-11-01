@@ -7,12 +7,31 @@ import { useMe } from '../me';
 export function ChoiceBox({ g }: { g: GameDetail }) {
   const me = useMe();
   const host = g.myRole === 'host';
-  const active = g.characters.filter((c) => c.seated && !c.absent && (!g.state.combat || g.state.combat.order.some((o) => o.characterId === c.id)));
+  const active = g.characters.filter((c) => c.seated && !c.absent && c.hp > 0 && (!g.state.combat || g.state.combat.order.some((o) => o.characterId === c.id)));
   const mine = active.filter((c) => c.userId === me.id || (host && c.absent));
   const waiting = active.filter((c) => !g.state.actions[c.id]);
   if (g.status !== 'playing' || g.state.phase !== 'collect') return null;
+  const dying = g.characters.filter((c) => c.seated && !c.absent && c.hp <= 0 && !c.conditions.some((x) => x.name === 'dead' || x.name === 'stable'));
   return (
     <div className="space-y-2 border-t border-[#30363d] pt-2">
+      {dying
+        .filter((c) => c.userId === me.id || host)
+        .map((c) => (
+          <div key={c.id} className="rounded-md border border-red-800 bg-red-950/40 px-2 py-1 text-sm text-red-200">
+            <b>{c.name} is down at 0 HP.</b>{' '}
+            {active.length ? (
+              'They roll a death save each turn until someone heals them.'
+            ) : (
+              <>
+                Roll death saves: 3 successes and they're stable, 3 failures and they die.{' '}
+                <button className="btn mt-1 py-0.5" onClick={() => api(`/api/games/${g.id}/actions`, { body: { characterId: c.id, text: 'Fights to stay alive' } })}>
+                  Fight to stay alive
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+      {!active.length && !dying.length && <p className="rounded-md border border-red-800 bg-red-950/40 px-2 py-1 text-sm text-red-200">Nobody is left standing. The host can heal someone with Host override, or end the game.</p>}
       {g.state.refused
         .filter((r) => mine.some((c) => c.id === r.characterId))
         .map((r) => (
