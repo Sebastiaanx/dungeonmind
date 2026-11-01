@@ -96,7 +96,7 @@ const SECTIONS: { id: string; title: string; img?: string; body: React.ReactNode
           <b>Reroll</b> (top bar): don't like how the DM told it? Ask for a reroll. If most players agree, the DM tells that moment again with the same dice. The group has a limited number.
         </p>
         <p>
-          <b>Campaign</b> (top bar): the living campaign file the DM keeps: story so far, NPCs, places, quests, loot and rulings. Everyone can read it; the host can edit it, and download the whole game as a save file.
+          <b>Campaign</b> (top bar): the living campaign file the DM keeps: story so far, NPCs, places, quests, loot and rulings. Everyone can read it; the host can edit it. Download game gives a zip with the whole story, the sheets and every picture.
         </p>
       </>
     ),

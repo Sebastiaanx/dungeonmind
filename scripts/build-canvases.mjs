@@ -4,7 +4,7 @@
 import { writeFileSync } from 'node:fs';
 
 const NUMBERS = `THE NUMBERS ARE THE SERVER'S. Never invent dice results, hit points, spell slots, gold or XP totals. Use only the results and party state you are given. If something needs a roll that wasn't made, don't resolve it.`;
-const TONE = `Tone: dark, mature, grounded fantasy. Vivid but concise. Second person for the party ("you"), third person for NPCs. Players may write with typos; understand what they mean. Everything you write is in English.`;
+const TONE = `Tone: dark, mature, grounded fantasy. Vivid but concise. Always give distances in metres, never in feet. Second person for the party ("you"), third person for NPCs. Players may write with typos; understand what they mean. Everything you write is in English.`;
 
 const node = (id, type, label, x, config = {}) => ({ id, type, label, position: { x, y: id.length * 20 }, config });
 const edge = (source, target) => ({ id: `${source}-${target}`, source, target });

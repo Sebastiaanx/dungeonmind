@@ -1,11 +1,17 @@
-import { createReadStream, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { requireUser } from './auth/index.js';
 import { config } from './config.js';
 import { newId } from './crypto.js';
+import { fetchFile, putFile } from './hivemind.js';
+import { logProblem } from './problems.js';
 
-export const imageDir = () => {
+/** Every image lives in HiveMind, in this folder of its files. DungeonMind only keeps the name and asks over the API. */
+const FOLDER = 'outputs/dungeon';
+
+/** Only for images from before they moved to HiveMind. */
+const imageDir = () => {
   const d = join(config.dataDir, 'images');
   mkdirSync(d, { recursive: true });
   return d;
@@ -23,14 +29,33 @@ export const sniff = (b: Buffer) => TYPES.find(([, , test]) => b.length > 12 && 
 
 export const MAX_IMAGE = 8 * 1024 * 1024;
 
-/** Stores an image in /data/images and returns its URL. */
-export function saveImage(data: Buffer, prefix = 'img'): string {
+/** Stores an image in HiveMind and returns its URL here. */
+export async function saveImage(data: Buffer, prefix = 'img'): Promise<string> {
   const t = sniff(data);
   if (!t) throw new Error('That is not a PNG, JPEG, WebP or GIF image');
   if (data.length > MAX_IMAGE) throw new Error('Images can be at most 8 MB');
-  const file = `${prefix}-${newId()}.${t[0]}`;
-  writeFileSync(join(imageDir(), file), data);
-  return `/api/images/${file}`;
+  const path = await putFile(`${FOLDER}/${prefix}-${newId()}.${t[0]}`, data);
+  return `/api/images/${path.split('/').pop()}`;
+}
+
+/** An image's bytes, by the file name in its URL. */
+export async function readImage(file: string): Promise<Buffer | undefined> {
+  const old = join(imageDir(), file);
+  if (existsSync(old)) return readFileSync(old);
+  return (await fetchFile(`${FOLDER}/${file}`).catch(() => undefined))?.data;
+}
+
+/** Moves images saved by earlier versions to HiveMind; what can't move now stays and is tried at the next start. */
+export async function moveImagesToHiveMind() {
+  for (const file of readdirSync(imageDir())) {
+    try {
+      await putFile(`${FOLDER}/${file}`, readFileSync(join(imageDir(), file)));
+      rmSync(join(imageDir(), file));
+    } catch (err) {
+      logProblem('image', err, `Moving ${file} to HiveMind`);
+      return;
+    }
+  }
 }
 
 export function imageRoutes(app: FastifyInstance) {
@@ -40,11 +65,11 @@ export function imageRoutes(app: FastifyInstance) {
   app.get('/api/images/:file', { preHandler: requireUser }, async (req, reply) => {
     const { file } = req.params as { file: string };
     if (!/^[a-z]+-[A-Za-z0-9_-]+\.(png|jpg|webp|gif)$/.test(file)) return reply.code(404).send({ error: 'Not found' });
-    const p = join(imageDir(), file);
-    if (!existsSync(p)) return reply.code(404).send({ error: 'Not found' });
+    const data = await readImage(file);
+    if (!data) return reply.code(404).send({ error: 'Not found' });
     reply.header('content-type', TYPES.find(([ext]) => file.endsWith(`.${ext}`))![1]);
     reply.header('cache-control', 'private, max-age=31536000, immutable');
     reply.header('x-content-type-options', 'nosniff');
-    return reply.send(createReadStream(p));
+    return reply.send(data);
   });
 }

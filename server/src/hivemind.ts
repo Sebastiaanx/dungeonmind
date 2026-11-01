@@ -368,6 +368,12 @@ export async function fetchFile(path: string): Promise<{ data: Buffer; type: str
   return { data: Buffer.from(await res.arrayBuffer()), type: res.headers.get('content-type') ?? 'application/octet-stream' };
 }
 
+/** Stores a file in HiveMind's files folder; returns the path it got. */
+export const putFile = async (name: string, data: Buffer) =>
+  (await call<{ path: string }>(`/api/files?name=${encodeURIComponent(name)}`, { method: 'POST', body: data as unknown as BodyInit, headers: { 'content-type': 'application/octet-stream' }, timeoutMs: 60_000 })).path;
+
+export const deleteFile = (path: string) => call(`/api/files?path=${encodeURIComponent(path)}`, { method: 'DELETE' });
+
 /** `![image](hm-file:path)` links in an image block's output. */
 export const imagePaths = (text: string) => [...text.matchAll(/\]\(hm-file:([^)\s]+)\)/g)].map((m) => decodeURIComponent(m[1]));
 

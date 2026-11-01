@@ -1,5 +1,6 @@
-import { toMetric } from '@dungeonmind/shared';
+import { toMetric, type LogEntry } from '@dungeonmind/shared';
 import type { FastifyInstance } from 'fastify';
+import { zipSync } from 'fflate';
 import { requireUser } from '../auth/index.js';
 import { db } from '../db.js';
 import { applyPatches, currentCampaign, parseSections, saveCampaign, SECTIONS, withParty } from '../game/campaign.js';
@@ -9,9 +10,13 @@ import { think } from '../game/queue.js';
 import { broadcast, gameCharacters, saveGame, saveGameCharacter } from '../game/store.js';
 import { activeCharacters, playersOf, redoNarration, resolveLater, retry, startGame, submitAction } from '../game/turn.js';
 import { HiveMindError, outputText, runCanvas, withRetry } from '../hivemind.js';
+import { readImage } from '../images.js';
 import { emitToGame } from '../realtime.js';
 import { recordCall } from '../trainer/records.js';
 import { gameFor } from './games.js';
+
+const logLine = (e: LogEntry) => (e.kind === 'narration' ? `\n${e.text}\n` : e.kind === 'action' ? `> **${e.actor}:** ${e.text}` : e.kind === 'ask' ? `> _${e.actor} asks:_ ${e.text}` : `- _${e.text}_`);
+const fileName = (name: string) => name.replace(/[^\w -]/g, '').trim() || 'dungeonmind';
 
 /** Per-user rate limit for writes at the table (cheat-proofing and spam). */
 const hits = new Map<string, number[]>();
@@ -199,12 +204,44 @@ export function tableRoutes(app: FastifyInstance) {
   app.get('/api/games/:id/export.md', { preHandler: requireUser }, async (req, reply) => {
     const r = await gameFor(req, reply);
     if (!r) return;
-    const log = readLog(r.g.id, { limit: 1000000 });
-    const lines = log.map((e) =>
-      e.kind === 'narration' ? `\n${e.text}\n` : e.kind === 'action' ? `> **${e.actor}:** ${e.text}` : e.kind === 'ask' ? `> _${e.actor} asks:_ ${e.text}` : `- _${e.text}_`,
-    );
+    const lines = readLog(r.g.id, { limit: 1000000 }).map(logLine);
     reply.header('content-type', 'text/markdown; charset=utf-8');
-    reply.header('content-disposition', `attachment; filename="${r.g.name.replace(/[^\w -]/g, '').trim() || 'dungeonmind'}.md"`);
+    reply.header('content-disposition', `attachment; filename="${fileName(r.g.name)}.md"`);
     return `${withParty(currentCampaign(r.g.id), gameCharacters(r.g.id), r.g.state.npcs)}\n---\n\n# The story\n${lines.join('\n')}\n`;
+  });
+
+  /** The whole game in one zip: game.md with the story and sheets, all its pictures, and game.json with the raw data. */
+  app.get('/api/games/:id/export.zip', { preHandler: requireUser }, async (req, reply) => {
+    const r = await gameFor(req, reply);
+    if (!r) return;
+    const { g } = r;
+    const files: Record<string, Uint8Array> = {};
+    /** Puts a picture in the zip; returns its path there. */
+    const picture = async (url: unknown) => {
+      const file = typeof url === 'string' ? url.split('/').pop() : undefined;
+      if (!file) return;
+      const data = files[`images/${file}`] ?? (await readImage(file));
+      if (!data) return;
+      files[`images/${file}`] = data;
+      return `images/${file}`;
+    };
+    const log = readLog(g.id, { limit: 1000000 });
+    const chars = gameCharacters(g.id);
+    const lines: string[] = [];
+    for (const e of log) {
+      const path = e.kind === 'image' ? await picture(e.data?.url) : undefined;
+      lines.push(path ? `\n![${e.text.replace(/[\[\]\n]/g, ' ')}](${path})\n` : logLine(e));
+    }
+    const sheets: string[] = [];
+    for (const c of chars) {
+      const portrait = await picture(c.portrait);
+      sheets.push(`## ${c.name}\n\n${portrait ? `![${c.name}](${portrait})\n\n` : ''}\`\`\`json\n${JSON.stringify(c, null, 2)}\n\`\`\`\n`);
+    }
+    const md = `${withParty(currentCampaign(g.id), chars, g.state.npcs)}\n---\n\n# The story\n${lines.join('\n')}\n\n---\n\n# Characters\n\n${sheets.join('\n')}`;
+    files['game.md'] = Buffer.from(md);
+    files['game.json'] = Buffer.from(JSON.stringify({ name: g.name, ruleset: g.ruleset, status: g.status, settings: g.settings, state: g.state, characters: chars, log }, null, 2));
+    reply.header('content-type', 'application/zip');
+    reply.header('content-disposition', `attachment; filename="${fileName(g.name)}.zip"`);
+    return reply.send(Buffer.from(zipSync(files)));
   });
 }

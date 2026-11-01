@@ -46,7 +46,7 @@ The image needs no GPU. The narrator (Kokoro) runs on the CPU; all LLM and image
 
 ## 3. Backups
 
-Back up the **Data** folder (`/mnt/user/appdata/dungeonmind`): `dungeonmind.db` (+ `-wal`/`-shm`), `secret.key`, `images/`, `audio/` and `models/`. Stop the container (or use the Unraid Appdata Backup plugin) for a consistent SQLite copy. Audio and models can be regenerated; the database and `secret.key` cannot.
+Back up the **Data** folder (`/mnt/user/appdata/dungeonmind`): `dungeonmind.db` (+ `-wal`/`-shm`), `secret.key`, `audio/` and `models/`. Stop the container (or use the Unraid Appdata Backup plugin) for a consistent SQLite copy. Audio and models can be regenerated; the database and `secret.key` cannot.
 
 ## 4. Connect HiveMind
 
@@ -167,6 +167,7 @@ Every turn runs on the server, step by step, and every step is in the story log:
 ## 11. Portraits and scene images
 
 - **Portraits:** on a character's page, **Make 4 portraits** runs the `dnd-portrait` canvas (an LLM writes the image prompt from the appearance, then one image block makes 4 variants with `batch: 4`). Pick one, **Regenerate**, or **Upload my own** (PNG/JPEG/WebP/GIF up to 8 MB; the server checks the bytes, not the file name). The portrait also updates that character's copies in games.
+- **Where images live:** in HiveMind, in `outputs/dungeon/` of its files folder, so back that up with HiveMind. DungeonMind keeps only the file names and fetches each picture over the API; images from older versions move there at the next start. The HiveMind token must be a full token, because tokens limited to canvases cannot save files.
 - **Scene images:** a player or the host presses **Make a picture** at the table, and DungeonMind runs `dnd-scene` for the current scene (`image` in the state JSON, or the last narration) and shows the picture above the zone board and in the story. Everyone sees a timer while it paints, usually about 50 seconds. Nothing is painted without that button, because images slow the game down. Hosts can turn it off per game ("Allow scene pictures").
 - Every image from HiveMind is **copied into DungeonMind's appdata** (`/data/images`), so games keep their pictures even if HiveMind's files are cleaned up.
 - Images need an image model (ComfyUI through HiveMind) on those canvases; without one, DungeonMind says so and the game goes on without pictures.

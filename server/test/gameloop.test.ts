@@ -156,6 +156,17 @@ describe('the game loop', () => {
     expect((await game())).toMatchObject({ status: 'playing', state: { phase: 'collect', turn: turnBefore } });
   });
 
+  it('downloads the whole game as a zip', async () => {
+    const { unzipSync, strFromU8 } = await import('fflate');
+    const r = await t.as(t.pl, 'GET', `/api/games/${t.id}/export.zip`);
+    expect(r.statusCode).toBe(200);
+    expect(r.headers['content-type']).toBe('application/zip');
+    const zip = unzipSync(r.rawPayload);
+    expect(strFromU8(zip['game.md'])).toContain('# The story');
+    expect(strFromU8(zip['game.md'])).toContain('# Characters');
+    expect(JSON.parse(strFromU8(zip['game.json'])).log.length).toBeGreaterThan(0);
+  });
+
   it('tells every distance in metres', async () => {
     const { metres, toMetric } = await import('@dungeonmind/shared');
     expect(metres(5)).toBe('1.5 m');

@@ -31,8 +31,8 @@ export function CampaignModal({ g, onClose }: { g: GameDetail; onClose: () => vo
                 </option>
               ))}
             </select>
-            <a className="btn-ghost text-xs" href={`/api/games/${g.id}/export.md`}>
-              Download save (.md)
+            <a className="btn-ghost text-xs" href={`/api/games/${g.id}/export.zip`} title="The whole game: story, sheets and pictures">
+              Download game (.zip)
             </a>
             {g.myRole === 'host' && !version && edit === undefined && (
               <button className="btn-ghost text-xs" onClick={() => setEdit(data.md)}>

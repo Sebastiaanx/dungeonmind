@@ -89,6 +89,10 @@ describe('scene images', () => {
     }
     expect(g.state.sceneImage).toMatch(/^\/api\/images\/scene-/);
     expect(g.state.paintingSince).toBeUndefined();
+    // The picture lives in HiveMind's dungeon folder; DungeonMind asks for it over the API.
+    const name = g.state.sceneImage.split('/').pop();
+    expect(hm.files.has(`outputs/dungeon/${name}`)).toBe(true);
+    expect((await t.as(t.pl, 'GET', g.state.sceneImage)).statusCode).toBe(200);
     expect(hm.callsOf('dnd-scene')[0].question).toBe('A storm over the marsh');
     const log = (await t.as(t.pl, 'GET', `/api/games/${t.id}/log`)).json();
     expect(log.some((e: any) => e.kind === 'image' && e.data.url === g.state.sceneImage)).toBe(true);

@@ -4,7 +4,7 @@ import { db } from '../db.js';
 import { addLog, readLog } from '../game/log.js';
 import { broadcast, gameCharacters, loadGame, saveGame, saveGameCharacter } from '../game/store.js';
 import { titleCase } from '../game/text.js';
-import { fetchFile, HiveMindError, imagePaths, runCanvas, withRetry } from '../hivemind.js';
+import { deleteFile, fetchFile, HiveMindError, imagePaths, runCanvas, withRetry } from '../hivemind.js';
 import { saveImage } from '../images.js';
 import { background } from '../jobs.js';
 import { think } from '../game/queue.js';
@@ -14,7 +14,7 @@ import { gameFor } from './games.js';
 
 const STYLES = ['painterly dark fantasy', 'ink and watercolor', 'grim oil painting', 'charcoal sketch', 'heroic illustration'];
 
-/** Runs an image canvas and copies every picture into DungeonMind's own appdata. */
+/** Runs an image canvas and moves every picture into the dungeon folder in HiveMind. */
 export async function generateImages(canvasId: string, label: string, question: string, vars: Record<string, string>, prefix: string): Promise<string[]> {
   const out = await withRetry(() => runCanvas(canvasId, question, { vars }), { attempts: 2 });
   const paths = imagePaths(out.outputs[label]?.text ?? '');
@@ -22,7 +22,8 @@ export async function generateImages(canvasId: string, label: string, question: 
   const urls: string[] = [];
   for (const p of paths.slice(0, 8)) {
     const f = await fetchFile(p);
-    urls.push(saveImage(f.data, prefix));
+    urls.push(await saveImage(f.data, prefix));
+    await deleteFile(p).catch(() => {});
   }
   return urls;
 }
@@ -103,7 +104,7 @@ export function portraitRoutes(app: FastifyInstance) {
     if (!c || c.ownerId !== req.user!.id) return reply.code(404).send({ error: 'Not found' });
     if (!Buffer.isBuffer(req.body)) return reply.code(400).send({ error: 'Send the image file' });
     try {
-      return setPortrait(c.id, saveImage(req.body, 'portrait'));
+      return setPortrait(c.id, await saveImage(req.body, 'portrait'));
     } catch (err) {
       return reply.code(400).send({ error: (err as Error).message });
     }

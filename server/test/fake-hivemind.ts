@@ -236,6 +236,17 @@ export class FakeHiveMind {
       const sc = this.schedules.get(m[1]);
       return sc ? this.send(res, 200, sc) : this.send(res, 404, { error: 'No schedule' });
     }
+    if (p === '/api/files' && req.method === 'POST') {
+      const chunks: Buffer[] = [];
+      for await (const c of req) chunks.push(c as Buffer);
+      const path = url.searchParams.get('name') ?? '';
+      this.files.set(path, Buffer.concat(chunks));
+      return this.send(res, 200, { path });
+    }
+    if (p === '/api/files' && req.method === 'DELETE') {
+      this.files.delete(url.searchParams.get('path') ?? '');
+      return this.send(res, 200, { ok: true });
+    }
     if (p === '/api/files/raw') {
       const f = this.files.get(url.searchParams.get('path') ?? '');
       if (!f) return this.send(res, 404, { error: 'Not found' });

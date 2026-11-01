@@ -40,6 +40,9 @@ export function PhaseBanner({ g }: { g: GameDetail }) {
             </button>
           </>
         )}
+        <a className="btn-ghost py-0.5" href={`/api/games/${g.id}/export.zip`}>
+          Download game
+        </a>
         <button className="btn-ghost py-0.5" onClick={() => navigate('/')}>
           Back to the lobby
         </button>
