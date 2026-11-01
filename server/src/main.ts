@@ -3,9 +3,13 @@ import { ensureAdmin } from './auth/index.js';
 import { config } from './config.js';
 import { recoverInterrupted } from './game/turn.js';
 import { startScheduler } from './jobs.js';
+import { logProblem } from './problems.js';
 import { recoverSims } from './trainer/sim.js';
 
-process.on('unhandledRejection', (err) => console.error('Unhandled rejection:', err));
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled rejection:', err);
+  logProblem('server', err, 'Unhandled rejection');
+});
 
 await ensureAdmin();
 recoverInterrupted();

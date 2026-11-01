@@ -1,5 +1,6 @@
 import type { GameCharacter, GameState, Npc } from '@dungeonmind/shared';
 import { db, json, tx } from '../db.js';
+import { logProblem } from '../problems.js';
 import { simContext } from '../trainer/context.js';
 import { labelTurn, recordCall } from '../trainer/records.js';
 import { health, HiveMindError, outputJson, outputText, runCanvas, withRetry, type RunResult } from '../hivemind.js';
@@ -115,6 +116,7 @@ function askDm(g: GameRow, canvasId: string, question: string, vars: Record<stri
 
 function fail(g: GameRow, err: unknown) {
   const msg = (err as Error).message ?? String(err);
+  logProblem('game', err, `Game "${g.name}" (${g.id}), turn ${g.state.turn}`);
   const fresh = loadGame(g.id) ?? g;
   fresh.state.queue = undefined;
   setPhase(fresh, 'error', { error: msg });
@@ -371,6 +373,7 @@ export async function chronicle(g: GameRow, narration: string, state: StateJson)
     saveCampaign(g.id, next.md, 'chronicler', g.state.turn);
     emitToGame(g.id, 'game:campaign', { gameId: g.id });
   } catch (err) {
+    logProblem('chronicler', err, `Game "${g.name}" (${g.id}), turn ${g.state.turn}`);
     addLog(g.id, g.state.turn, 'note', `The Chronicler couldn't update the campaign file this turn (${clip((err as Error).message, 160)}). It catches up next turn.`);
   }
 }

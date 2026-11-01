@@ -1,3 +1,4 @@
+import { logProblem } from './problems.js';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { config } from './config.js';
@@ -19,6 +20,8 @@ export class HiveMindError extends Error {
     readonly status = 0,
     /** Worth an automatic retry (network, timeout, 5xx, invalid JSON). */
     readonly retryable = true,
+    /** What the AI answered, for Settings → Problems. */
+    readonly raw?: string,
   ) {
     super(message);
   }
@@ -326,15 +329,28 @@ export async function runInputs(result: RunResult): Promise<Record<string, ChatM
   return out;
 }
 
+/**
+ * Some models wrap their answer in an extra layer, like {"pitches":{"pitches":[…]}} or {"state":{…}}.
+ * Only a wrapper named after the block or after what's inside it comes off: {"choices":{…}} is a real answer.
+ */
+function unwrap(value: unknown, label: string): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const keys = Object.keys(value);
+  if (keys.length !== 1) return value;
+  const inner = (value as Record<string, unknown>)[keys[0]];
+  if (!inner || typeof inner !== 'object' || Array.isArray(inner)) return value;
+  return keys[0] === label || keys[0] in inner ? unwrap(inner, label) : value;
+}
+
 /** Parses a JSON node output (HiveMind already normalises it; this also strips fences for safety). */
 export function outputJson<T>(result: RunResult, label: string): T {
   const text = result.outputs[label]?.text;
   if (text === undefined) throw new HiveMindError(`HiveMind returned no "${label}" output`);
   const clean = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
   try {
-    return JSON.parse(clean) as T;
+    return unwrap(JSON.parse(clean), label) as T;
   } catch {
-    throw new HiveMindError(`"${label}" is not valid JSON`);
+    throw new HiveMindError(`"${label}" is not valid JSON`, 0, true, text);
   }
 }
 
@@ -364,6 +380,7 @@ export async function withRetry<T>(fn: (attempt: number) => Promise<T>, opts: { 
       return await fn(a);
     } catch (err) {
       last = err as Error;
+      if (attempts > 1) logProblem('hivemind', last, `Attempt ${a} of ${attempts}`);
       if (err instanceof HiveMindError && !err.retryable) throw err;
       if (a < attempts) {
         opts.onRetry?.(a, last);

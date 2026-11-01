@@ -17,6 +17,7 @@ import { portraitRoutes } from './api/portraits.js';
 import { tableRoutes } from './api/table.js';
 import { imageRoutes } from './images.js';
 import { jobRoutes } from './jobs.js';
+import { logProblem, problemRoutes } from './problems.js';
 import { ttsRoutes } from './api/tts.js';
 import { authRoutes } from './auth/index.js';
 import { registerEngine } from './game/engine.js';
@@ -33,7 +34,10 @@ export async function buildApp(opts: { logger?: boolean; web?: boolean; realtime
 
   app.setErrorHandler((err: Error & { statusCode?: number }, req, reply) => {
     const status = err.statusCode && err.statusCode < 500 ? err.statusCode : 500;
-    if (status >= 500) req.log.error(err);
+    if (status >= 500) {
+      req.log.error(err);
+      logProblem('server', err, `${req.method} ${req.url}`);
+    }
     return reply.code(status).send({ error: status >= 500 ? `Server error: ${err.message}` : err.message });
   });
 
@@ -68,6 +72,7 @@ export async function buildApp(opts: { logger?: boolean; web?: boolean; realtime
   trainerRoutes(app);
   registerNightly();
   jobRoutes(app);
+  problemRoutes(app);
 
   if (opts.realtime !== false) attachRealtime(app);
 

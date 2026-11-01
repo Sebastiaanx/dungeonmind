@@ -208,6 +208,16 @@ const MIGRATIONS = [
     at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   `,
+  // Settings → Problems
+  `
+  CREATE TABLE problems (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at TEXT NOT NULL DEFAULT (datetime('now')),
+    source TEXT NOT NULL,
+    message TEXT NOT NULL,
+    detail TEXT
+  );
+  `,
 ];
 
 export const db = new DatabaseSync(join(config.dataDir, 'dungeonmind.db'));

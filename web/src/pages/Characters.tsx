@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { RULESET_NAMES, type Character, type CharacterBuild, type Derived, type Ruleset } from '@dungeonmind/shared';
 import { api } from '../api';
+import { Busy } from '../components/Busy';
 import { PortraitPicker } from '../components/PortraitPicker';
 import { Sheet } from '../components/Sheet';
 import { navigate } from '../router';
@@ -59,8 +60,9 @@ function AiForm() {
           }
         }}
       >
-        {busy ? <span className="dm-breathe">The DM is thinking…</span> : 'Build it'}
+        Build it
       </button>
+      {busy && <Busy text="The DM is building your character…" />}
     </section>
   );
 }

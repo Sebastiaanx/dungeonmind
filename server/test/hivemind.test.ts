@@ -55,6 +55,27 @@ describe('HiveMind connection', () => {
     expect(hm.canvases.get('dnd-judge').nodes.find((n: any) => n.label === 'verdict').config.model.model).toBe('strict-judge');
   });
 
+  it('reads answers a model wrapped in an extra layer, and leaves real answers alone', async () => {
+    const { outputJson } = await import('../src/hivemind.js');
+    const out = (text: string, label: string) => outputJson<any>({ runId: 'r', outputs: { [label]: { text } } } as any, label);
+    expect(out('{"pitches":{"pitches":[{"title":"A"}]}}', 'pitch')).toEqual({ pitches: [{ title: 'A' }] });
+    expect(out('{"state":{"xp":5}}', 'state')).toEqual({ xp: 5 });
+    expect(out('{"choices":{"Rook":["Run"]}}', 'state')).toEqual({ choices: { Rook: ['Run'] } });
+  });
+
+  it('keeps what went wrong for admins under Settings → Problems', async () => {
+    const { logProblem } = await import('../src/problems.js');
+    await as('DELETE', '/api/problems');
+    logProblem('job', Object.assign(new Error('The DM had no pitches'), { raw: 'not a pitch' }), 'POST /api/games/x/pitches');
+    const [p] = (await as('GET', '/api/problems')).json();
+    expect(p).toMatchObject({ source: 'job', message: 'The DM had no pitches' });
+    expect(p.detail).toContain('not a pitch');
+    expect(p.detail).toContain('POST /api/games/x/pitches');
+    expect((await app.inject({ url: '/api/problems' })).statusCode).toBe(401);
+    await as('DELETE', '/api/problems');
+    expect((await as('GET', '/api/problems')).json()).toEqual([]);
+  });
+
   it('imports the SRD into memory under rules:<ruleset>, in chunks', async () => {
     const r = await as('POST', '/api/hivemind/import-rules?wait=1', { rulesets: ['srd51', 'srd52'] });
     expect(r.statusCode).toBe(200);

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Character } from '@dungeonmind/shared';
 import { api, upload } from '../api';
+import { Busy } from './Busy';
 
 const STYLES = ['painterly dark fantasy', 'ink and watercolor', 'grim oil painting', 'charcoal sketch', 'heroic illustration'];
 
@@ -20,6 +21,7 @@ export function PortraitPicker({ c, onChanged }: { c: Character; onChanged: (c: 
   return (
     <section className="card space-y-3">
       <h2 className="rune-title">Portrait</h2>
+      {busy && <Busy text="Painting four portraits…" />}
       <div className="flex flex-wrap items-center gap-2">
         <select className="input w-auto" value={style} onChange={(e) => setStyle(e.target.value)}>
           {STYLES.map((s) => (
@@ -27,7 +29,7 @@ export function PortraitPicker({ c, onChanged }: { c: Character; onChanged: (c: 
           ))}
         </select>
         <button className="btn" disabled={busy} onClick={generate}>
-          {busy ? <span className="dm-breathe">Painting…</span> : options.length ? 'Regenerate' : 'Make 4 portraits'}
+          {options.length ? 'Regenerate' : 'Make 4 portraits'}
         </button>
         <label className="btn-ghost cursor-pointer">
           Upload my own

@@ -3,6 +3,7 @@ import { requireUser } from './auth/index.js';
 import { newId } from './crypto.js';
 import { getSetting, setSetting } from './db.js';
 import { HiveMindError } from './hivemind.js';
+import { logProblem } from './problems.js';
 
 /**
  * Slow AI work (pitches, setup form, AI sheets, portraits) runs as a background job: the request answers
@@ -38,6 +39,7 @@ export function background(req: FastifyRequest, reply: FastifyReply, work: () =>
     (result) => Object.assign(job, { status: 'done', result, at: Date.now() }),
     (err) => {
       if (!(err instanceof HiveMindError)) req.log.error(err);
+      logProblem('job', err, `${req.method} ${req.url} by ${req.user!.username}`);
       Object.assign(job, { status: 'error', error: friendlyError(err), at: Date.now() });
     },
   );
@@ -79,7 +81,10 @@ export async function tick(now = new Date()) {
     const key = `jobs.lastRun.${d.name}`;
     if (late < 0 || late >= 60 || getSetting(key) === localDay(now)) continue;
     setSetting(key, localDay(now));
-    await d.run().catch((err) => console.error(`Scheduled task ${d.name} failed:`, (err as Error).message));
+    await d.run().catch((err) => {
+      console.error(`Scheduled task ${d.name} failed:`, (err as Error).message);
+      logProblem('schedule', err, d.name);
+    });
   }
 }
 

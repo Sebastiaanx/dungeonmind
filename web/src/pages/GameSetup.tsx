@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { RULESET_NAMES, type GameDetail, type Pitch, type SetupField } from '@dungeonmind/shared';
 import { api } from '../api';
+import { Busy } from '../components/Busy';
 import { useMe } from '../me';
 import { navigate } from '../router';
 import { titleCase } from '../rules';
@@ -43,14 +44,17 @@ function FieldInput({ f, value, onChange, disabled }: { f: SetupField; value: an
 function Pitches({ g, onChanged }: { g: GameDetail; onChanged: () => void }) {
   const [wishes, setWishes] = useState(g.settings.wishes ?? '');
   const [busy, setBusy] = useState('');
+  const [picking, setPicking] = useState('');
   const [own, setOwn] = useState<Pitch>({ title: '', hook: '' });
   const pick = async (p: Pitch) => {
     setBusy('form');
+    setPicking(p.title);
     try {
       await api(`/api/games/${g.id}/form`, { body: { pitch: p } });
       onChanged();
     } finally {
       setBusy('');
+      setPicking('');
     }
   };
   return (
@@ -70,12 +74,25 @@ function Pitches({ g, onChanged }: { g: GameDetail; onChanged: () => void }) {
           }
         }}
       >
-        {busy === 'pitch' ? <span className="dm-breathe">The DM is dreaming up pitches…</span> : 'Suggest pitches'}
+        {g.settings.pitches ? 'Suggest new pitches' : 'Suggest pitches'}
       </button>
-      {g.settings.pitches && (
+      {busy === 'pitch' && <Busy text="The DM is dreaming up pitches…" />}
+      {busy === 'form' && <Busy text={`The DM is preparing the setup questions for “${picking}”…`} />}
+      {busy === 'pitch' ? (
+        <div className="grid gap-2 sm:grid-cols-2" aria-hidden>
+          {[0, 1, 2, 3].map((n) => (
+            <div key={n} className="card animate-pulse space-y-2">
+              <div className="h-4 w-1/2 rounded bg-[#30363d]" />
+              <div className="h-3 rounded bg-[#21262d]" />
+              <div className="h-3 rounded bg-[#21262d]" />
+              <div className="h-3 w-2/3 rounded bg-[#21262d]" />
+            </div>
+          ))}
+        </div>
+      ) : g.settings.pitches && (
         <div className="grid gap-2 sm:grid-cols-2">
           {g.settings.pitches.map((p) => (
-            <button key={p.title} disabled={!!busy} onClick={() => pick(p)} className={`card text-left hover:border-indigo-500 ${g.settings.pitch?.title === p.title ? 'border-indigo-400' : ''}`}>
+            <button key={p.title} disabled={!!busy} onClick={() => pick(p)} className={`card text-left hover:border-indigo-500 ${picking === p.title ? 'animate-pulse border-indigo-400' : picking ? 'opacity-40' : g.settings.pitch?.title === p.title ? 'border-indigo-400' : ''}`}>
               <span className="block font-serif text-base text-indigo-100">{p.title}</span>
               <span className="story block text-sm">{p.hook}</span>
               {p.tone && <span className="mt-1 block text-xs text-slate-500">{p.tone}</span>}
@@ -93,7 +110,6 @@ function Pitches({ g, onChanged }: { g: GameDetail; onChanged: () => void }) {
           </button>
         </div>
       </details>
-      {busy === 'form' && <p className="dm-breathe text-sm text-slate-300">The DM is preparing the setup questions…</p>}
     </section>
   );
 }
@@ -262,8 +278,9 @@ export function GameSetup({ id }: { id: string }) {
                 }
               }}
             >
-              {starting ? <span className="dm-breathe">Writing the campaign…</span> : 'Begin the adventure'}
+              Begin the adventure
             </button>
+            {starting && <Busy text="Writing the campaign…" />}
             <p className="text-xs text-slate-500">Needs a pitch and at least one character. More players can join later.</p>
             <button className="btn-danger w-full" onClick={() => confirm('Delete this adventure?') && api(`/api/games/${g.id}`, { method: 'DELETE' }).then(() => navigate('/'))}>
               Delete adventure

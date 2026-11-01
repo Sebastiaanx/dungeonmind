@@ -6,6 +6,7 @@ import { db, setSetting } from '../db.js';
 import { addTurnHooks } from '../game/turn.js';
 import { loadGame, saveGame } from '../game/store.js';
 import { isOnline } from '../realtime.js';
+import { logProblem } from '../problems.js';
 import { simContext } from '../trainer/context.js';
 import { castVoice, narratorSentences, segments, type Casting, type Speaker } from '../tts/cast.js';
 import { sentences } from '../tts/engine.js';
@@ -66,7 +67,7 @@ function render(whole: Part[], speed: number) {
   const missing = parts.filter((_, i) => !clips[i]);
   if (missing.length) {
     (async () => {
-      for (const p of missing) await speak(p.text, p.voice, speed, p.fx).catch(() => {});
+      for (const p of missing) await speak(p.text, p.voice, speed, p.fx).catch((err) => logProblem('voice', err, `${p.voice}: ${p.text}`));
     })();
   }
   return {

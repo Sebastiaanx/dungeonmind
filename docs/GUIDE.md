@@ -151,6 +151,10 @@ Every turn runs on the server, step by step, and every step is in the story log:
 
 **Host override:** the host can set HP, temp HP, XP, gold, exhaustion, counters and conditions directly; every override is logged for everyone.
 
+## Finding out what went wrong
+
+**Settings → Problems** (admins) lists crashes, failed AI calls and errors, newest first, and keeps them after a restart. Open an entry for the details, including what the AI answered when its answer was the cause.
+
 ## 10. Narrator voices
 
 - **Kokoro (default, built in):** Kokoro-82M runs inside the container on the CPU (`kokoro-js`, ONNX, no Python). The image build bakes the model in (`/app/models`); if that wasn't possible it downloads once to `/data/models` on first use. 28 English voices (American and British).

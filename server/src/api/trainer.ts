@@ -150,7 +150,8 @@ export function trainerRoutes(app: FastifyInstance) {
     const count = int((req.body as { count?: number })?.count, 1, 50, 20);
     return background(req, reply, async () => {
       const r = await withRetry(() => runCanvas('dnd-scenarios', theme, { vars: { count: String(count) } }));
-      const list = (outputJson<{ scenarios?: unknown[] }>(r, 'scenarios').scenarios ?? []).map((s) => String(s ?? '').trim()).filter(Boolean).slice(0, count);
+      const found = outputJson<{ scenarios?: unknown[] }>(r, 'scenarios').scenarios;
+      const list = (Array.isArray(found) ? found : []).map((s) => String(s ?? '').trim()).filter(Boolean).slice(0, count);
       if (!list.length) throw new HiveMindError('The AI wrote no scenarios; try again');
       return list.map((s) => addScenario(s, 'ai'));
     });

@@ -208,11 +208,12 @@ export function gameRoutes(app: FastifyInstance) {
       const vars = { ...setupVars(g), stage: 'pitches', pitch: '' };
       const out = await withRetry(() => runCanvas('dnd-setup', question, { vars }));
       await recordCall(g, 'dnd-setup', question, vars, out);
-      const pitches = (outputJson<{ pitches?: Pitch[] }>(out, 'pitch').pitches ?? [])
+      const list = outputJson<{ pitches?: Pitch[] }>(out, 'pitch').pitches;
+      const pitches = (Array.isArray(list) ? list : [])
         .filter((p) => p?.title)
         .slice(0, 6)
         .map((p) => ({ title: String(p.title).slice(0, 200), hook: String(p.hook ?? '').slice(0, 2000), tone: p.tone ? String(p.tone).slice(0, 200) : undefined, themes: Array.isArray(p.themes) ? p.themes.map(String).slice(0, 6) : undefined }));
-      if (!pitches.length) throw new HiveMindError('The DM had no pitches; try again');
+      if (!pitches.length) throw new HiveMindError('The DM had no pitches; try again', 0, true, out.outputs.pitch?.text);
       g.settings.wishes = wishes;
       g.settings.pitches = pitches;
       saveGame(g);
@@ -232,8 +233,12 @@ export function gameRoutes(app: FastifyInstance) {
       const vars = { ...setupVars(g), stage: 'form', pitch: `${g.settings.pitch!.title}: ${g.settings.pitch!.hook}` };
       const out = await withRetry(() => runCanvas('dnd-setup', question, { vars }));
       await recordCall(g, 'dnd-setup', question, vars, out);
-      const f = outputJson<{ title?: string; summary?: string; fields?: unknown }>(out, 'pitch');
-      g.settings.form = { title: f.title ? String(f.title).slice(0, 120) : undefined, summary: f.summary ? String(f.summary).slice(0, 2000) : undefined, fields: cleanFields(f.fields) };
+      type Form = { title?: string; summary?: string; fields?: unknown };
+      const answer = outputJson<Form>(out, 'pitch');
+      const f = answer.fields ? answer : (Object.values(answer).find((v) => (v as Form)?.fields) as Form | undefined) ?? answer;
+      const fields = cleanFields(f.fields);
+      if (!fields.length) throw new HiveMindError('The DM had no setup questions; try again', 0, true, out.outputs.pitch?.text);
+      g.settings.form = { title: f.title ? String(f.title).slice(0, 120) : undefined, summary: f.summary ? String(f.summary).slice(0, 2000) : undefined, fields };
       g.settings.formValues = Object.fromEntries(g.settings.form.fields.map((x) => [x.id, x.default ?? (x.type === 'multi' ? [] : x.type === 'slider' ? (x.min ?? 0) : '')]));
       if (f.title && g.name === 'Untitled adventure') g.name = String(f.title).slice(0, 80);
       saveGame(g);

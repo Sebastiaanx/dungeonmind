@@ -217,6 +217,50 @@ function DmModel({ onDone }: { onDone: () => void }) {
   );
 }
 
+interface Problem {
+  id: number;
+  at: string;
+  source: string;
+  message: string;
+  detail: string | null;
+}
+
+/** Everything that went wrong, newest first, with what the AI answered when that's the cause. */
+function Problems() {
+  const [list, setList] = useState<Problem[]>();
+  const load = () => api<Problem[]>('/api/problems', { quiet: true }).then(setList).catch(() => setList([]));
+  useEffect(() => {
+    load();
+  }, []);
+  return (
+    <section className="card space-y-2">
+      <div className="flex items-center gap-2">
+        <h2 className="rune-title flex-1">Problems</h2>
+        <button className="btn-ghost text-xs" onClick={load}>
+          Refresh
+        </button>
+        <button className="btn-ghost text-xs" disabled={!list?.length} onClick={() => confirm('Clear the list of problems?') && api('/api/problems', { method: 'DELETE' }).then(load)}>
+          Clear
+        </button>
+      </div>
+      <p className="text-xs text-slate-500">Crashes, failed AI calls and errors, newest first. Kept after restarts.</p>
+      {list && !list.length && <p className="text-sm text-slate-400">Nothing went wrong.</p>}
+      <div className="scroll-thin max-h-96 space-y-2 overflow-y-auto">
+        {list?.map((p) => (
+          <details key={p.id} className="rounded-md border border-[#30363d] px-3 py-2 text-sm">
+            <summary className="cursor-pointer">
+              <span className="chip mr-2">{p.source}</span>
+              <span className="mr-2 text-xs text-slate-500">{new Date(`${p.at.replace(' ', 'T')}Z`).toLocaleString()}</span>
+              <span className="text-slate-200">{p.message}</span>
+            </summary>
+            {p.detail && <pre className="scroll-thin mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs text-slate-400">{p.detail}</pre>}
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Tokens() {
   const [list, setList] = useState<{ id: string; name: string; prefix: string; lastUsedAt?: string }[]>([]);
   const [name, setName] = useState('');
@@ -395,6 +439,7 @@ export function SettingsPage() {
       <Reading />
       <VoiceSettings />
       {me.role === 'admin' && <HiveMindSettings />}
+      {me.role === 'admin' && <Problems />}
       {me.role === 'admin' && <Users />}
       <Tokens />
     </div>
