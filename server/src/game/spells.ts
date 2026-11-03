@@ -64,7 +64,7 @@ export function spellSummary(s: RulesSpell, charLevel: number): string {
   if (e.area) parts.push(e.area);
   const count = spellCount(e, s.level, s.level, charLevel);
   if (count > 1) parts.push(`${count}×`);
-  for (const d of e.damage ?? []) parts.push(`${spellDice(d.dice.replace(/\+mod/, ''), { mod: 0, tier })}${/mod/.test(d.dice) ? '+mod' : ''} ${d.type.replace(/\|/g, '/')}`);
+  for (const d of e.damage ?? []) parts.push(`${spellDice(d.dice.replace(/\+mod/, ''), { mod: 0, tier })}${/mod/.test(d.dice) ? '+mod' : ''} ${d.type.replace(/\|/g, '/')}${d.upcast ? ` (+${d.upcast} per slot above ${s.level})` : ''}`);
   if (e.heal) parts.push(`heals ${e.heal}`);
   if (e.tempHp) parts.push(`${e.tempHp} temp HP`);
   if (e.upcast) parts.push(`+${e.upcast} per ${e.upcastEvery ? `${e.upcastEvery} slot levels` : 'slot'} above ${s.level}`);

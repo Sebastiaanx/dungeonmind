@@ -280,7 +280,7 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
             times = left.rolls === 1 ? left.left : Math.max(1, Math.min(Math.round(said) || 1, left.left));
             left.left = Math.max(0, left.left - times);
           }
-          dice = effect.damage!.map((p, j) => spellDice(p.dice, { ...o, tier, times, upcast: j ? undefined : effect.upcast })).join('+');
+          dice = effect.damage!.map((p, j) => spellDice(p.dice, { ...o, tier, times, upcast: p.upcast ?? (j ? undefined : effect.upcast) })).join('+');
           const types = effect.damage!.map((p) => pickType(p.type, r.damageType)).filter(Boolean);
           base.damageType = types.length ? [...new Set(types)].join(', ') : base.damageType;
           if (base.onFail) base.half = effect.half || undefined;

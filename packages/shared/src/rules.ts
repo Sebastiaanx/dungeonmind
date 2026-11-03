@@ -94,10 +94,10 @@ export interface SpellEffect {
   /** Extra damage on the caster's own attack hits (smites, Hex, Hunter's Mark). */
   rider?: boolean;
   /** Damage parts; several for spells like Flame Strike (fire + radiant). A type the caster picks lists the options: "acid|cold|fire"; "weapon" is the weapon's type. */
-  damage?: { dice: string; type: string }[];
+  damage?: { dice: string; type: string; upcast?: string }[];
   heal?: string;
   tempHp?: string;
-  /** Added to the first damage part (or the healing) per slot level above the spell's level. */
+  /** Added to the first damage part (or the healing) per slot level above the spell's level; a part's own `upcast` is for spells where several grow (2024 Flame Strike). */
   upcast?: string;
   /** `upcast` comes once per this many slot levels above (2014 Spiritual Weapon: 2). */
   upcastEvery?: number;

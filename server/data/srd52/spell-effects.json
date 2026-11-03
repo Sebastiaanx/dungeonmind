@@ -40,13 +40,62 @@
     "save": "cha",
     "note": "Tiny Beast only (one with a Challenge Rating above 0 succeeds); on a failure it carries a 25-word message to the recipient you describe."
   },
+  "arcane-hand": {
+    "attack": "melee",
+    "damage": [
+      {
+        "dice": "5d8",
+        "type": "force"
+      }
+    ],
+    "upcast": "2d8",
+    "note": "Clenched Fist; other options: Forceful Hand (Str save or pushed), Grasping Hand (Dex save or Grappled, then a Bonus Action crush for 4d6 + mod bludgeoning, +2d6 per slot level above 5) or Interposing Hand; Bonus Action on later turns for up to 1 minute."
+  },
+  "aura-of-life": {
+    "note": "For up to 10 minutes you and allies in a 30-foot Emanation have Resistance to necrotic and Hit Point maximums that can't be reduced; an ally starting its turn there at 0 Hit Points regains 1 Hit Point."
+  },
+  "awaken": {
+    "conditions": [
+      {
+        "name": "charmed"
+      }
+    ],
+    "note": "A Beast or Plant gains Intelligence 10 and a language; Charmed for 30 days or until you or allies damage it."
+  },
   "bane": {
     "save": "cha",
     "note": "Up to three targets; a target that fails subtracts 1d4 from attack rolls and saves for the duration; one more target per slot level above 1."
   },
+  "banishment": {
+    "save": "cha",
+    "conditions": [
+      {
+        "name": "incapacitated",
+        "rounds": 10
+      }
+    ],
+    "note": "Sent to a harmless demiplane while it lasts; an Aberration, Celestial, Elemental, Fey or Fiend doesn't return if it lasts the full minute; one more target per slot level above 4."
+  },
   "bestow-curse": {
     "save": "wis",
     "note": "One curse of your choice for 1 minute: Disadvantage on checks and saves with one ability, Disadvantage on attacks against you, a Wis save each turn or Dodge, or 1d8 extra necrotic when you damage it."
+  },
+  "black-tentacles": {
+    "save": "str",
+    "damage": [
+      {
+        "dice": "3d6",
+        "type": "bludgeoning"
+      }
+    ],
+    "area": "20-foot square",
+    "conditions": [
+      {
+        "name": "restrained",
+        "rounds": 10
+      }
+    ],
+    "note": "Saves when it appears and when a creature enters or ends its turn there, once per turn; Difficult Terrain; an action and Strength (Athletics) check vs your DC ends the Restrained condition."
   },
   "bless": {
     "conditions": [
@@ -56,6 +105,18 @@
       }
     ],
     "note": "Up to three creatures; one more per slot level above 1."
+  },
+  "blight": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "8d8",
+        "type": "necrotic"
+      }
+    ],
+    "upcast": "1d8",
+    "note": "A Plant creature automatically fails; a nonmagical plant simply withers and dies."
   },
   "blindness-deafness": {
     "save": "con",
@@ -101,6 +162,15 @@
     "area": "20-foot-radius Sphere",
     "note": "Humanoids only; each gains Immunity to Charmed and Frightened (suppressing them) or becomes Indifferent toward creatures you choose until it or its allies take damage."
   },
+  "charm-monster": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "charmed"
+      }
+    ],
+    "note": "Advantage on the save if you or allies are fighting it; ends if you or allies damage it; one more target per slot level above 4."
+  },
   "charm-person": {
     "save": "wis",
     "conditions": [
@@ -132,6 +202,19 @@
     "upcast": "1d8",
     "note": "If two or more d8s match, the orb leaps to another target within 30 feet (new attack and damage roll), up to slot-level leaps."
   },
+  "cloudkill": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "5d8",
+        "type": "poison"
+      }
+    ],
+    "upcast": "1d8",
+    "area": "20-foot-radius Sphere",
+    "note": "Triggers when it appears, when the Sphere moves into a creature's space and when a creature enters or ends its turn there, once per turn; it moves 10 feet away from you at the start of each of your turns; Heavily Obscured."
+  },
   "color-spray": {
     "save": "con",
     "area": "15-foot Cone",
@@ -147,6 +230,34 @@
     "save": "wis",
     "note": "On a failed save the target obeys a one-word command (Approach, Drop, Flee, Grovel = Prone, Halt) on its next turn; one more target per slot level above 1."
   },
+  "compulsion": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "charmed",
+        "rounds": 10
+      }
+    ],
+    "note": "As a Bonus Action you name a horizontal direction; each Charmed target moves as far as it can that way on its next turn, then repeats the save."
+  },
+  "cone-of-cold": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "8d8",
+        "type": "cold"
+      }
+    ],
+    "upcast": "1d8",
+    "area": "60-foot Cone",
+    "note": "A creature killed by it becomes a frozen statue until it thaws."
+  },
+  "confusion": {
+    "save": "wis",
+    "area": "10-foot-radius Sphere",
+    "note": "A failure means no Bonus Actions or Reactions and a 1d10 roll at the start of each of its turns for its behavior; it repeats the save at the end of each turn; radius +5 feet per slot level above 4."
+  },
   "conjure-animals": {
     "save": "dex",
     "damage": [
@@ -157,6 +268,82 @@
     ],
     "upcast": "1d10",
     "note": "You can force the save when the pack moves within 10 feet of a creature or a creature enters or ends its turn within 10 feet of it, once per turn, for up to 10 minutes."
+  },
+  "conjure-elemental": {
+    "save": "dex",
+    "damage": [
+      {
+        "dice": "8d8",
+        "type": "lightning|thunder|fire|cold"
+      }
+    ],
+    "upcast": "1d8",
+    "conditions": [
+      {
+        "name": "restrained"
+      }
+    ],
+    "note": "When a creature enters the spirit's space or starts its turn within 5 feet of it and the spirit restrains no one; the Restrained target saves at the start of each of its turns, taking 4d8 on a failure and breaking free on a success."
+  },
+  "conjure-minor-elementals": {
+    "rider": true,
+    "damage": [
+      {
+        "dice": "2d8",
+        "type": "acid|cold|fire|lightning"
+      }
+    ],
+    "upcast": "1d8",
+    "note": "Any attack you hit against a creature in your 15-foot Emanation, for up to 10 minutes; the ground there is Difficult Terrain for your enemies."
+  },
+  "conjure-woodland-beings": {
+    "save": "wis",
+    "half": true,
+    "damage": [
+      {
+        "dice": "5d8",
+        "type": "force"
+      }
+    ],
+    "upcast": "1d8",
+    "area": "10-foot Emanation",
+    "note": "Triggers when the Emanation enters a creature's space or it enters or ends its turn there, once per turn, for up to 10 minutes; you can Disengage as a Bonus Action."
+  },
+  "contact-other-plane": {
+    "autoHit": true,
+    "damage": [
+      {
+        "dice": "6d6",
+        "type": "psychic"
+      }
+    ],
+    "note": "Only to you, if you fail the DC 15 Intelligence save on casting, and you are then Incapacitated until a Long Rest; on a success you ask up to five questions."
+  },
+  "contagion": {
+    "save": "con",
+    "damage": [
+      {
+        "dice": "11d8",
+        "type": "necrotic"
+      }
+    ],
+    "conditions": [
+      {
+        "name": "poisoned"
+      }
+    ],
+    "note": "While Poisoned it has Disadvantage on saves with an ability you choose; it repeats the save each turn until three successes (spell ends) or three failures (lasts 7 days)."
+  },
+  "control-water": {
+    "save": "str",
+    "half": true,
+    "damage": [
+      {
+        "dice": "2d8",
+        "type": "bludgeoning"
+      }
+    ],
+    "note": "Whirlpool effect only: a creature entering it for the first time on a turn or ending its turn there saves; other options flood, part or redirect water."
   },
   "counterspell": {
     "save": "con",
@@ -169,6 +356,20 @@
   "detect-thoughts": {
     "save": "wis",
     "note": "Only when you probe deeper: a failure reveals its reasoning and emotions, a success ends the spell."
+  },
+  "dimension-door": {
+    "autoHit": true,
+    "damage": [
+      {
+        "dice": "4d6",
+        "type": "force"
+      }
+    ],
+    "note": "Only if you or the creature with you would arrive in an occupied space; each of you takes it and the teleportation fails."
+  },
+  "dispel-evil-and-good": {
+    "save": "cha",
+    "note": "Dismissal (Magic action, 5 feet) sends a Celestial, Elemental, Fey, Fiend or Undead home on a failure; those types have Disadvantage on attacks against you; Break Enchantment ends their charm, fear or possession."
   },
   "dissonant-whispers": {
     "save": "wis",
@@ -203,6 +404,26 @@
     "upcast": "1d8",
     "note": "1d8 more if the target is a Fiend or an Undead."
   },
+  "dominate-beast": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "charmed",
+        "rounds": 10
+      }
+    ],
+    "note": "Beasts only; Advantage on the save if you or allies are fighting it; repeats the save whenever it takes damage; lasts up to 10 minutes, 1 hour or 8 hours with a level 5, 6 or 7+ slot."
+  },
+  "dominate-person": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "charmed",
+        "rounds": 10
+      }
+    ],
+    "note": "Humanoids only; Advantage on the save if you or allies are fighting it; repeats the save whenever it takes damage; lasts up to 10 minutes, 1 hour or 8 hours with a level 6, 7 or 8+ slot."
+  },
   "dragons-breath": {
     "save": "dex",
     "half": true,
@@ -215,6 +436,16 @@
     "upcast": "1d6",
     "area": "15-foot Cone",
     "note": "The touched creature exhales as a Magic action on each of its turns for up to 1 minute; the type is chosen on casting."
+  },
+  "dream": {
+    "save": "wis",
+    "damage": [
+      {
+        "dice": "3d6",
+        "type": "psychic"
+      }
+    ],
+    "note": "Only if you make the messenger terrifying; on a failure the target also gains no benefit from its rest and takes the damage when it wakes up."
   },
   "eldritch-blast": {
     "attack": "ranged",
@@ -261,6 +492,16 @@
     "area": "20-foot Cube",
     "note": "Affected creatures shed Dim Light, can't benefit from Invisible, and attack rolls against them have Advantage."
   },
+  "faithful-hound": {
+    "save": "dex",
+    "damage": [
+      {
+        "dice": "4d8",
+        "type": "force"
+      }
+    ],
+    "note": "At the start of each of your turns, for 8 hours, the hound bites one enemy within 5 feet of it; only you can see it."
+  },
   "false-life": {
     "tempHp": "2d4+4",
     "upcast": "5"
@@ -287,6 +528,16 @@
     "scales": "dice",
     "note": "An unattended flammable object hit starts burning."
   },
+  "fire-shield": {
+    "autoHit": true,
+    "damage": [
+      {
+        "dice": "2d8",
+        "type": "fire|cold"
+      }
+    ],
+    "note": "Hits a creature within 5 feet that hits you with a melee attack, for 10 minutes; warm shield deals fire and resists cold, chill shield deals cold and resists fire."
+  },
   "fireball": {
     "save": "dex",
     "half": true,
@@ -311,6 +562,23 @@
     "upcast": "1d6",
     "note": "Each attack is a Magic action, for up to 10 minutes; the blade can be evoked again as a Bonus Action."
   },
+  "flame-strike": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "5d6",
+        "type": "fire",
+        "upcast": "1d6"
+      },
+      {
+        "dice": "5d6",
+        "type": "radiant",
+        "upcast": "1d6"
+      }
+    ],
+    "area": "10-foot-radius, 40-foot-high Cylinder"
+  },
   "flaming-sphere": {
     "save": "dex",
     "half": true,
@@ -322,6 +590,15 @@
     ],
     "upcast": "1d6",
     "note": "Triggers when a creature ends its turn within 5 feet of the sphere or you roll it into its space (Bonus Action, 30 feet), for up to 1 minute."
+  },
+  "geas": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "charmed"
+      }
+    ],
+    "note": "Charmed for 30 days (365 with a level 7 or 8 slot); it takes 5d10 psychic, at most once a day, when it acts directly against your command."
   },
   "glyph-of-warding": {
     "save": "dex",
@@ -348,6 +625,26 @@
       }
     ],
     "note": "Difficult Terrain for 1 minute; a creature entering or ending its turn there saves again or falls Prone."
+  },
+  "greater-invisibility": {
+    "conditions": [
+      {
+        "name": "invisible",
+        "rounds": 10
+      }
+    ]
+  },
+  "guardian-of-faith": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "20",
+        "type": "radiant"
+      }
+    ],
+    "area": "within 10 feet of the guardian",
+    "note": "Enemies only, when one moves there for the first time on a turn or starts its turn there, for 8 hours; the guardian vanishes after dealing 60 damage in total."
   },
   "guidance": {
     "conditions": [
@@ -430,6 +727,16 @@
     ],
     "note": "Repeats the save at the end of each of its turns and when it takes damage (with Advantage); one more target per slot level above 1."
   },
+  "hold-monster": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "paralyzed",
+        "rounds": 10
+      }
+    ],
+    "note": "Repeats the save at the end of each of its turns; one more creature per slot level above 5."
+  },
   "hold-person": {
     "save": "wis",
     "conditions": [
@@ -475,6 +782,23 @@
     ],
     "note": "Hit or miss, the target and each creature within 5 feet make a Dex save or take 2d6 cold (+1d6 per slot level above 1)."
   },
+  "ice-storm": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "2d10",
+        "type": "bludgeoning"
+      },
+      {
+        "dice": "4d6",
+        "type": "cold"
+      }
+    ],
+    "upcast": "1d10",
+    "area": "20-foot-radius, 40-foot-high Cylinder",
+    "note": "The ground there is Difficult Terrain until the end of your next turn."
+  },
   "inflict-wounds": {
     "save": "con",
     "half": true,
@@ -485,6 +809,19 @@
       }
     ],
     "upcast": "1d10"
+  },
+  "insect-plague": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "4d10",
+        "type": "piercing"
+      }
+    ],
+    "upcast": "1d10",
+    "area": "20-foot-radius Sphere",
+    "note": "Triggers when the swarm appears and when a creature first enters it on a turn or ends its turn there, once per turn, for up to 10 minutes; Lightly Obscured, Difficult Terrain."
   },
   "invisibility": {
     "conditions": [
@@ -525,6 +862,11 @@
     "count": 3,
     "countUpcast": 1
   },
+  "mass-cure-wounds": {
+    "heal": "5d8+mod",
+    "upcast": "1d8",
+    "note": "Up to six creatures in a 30-foot-radius Sphere."
+  },
   "mass-healing-word": {
     "heal": "2d4+mod",
     "upcast": "1d4",
@@ -552,6 +894,28 @@
     "upcast": "1d8",
     "note": "On a failure you know its location for up to 1 hour, and it can't hide from you or benefit from Invisible against you."
   },
+  "mislead": {
+    "conditions": [
+      {
+        "name": "invisible"
+      }
+    ],
+    "note": "You turn Invisible and an illusory double appears; the invisibility ends right after you attack, deal damage or cast a spell."
+  },
+  "modify-memory": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "charmed",
+        "rounds": 10
+      },
+      {
+        "name": "incapacitated",
+        "rounds": 10
+      }
+    ],
+    "note": "Advantage on the save if you are fighting it; ends if it takes damage or is targeted by another spell; lets you rewrite its memory of a recent event."
+  },
   "moonbeam": {
     "save": "con",
     "half": true,
@@ -575,6 +939,22 @@
     ],
     "note": "The 2d8 comes on each of your turns, with no new save, while the target is in or within 5 feet of a harmful phantasm; an Intelligence (Investigation) check vs your DC ends it."
   },
+  "phantasmal-killer": {
+    "save": "wis",
+    "half": true,
+    "damage": [
+      {
+        "dice": "4d10",
+        "type": "psychic"
+      }
+    ],
+    "upcast": "1d10",
+    "note": "A success ends the spell; a failure gives Disadvantage on checks and attacks and a new save at the end of each of its turns, full damage again on a failure, ending on a success."
+  },
+  "planar-binding": {
+    "save": "cha",
+    "note": "A Celestial, Elemental, Fey or Fiend that fails is bound to serve you for 24 hours, longer with a higher slot."
+  },
   "poison-spray": {
     "attack": "ranged",
     "damage": [
@@ -584,6 +964,10 @@
       }
     ],
     "scales": "dice"
+  },
+  "polymorph": {
+    "save": "wis",
+    "note": "Turns it into a Beast of your choice with a Challenge Rating up to its own for up to 1 hour; it gains Temporary Hit Points equal to the form's Hit Points and reverts when they run out."
   },
   "prayer-of-healing": {
     "heal": "2d8",
@@ -633,6 +1017,13 @@
     ],
     "note": "Poisoned until the end of your next turn."
   },
+  "reincarnate": {
+    "note": "Roll 1d10 for the new body's species (1 roll again, 2 Dragonborn, 3 Dwarf, 4 Elf, 5 Gnome, 6 Goliath, 7 Halfling, 8 Human, 9 Orc, 10 Tiefling) or the GM picks one."
+  },
+  "resilient-sphere": {
+    "save": "dex",
+    "note": "Only an unwilling creature saves; it is enclosed for up to 1 minute, and nothing passes in or out or damages across the barrier."
+  },
   "resistance": {
     "note": "Once per turn, damage of the chosen type to the target is reduced by 1d4."
   },
@@ -661,6 +1052,10 @@
     "count": 3,
     "countUpcast": 1
   },
+  "scrying": {
+    "save": "wis",
+    "note": "The save is modified by how well you know the target and your connection to it; on a success you can't scry it again for 24 hours."
+  },
   "searing-smite": {
     "rider": true,
     "damage": [
@@ -671,6 +1066,10 @@
     ],
     "upcast": "1d6",
     "note": "At the start of each of its turns the target takes the fire damage again, then makes a Con save; a success ends the spell."
+  },
+  "seeming": {
+    "save": "cha",
+    "note": "Only an unwilling creature saves; a Study action and Intelligence (Investigation) check vs your DC sees through the disguise."
   },
   "shatter": {
     "save": "con",
@@ -822,6 +1221,16 @@
     ],
     "note": "It pursues a suggested course of up to 25 words for up to 8 hours; ends if you or your allies damage it."
   },
+  "telekinesis": {
+    "save": "str",
+    "conditions": [
+      {
+        "name": "restrained",
+        "rounds": 1
+      }
+    ],
+    "note": "On a failure you move it up to 30 feet and it is Restrained until the end of your next turn; again as a Magic action on later turns for up to 10 minutes."
+  },
   "thunderwave": {
     "save": "con",
     "half": true,
@@ -859,6 +1268,36 @@
     ],
     "scales": "dice",
     "note": "On a failed save the target has Disadvantage on its next attack roll before the end of its next turn."
+  },
+  "vitriolic-sphere": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "10d4",
+        "type": "acid"
+      }
+    ],
+    "upcast": "2d4",
+    "area": "20-foot-radius Sphere",
+    "note": "On a failed save it also takes 5d4 acid at the end of its next turn."
+  },
+  "wall-of-fire": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "5d8",
+        "type": "fire"
+      }
+    ],
+    "upcast": "1d8",
+    "area": "60-foot-long, 20-foot-high, 1-foot-thick wall",
+    "note": "The save is only when the wall appears; later, for up to 1 minute, a creature takes the damage with no save when it ends its turn within 10 feet of your chosen side or inside, or first enters the wall on a turn."
+  },
+  "wall-of-stone": {
+    "save": "dex",
+    "note": "Only a creature the wall would enclose saves; on a success it can use its Reaction to move out."
   },
   "web": {
     "save": "dex",

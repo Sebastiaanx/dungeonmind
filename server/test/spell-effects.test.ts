@@ -6,7 +6,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { parseDice } from '../src/game/dice.js';
 
 /** Spell levels whose effects are all written; raise this as more levels land. */
-const COVERED = [0, 1, 2, 3];
+const COVERED = [0, 1, 2, 3, 4, 5];
 
 const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 const DAMAGE_TYPES = ['acid', 'bludgeoning', 'cold', 'fire', 'force', 'lightning', 'necrotic', 'piercing', 'poison', 'psychic', 'radiant', 'slashing', 'thunder'];
@@ -38,12 +38,14 @@ describe.each(['srd51', 'srd52'])('%s spell effects', (ruleset) => {
     if (e.half) expect(e.save, 'half needs a save').toBeTruthy();
     if (e.autoHit || e.rider) expect(!e.attack && !e.save && !(e.autoHit && e.rider), 'autoHit and rider have no attack or save').toBe(true);
     if (e.damage) expect(e.attack || e.save || e.autoHit || e.rider, 'damage needs attack, save, autoHit or rider').toBeTruthy();
-    for (const expr of [...(e.damage ?? []).map((d) => d.dice), e.heal, e.tempHp, e.upcast].filter((x): x is string => !!x)) {
+    for (const expr of [...(e.damage ?? []).flatMap((d) => [d.dice, d.upcast]), e.heal, e.tempHp, e.upcast].filter((x): x is string => !!x)) {
       expect(() => parseDice(expr.replace(/mod/g, '0')), expr).not.toThrow();
       // The dice have to be the ones the SRD text names.
       for (const t of diceTerms(expr)) expect(text, `${t} is not in the spell text`).toContain(t);
     }
     for (const d of e.damage ?? []) for (const t of d.type.split('|')) expect([...DAMAGE_TYPES, 'weapon']).toContain(t);
+    for (const d of e.damage ?? []) expect(Object.keys(d).filter((k) => !['dice', 'type', 'upcast'].includes(k)), 'unknown damage fields').toEqual([]);
+    if (e.damage?.some((d) => d.upcast)) expect(e.upcast, 'part upcasts replace the spell upcast').toBeUndefined();
     if (e.upcast) expect(s.level > 0 && !!(e.damage?.length || e.heal || e.tempHp), 'upcast needs a leveled spell with damage, healing or temp HP').toBe(true);
     if (e.upcastEvery) expect(e.upcast && e.upcastEvery > 1, 'upcastEvery goes with upcast').toBeTruthy();
     if (e.scales) expect(s.level, 'only cantrips scale').toBe(0);
@@ -89,6 +91,20 @@ describe('rolling PC spells', () => {
     expect(S.spellDice('1d8+mod', { mod: -1, upcast: '1d8', above: 2 })).toBe('3d8-1');
     expect(S.spellDice('1d10', { mod: 0, tier: 3 })).toBe('3d10');
     expect(S.spellDice('1d4+1', { mod: 0, times: 3 })).toBe('3d4+3');
+  });
+
+  it('grows every damage part that has its own upcast', () => {
+    const { rules, cleric } = party.srd52;
+    const effect = { save: 'dex' as const, half: true, damage: [{ dice: '5d6', type: 'fire', upcast: '1d6' }, { dice: '5d6', type: 'radiant', upcast: '1d6' }] };
+    const r = { ...rules, spells: rules.spells.map((x) => (x.id === 'guiding-bolt' ? { ...x, level: 5, effect } : x)) };
+    const [, dmg] = R.buildRolls(r, [cleric], [hag()], {
+      rolls: [
+        { id: 's', actor: 'The Bell-Hag', kind: 'save', spell: 'Guiding Bolt' },
+        { actor: 'Esva', kind: 'damage', target: 'The Bell-Hag', onFail: 's' },
+      ],
+      resources: [{ pc: 'Esva', name: 'Spell slot L7', amount: 1 }],
+    });
+    expect(dmg).toMatchObject({ dice: '7d6+7d6', damageType: 'fire, radiant', half: true });
   });
 
   it('upcasts every two slot levels when the spell says so', () => {
