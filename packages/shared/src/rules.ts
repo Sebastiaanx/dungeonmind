@@ -162,6 +162,60 @@ export interface RulesEntry {
   /** Feature: class id; trait: species ids. */
   owner?: string;
   level?: number;
+  /** Class features: hand-written numbers the server uses (server/data/<ruleset>/class-features.json). */
+  effect?: FeatureEffect;
+}
+
+/**
+ * A number that grows with the class level: a plain number, a formula over `level` (the class level), `pb`,
+ * the ability modifiers (`str`…`cha`) and the class table's number columns ("max(1, cha)", "5 * level", "rage_count"),
+ * or a step table by class level ({ "1": 2, "3": 3 }).
+ */
+export type LevelValue = number | string | Record<string, number>;
+
+/**
+ * What a class or subclass feature does in numbers. Everything is per class level, so a feature reads the same
+ * for a single class and for one class of a multiclass character.
+ */
+export interface FeatureEffect {
+  /** Only for this subclass (the imported features don't say which ones are a subclass's). */
+  subclass?: string;
+  /**
+   * A limited-use counter. A later feature naming the same counter changes it (Font of Inspiration: recharge "short").
+   * `regain`: a short rest gives back this many of a long-rest counter (2024 Rage: 1).
+   */
+  counter?: { name?: string; uses?: LevelValue; recharge?: 'short' | 'long' | 'dawn' | 'turn'; regain?: number };
+  /** Spending the counter puts this condition on the character (Rage: "raging"). */
+  grants?: { name: string; rounds?: number };
+  /** The parts below work only while the character has this condition. */
+  while?: string;
+  /**
+   * Extra damage on the character's own hits. `dice` is a dice expression ("1d8"), a LevelValue for a flat bonus
+   * ("rage_damage_bonus"), or a step table of dice ({ "1": "1d6", "3": "2d6" }). "weapon" damage takes the weapon's type.
+   * `ask`: only when the adjudicator names the feature on the damage roll (the server can't see the conditions).
+   * `slot`: spends a spell slot, with `upcast` dice per slot level above 1st, up to `max` (2014 Divine Smite).
+   * `name`: what the table calls it when that isn't the feature's name (Blessed Strikes: "Divine Strike").
+   * `on`: "melee" counts Unarmed Strikes too; a type the character picks lists the options ("cold|fire").
+   */
+  damage?: {
+    name?: string;
+    dice: string | Record<string, string>;
+    type: string;
+    on: 'weapon' | 'melee' | 'melee-weapon' | 'str-melee' | 'finesse-or-ranged';
+    once?: 'turn';
+    ask?: boolean;
+    slot?: { upcast: string; max: string };
+  };
+  /** Healing the server rolls when a heal roll names the feature ("1d10+level"). */
+  heal?: string;
+  /** Advantage on the character's own d20 tests; `spell`: only spell attacks. */
+  advantage?: { kind: 'attack' | 'save' | 'check'; ability?: Ability; spell?: boolean }[];
+  /** Damage types halved. */
+  resist?: string[];
+  /** Weapon attacks score a critical hit on this natural roll or higher (Improved Critical: 19). */
+  critOn?: number;
+  /** What the story has to handle. */
+  note?: string;
 }
 
 export interface RulesData {

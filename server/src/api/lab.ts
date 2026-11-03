@@ -5,6 +5,7 @@ import { db, json } from '../db.js';
 import { applyDamage, applyDeltas, applyHeal, applySpend, applyXp, checkResources, damageNpc, healNpc, levelCheck, rest, type BookResult } from '../game/bookkeeper.js';
 import { buildCharacter, derive, validateBuild } from '../game/character.js';
 import { isDice } from '../game/dice.js';
+import { grantConditions, resistances } from '../game/features.js';
 import { readLog } from '../game/log.js';
 import { buildRolls, ready, resolveRoll, rollEffects, type Adjudication } from '../game/rolls.js';
 import { DEFAULT_SETTINGS, loadGame, roleIn } from '../game/store.js';
@@ -97,6 +98,8 @@ export function bookkeeperCheck(input: CheckInput) {
     const adj = input.adjudication;
     const check = checkResources(party, adj.resources ?? []);
     for (const x of check.refused) errors.push({ type: 'refused-resource', message: x.reason, pc: party.find((c) => c.id === x.characterId)?.name });
+    // Spent first, as at the table: spending Rage makes the barbarian raging for these rolls.
+    changes.push(...applySpend(party, check.spend), ...grantConditions(r, party, check.spend));
     // The AI must never hand player characters a bonus: the sheet decides. A different number is an invented one.
     rolls = buildRolls(r, party, npcs, adj);
     for (const [i, raw] of (adj.rolls ?? []).entries()) {
@@ -105,7 +108,6 @@ export function bookkeeperCheck(input: CheckInput) {
         errors.push({ type: 'invented-bonus', message: `${built.label}: the DM gave +${raw.bonus}, the sheet says ${built.bonus >= 0 ? '+' : ''}${built.bonus}`, pc: built.actor });
       if ((raw?.kind === 'damage' || raw?.kind === 'heal') && raw.dice && !built?.characterId && !isDice(raw.dice)) errors.push({ type: 'bad-dice', message: `${built?.label ?? 'roll'}: "${raw.dice}" is not valid dice` });
     }
-    changes.push(...applySpend(party, check.spend));
     for (let i = 0; i < 60; i++) {
       const next = rolls.find((x) => ready(x, rolls));
       if (!next) break;
@@ -116,7 +118,8 @@ export function bookkeeperCheck(input: CheckInput) {
     const s = input.state;
     if (Array.isArray(s.npcs)) npcs = mergeNpcs(npcs, s.npcs, new Set(rolls.filter((x) => (x.kind === 'damage' || x.kind === 'heal') && x.result && !x.result.skipped && x.target).map((x) => x.target!)), r);
   }
-  const fx = rollEffects(rolls, party, npcs);
+  const fx = rollEffects(rolls, party, npcs, (c) => resistances(r, c));
+  changes.push(...fx.resisted);
   const backed = new Map<string, number>();
   for (const [id, e] of fx.pcs) {
     const c = party.find((x) => x.id === id)!;

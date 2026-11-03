@@ -148,7 +148,8 @@ describe('builder legality, SRD 5.2', () => {
     const byName = Object.fromEntries(c.counters.map((x) => [x.name, x]));
     expect(byName['Spell slot L1']).toMatchObject({ max: 4, recharge: 'long' });
     expect(byName['Spell slot L2']).toMatchObject({ max: 2 });
-    expect(byName['Channel Divinity']).toMatchObject({ max: 2, recharge: 'short' });
+    // 2024: one use back on a short rest, all on a long rest.
+    expect(byName['Channel Divinity']).toMatchObject({ max: 2, recharge: 'long', regain: 1 });
     expect(byName['Hit Dice (d8)']).toMatchObject({ max: 3 });
     expect(lib.derive(r, c).spellDc).toBe(8 + 2 + 3); // WIS 17
   });

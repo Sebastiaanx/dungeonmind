@@ -169,6 +169,8 @@ export interface PendingRoll {
   bonusDice?: BonusDie[];
   /** Halfling Luck: a natural 1 on the d20 is rolled again. */
   luck?: boolean;
+  /** A critical hit on this natural roll or higher (Improved Critical: 19). */
+  critOn?: number;
   result?: RollOutcome;
 }
 

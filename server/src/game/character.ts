@@ -17,6 +17,7 @@ import {
   type RulesItem,
 } from '@dungeonmind/shared';
 import { findIn, slug } from '../rules/index.js';
+import { featureCounters } from './features.js';
 
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 const POINT_COST: Record<number, number> = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
@@ -230,55 +231,12 @@ export function maxHp(hitDie: number, level: number, conMod: number, hpRolls: nu
 // ---- Counters (resource model) ----
 const C = (name: string, max: number, recharge: Recharge, source: string): Counter => ({ name, current: max, max, recharge, source });
 
-export function classCounters(rules: RulesData, cls: RulesClass, level: number, abilities: Abilities): Counter[] {
-  const lv = cls.levels.find((l) => l.level === level);
-  const cs = (lv?.classSpecific ?? {}) as Record<string, any>;
-  const m = (a: Ability) => mod(abilities[a]);
-  const pb = profBonus(level);
-  const r24 = rules.ruleset === 'srd52';
-  const out: Counter[] = [];
-  const src = cls.name;
-  switch (cls.id) {
-    case 'barbarian':
-      out.push(C('Rage', typeof cs.rage_count === 'number' ? cs.rage_count : 99, 'long', src));
-      break;
-    case 'bard':
-      out.push(C('Bardic Inspiration', Math.max(1, m('cha')), level >= 5 ? 'short' : 'long', src));
-      break;
-    case 'cleric':
-      if (cs.channel_divinity_charges) out.push(C('Channel Divinity', cs.channel_divinity_charges, 'short', src));
-      break;
-    case 'druid':
-      if (level >= 2) out.push(C('Wild Shape', r24 ? (cs.wild_shape_uses ?? 2) : 2, 'short', src));
-      break;
-    case 'fighter':
-      out.push(C('Second Wind', r24 ? (cs.second_wind_uses ?? 2) : 1, 'short', src));
-      if (level >= 2) out.push(C('Action Surge', cs.action_surges ?? (level >= 17 ? 2 : 1), 'short', src));
-      if (level >= 9) out.push(C('Indomitable', cs.indomitable_uses ?? (level >= 17 ? 3 : level >= 13 ? 2 : 1), 'long', src));
-      break;
-    case 'monk':
-      if (level >= 2) out.push(C(r24 ? 'Focus Points' : 'Ki', cs.focus_points ?? cs.ki_points ?? level, 'short', src));
-      break;
-    case 'paladin':
-      out.push(C('Lay on Hands', 5 * level, 'long', src));
-      if (!r24) out.push(C('Divine Sense', Math.max(1, 1 + m('cha')), 'long', src));
-      if (level >= 3) out.push(C('Channel Divinity', r24 ? (cs.channel_divinity_charges ?? 2) : 1, 'short', src));
-      break;
-    case 'ranger':
-      if (r24) out.push(C("Hunter's Mark (free)", cs.favored_enemies ?? 2, 'long', src));
-      break;
-    case 'sorcerer':
-      if (level >= 2) out.push(C('Sorcery Points', cs.sorcery_points ?? level, 'long', src));
-      if (r24) out.push(C('Innate Sorcery', 2, 'long', src));
-      break;
-    case 'wizard':
-      out.push(C('Arcane Recovery', 1, 'long', src));
-      break;
-  }
+/** A class's counters at this level: its features' (server/data/<ruleset>/class-features.json) and its spell slots. */
+export function classCounters(rules: RulesData, cls: RulesClass, level: number, abilities: Abilities, subclass?: string): Counter[] {
+  const out = featureCounters(rules, cls, level, subclass, abilities);
   // Spell slots: warlock pact slots come back on a short rest.
-  const slots = lv?.spellcasting?.slots ?? [];
-  slots.forEach((n, i) => n > 0 && out.push(C(`Spell slot L${i + 1}`, n, cls.id === 'warlock' ? 'short' : 'long', `${src} spellcasting`)));
-  void pb;
+  const slots = cls.levels.find((l) => l.level === level)?.spellcasting?.slots ?? [];
+  slots.forEach((n, i) => n > 0 && out.push(C(`Spell slot L${i + 1}`, n, cls.id === 'warlock' ? 'short' : 'long', `${cls.name} spellcasting`)));
   return out;
 }
 
@@ -295,12 +253,12 @@ const SPECIES_COUNTERS: Record<string, (pb: number) => Counter[]> = {
  * The counters a sheet should have. Spent amounts carry over (a rebuild or level-up never refills them),
  * and custom counters (items, ammo, homebrew) are kept.
  */
-export function buildCounters(rules: RulesData, c: Pick<Character, 'class' | 'species' | 'level' | 'abilities' | 'counters' | 'hitDie'>): Counter[] {
+export function buildCounters(rules: RulesData, c: Pick<Character, 'class' | 'subclass' | 'species' | 'level' | 'abilities' | 'counters' | 'hitDie'>): Counter[] {
   const cls = findIn(rules.classes, c.class);
   const sp = findIn(rules.species, c.species);
   const fresh = [
     C(`Hit Dice (d${c.hitDie})`, c.level, 'long', 'Hit Dice'),
-    ...(cls ? classCounters(rules, cls, c.level, c.abilities) : []),
+    ...(cls ? classCounters(rules, cls, c.level, c.abilities, findSub(cls.subclasses, c.subclass)?.id) : []),
     ...(sp ? (SPECIES_COUNTERS[`${rules.ruleset}:${sp.id}`]?.(profBonus(c.level)) ?? []) : []),
   ];
   const old = c.counters ?? [];

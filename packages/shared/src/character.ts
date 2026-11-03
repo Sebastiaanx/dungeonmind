@@ -8,6 +8,8 @@ export interface Counter {
   current: number;
   max: number;
   recharge: Recharge;
+  /** A short rest gives back this many of a long-rest counter (2024 Rage, Wild Shape, Channel Divinity: 1). */
+  regain?: number;
   /** Where it comes from (class, species, item, custom). Custom counters survive a rebuild. */
   source?: string;
 }

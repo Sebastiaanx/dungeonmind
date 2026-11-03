@@ -488,6 +488,11 @@ export function rest(chars: GameCharacter[], kind: 'short' | 'long', ruleset: Ru
       if (back && k.current < k.max) {
         k.current = k.max;
         refilled.push(k.name);
+      } else if (kind === 'short' && k.regain && k.current < k.max) {
+        // 2024 Rage, Wild Shape, Channel Divinity: one use back on a short rest.
+        const before = k.current;
+        k.current = Math.min(k.max, k.current + k.regain);
+        refilled.push(`${k.current - before} ${k.name}`);
       }
     }
     const hd = c.counters.find((k) => k.name.startsWith('Hit Dice'));

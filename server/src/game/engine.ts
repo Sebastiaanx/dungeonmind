@@ -5,6 +5,7 @@ import { rules } from '../rules/index.js';
 import { applyDamage, applyDeltas, applyHeal, applySpend, applyXp, checkResources, damageNpc, usedUpIn, deathSave, healNpc, levelCheck, rechargeTurn, tickConditions } from './bookkeeper.js';
 import { derive } from './character.js';
 import { DiceError, roll } from './dice.js';
+import { grantConditions, resistances } from './features.js';
 import { rollInitiative, nextRound, pruneCombat } from './initiative.js';
 import { addLog, readLog } from './log.js';
 import { campaignFor, partyJson, recentTurns } from './prompt.js';
@@ -134,10 +135,11 @@ async function beforeNarrate(g: GameRow): Promise<boolean> {
   tx(() => {
     // The declared actions go into the story first, then the dice.
     for (const a of orderedActions(g, chars)) addLog(g.id, g.state.turn, 'action', a.text, chars.find((c) => c.id === a.characterId)?.name);
-    const spent = applySpend(chars, check.spend);
+    const r = rules(g.ruleset);
+    // Spending Rage makes the barbarian raging before the dice are set up.
+    const spent = [...applySpend(chars, check.spend), ...grantConditions(r, chars, check.spend)];
     for (const c of chars) saveGameCharacter(g.id, c);
     g.state.spent = check.spend;
-    const r = rules(g.ruleset);
     // Someone at 0 HP only makes death saves.
     const standing = buildRolls(r, chars, g.state.npcs, adj).filter((x) => !chars.some((c) => c.hp <= 0 && c.name === x.actor));
     g.state.rolls = [...standing, ...deathRolls(chars, 1)];
@@ -157,7 +159,8 @@ function applyState(g: GameRow, chars: GameCharacter[], state: StateJson) {
   const changes: string[] = [];
   const notes: string[] = [];
   // 1. Dice effects: the server's numbers.
-  const { pcs, foes } = rollEffects(g.state.rolls, chars, g.state.npcs);
+  const { pcs, foes, resisted } = rollEffects(g.state.rolls, chars, g.state.npcs, (c) => resistances(r, c));
+  changes.push(...resisted);
   const backed = new Map<string, number>();
   for (const [id, e] of pcs) {
     const c = chars.find((x) => x.id === id)!;

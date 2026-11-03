@@ -4,6 +4,7 @@ import { checkManual, combineAdv, DiceError, diceNeeded, parseDice, roll, rollD2
 import { derive, itemByName } from './character.js';
 import { normalizeCounterName } from './bookkeeper.js';
 import { actionNamed, monsterAttack, monsterCheck, monsterOf, monsterSave, type MonsterAction } from './monsters.js';
+import { critOn, damageRiders, featureAdv, featureHeal } from './features.js';
 import { cantripTier, knownSpell, spellCount, spellDice, spellMod } from './spells.js';
 import { clip, sameName } from './text.js';
 
@@ -33,6 +34,8 @@ export interface RawRoll {
   onHit?: string;
   onFail?: string;
   half?: boolean;
+  /** Class features the roll uses: "Sneak Attack", "Divine Smite", "Second Wind". */
+  features?: string[];
   reason?: string;
 }
 
@@ -107,12 +110,8 @@ interface Cast {
   slot: number;
 }
 
-/**
- * The PC spell behind each roll: the spell it names (a damage roll also its attack's or save's), who casts it,
- * and the slot it's cast with (from the slots the adjudicator spends for that caster, lowest that fits first).
- */
-function spellCasts(rules: RulesData, chars: GameCharacter[], npcs: Npc[], list: RawRoll[], resources: Adjudication['resources']): (Cast | undefined)[] {
-  const index = new Map(list.map((r, i) => [String(r?.id ?? `r${i + 1}`), i]));
+/** The spell slots the adjudicator spends, per character id, lowest first. */
+function spentSlots(chars: GameCharacter[], resources: Adjudication['resources']): Map<string, number[]> {
   const slots = new Map<string, number[]>();
   for (const w of Array.isArray(resources) ? resources : []) {
     const c = chars.find((x) => sameName(x.name, w?.pc));
@@ -122,6 +121,15 @@ function spellCasts(rules: RulesData, chars: GameCharacter[], npcs: Npc[], list:
     for (let k = 0; k < Math.min(9, Math.max(1, Math.round(Number(w.amount) || 1))); k++) free.push(Number(m[1]));
     slots.set(c.id, free.sort((a, b) => a - b));
   }
+  return slots;
+}
+
+/**
+ * The PC spell behind each roll: the spell it names (a damage roll also its attack's or save's), who casts it,
+ * and the slot it's cast with (taken out of `slots`, lowest that fits first; what's left is for smites).
+ */
+function spellCasts(rules: RulesData, chars: GameCharacter[], npcs: Npc[], list: RawRoll[], slots: Map<string, number[]>): (Cast | undefined)[] {
+  const index = new Map(list.map((r, i) => [String(r?.id ?? `r${i + 1}`), i]));
   const byKey = new Map<string, Cast>();
   const out: (Cast | undefined)[] = [];
   list.forEach((r, i) => {
@@ -173,7 +181,8 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
   const attackOf = new Map<string, MonsterAction>();
   const present = npcs.filter((n) => n.status !== 'dead' && n.status !== 'fled');
   list.forEach((r, i) => ids.set(String(r?.id ?? `r${i + 1}`), `r${i + 1}`));
-  const casts = spellCasts(rules, chars, npcs, list, adj.resources);
+  const slots = spentSlots(chars, adj.resources);
+  const casts = spellCasts(rules, chars, npcs, list, slots);
   // Darts that always hit (Magic Missile): how many each cast has left, and over how many damage rolls the AI spread them.
   const darts = new Map<Cast, { left: number; rolls: number }>();
   list.forEach((r, i) => {
@@ -242,8 +251,11 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
         label: `${base.actor} attacks${base.target ? ` ${base.target}` : ''} (${what})`,
         bonus,
         targetAc: ac,
-        adv: combineAdv(aiAdv, conditionAdv(pc, 'attack', undefined, rules.ruleset), targetGivesAdv(targetPc) ? 'adv' : 'none'),
+        adv: combineAdv(aiAdv, conditionAdv(pc, 'attack', undefined, rules.ruleset), targetGivesAdv(targetPc) ? 'adv' : 'none', featureAdv(rules, pc, 'attack', undefined, !!r.spell) ? 'adv' : 'none'),
       });
+      // Improved Critical: weapon attacks only.
+      const crit = pc && !r.spell ? critOn(rules, pc) : 20;
+      if (crit < 20) base.critOn = crit;
     } else if (kind === 'save') {
       // A PC's spell sets the ability and the DC: the caster's real spell save DC.
       const ab = effect?.save ?? ability ?? 'dex';
@@ -255,7 +267,7 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
         label: `${base.actor} ${ab.toUpperCase()} save`,
         bonus: pc && d ? d.saveBonus[ab] : mon ? monsterSave(mon, ab) : Number(r.bonus) || 0,
         dc,
-        adv: combineAdv(aiAdv, conditionAdv(pc, 'save', ab, rules.ruleset)),
+        adv: combineAdv(aiAdv, conditionAdv(pc, 'save', ab, rules.ruleset), featureAdv(rules, pc, 'save', ab) ? 'adv' : 'none'),
       });
     } else if (kind === 'check') {
       const ab = ability ?? (skill ? SKILLS[skill] : 'wis');
@@ -263,21 +275,31 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
         label: `${base.actor} ${skill ? skill.replace(/-/g, ' ') : ab.toUpperCase()} check`,
         bonus: pc && d ? (skill ? d.skillBonus[skill] : d.mods[ab] - exh2024) : mon ? monsterCheck(mon, ab, skill) : Number(r.bonus) || 0,
         dc: Number(r.dc) || undefined,
-        adv: combineAdv(aiAdv, conditionAdv(pc, 'check', ab, rules.ruleset)),
+        adv: combineAdv(aiAdv, conditionAdv(pc, 'check', ab, rules.ruleset), featureAdv(rules, pc, 'check', ab) ? 'adv' : 'none'),
       });
     } else {
       // damage / heal
       let dice = safeDice(r.dice, kind === 'heal' ? '1d4' : '1d6');
+      const named = Array.isArray(r.features) ? r.features.slice(0, 6).map((f) => clip(String(f), 40)) : undefined;
+      const from: string[] = [];
       if (kind === 'damage' && pc && d && !r.spell) {
         const item = (r.weapon && pc.inventory.find((it) => sameName(it.name, r.weapon))) || pc.inventory.find((it) => it.equipped && itemByName(rules, it.name)?.damage);
         const w = item ? itemByName(rules, item.name) : undefined;
+        const finesse = !!w?.properties?.some((p) => /finesse/i.test(p));
+        const ranged = /ranged/i.test(w?.category ?? '');
+        const m = !w ? d.mods.str : finesse ? Math.max(d.mods.str, d.mods.dex) : ranged ? d.mods.dex : d.mods.str;
         if (w?.damage) {
-          const finesse = w.properties?.some((p) => /finesse/i.test(p));
-          const ranged = /ranged/i.test(w.category);
-          const m = finesse ? Math.max(d.mods.str, d.mods.dex) : ranged ? d.mods.dex : d.mods.str;
           dice = `${w.damage}${m >= 0 ? '+' : ''}${m}`;
           base.damageType = w.damageType ?? base.damageType;
         }
+        // Features on the hit: Rage and Divine Strike on their own, Sneak Attack and Smite when the adjudicator names them.
+        const extra = damageRiders(rules, pc, { weapon: w?.damage ? w : undefined, str: !ranged && m === d.mods.str, named, type: r.damageType, used, slots: slots.get(pc.id) ?? [] });
+        for (const x of extra.riders) {
+          dice += `+${x.dice}`;
+          from.push(`${x.from} ${x.dice}`);
+          if (x.type) base.damageType = [...new Set([...(base.damageType?.split(', ') ?? []), x.type])].join(', ');
+        }
+        if (extra.notes.length) base.reason = clip([base.reason, ...extra.notes].filter(Boolean).join('; '), 160);
       } else if (kind === 'damage' && mon) {
         // After an attack: that attack's damage. Otherwise the action the AI names (a breath weapon), if it deals damage.
         const parent = base.onHit ?? base.onFail;
@@ -285,6 +307,13 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
         if (a?.damage) {
           dice = a.damage;
           base.damageType = a.damageType ?? base.damageType;
+        }
+      }
+      if (kind === 'heal' && pc && !r.spell) {
+        const h = featureHeal(rules, pc, named);
+        if (h) {
+          dice = h.dice;
+          from.push(h.from);
         }
       }
       if (cast && effect && (kind === 'damage' ? effect.damage?.length : effect.heal)) {
@@ -309,7 +338,7 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
         }
       }
       Object.assign(base, {
-        label: `${base.actor} ${kind === 'heal' ? 'healing' : 'damage'}${base.target ? ` → ${base.target}` : ''}${base.damageType ? ` (${base.damageType})` : ''}`,
+        label: `${base.actor} ${kind === 'heal' ? 'healing' : 'damage'}${from.length ? ` with ${from.join(', ')}` : ''}${base.target ? ` → ${base.target}` : ''}${base.damageType ? ` (${base.damageType})` : ''}`,
         dice,
         bonus: 0,
         adv: undefined,
@@ -379,7 +408,7 @@ export function resolveRoll(r: PendingRoll, all: PendingRoll[], manual?: number[
     const err = checkManual([...Array<number>(n).fill(20), ...extra.flatMap((e) => diceNeeded(parseDice(e.dice)))], manual);
     if (err) throw new DiceError(err);
   }
-  const d = rollD20(r.bonus, (r.adv ?? 'none') as Adv, manual?.slice(0, n), { rerollOnes: r.luck && !manual });
+  const d = rollD20(r.bonus, (r.adv ?? 'none') as Adv, manual?.slice(0, n), { rerollOnes: r.luck && !manual, critOn: r.critOn });
   let k = n;
   const bonusRolls = extra.map((e) => ({ e, out: roll(e.dice, { manual: manual?.slice(k, (k += diceNeeded(parseDice(e.dice)).length)) }) }));
   const total = d.total + bonusRolls.reduce((sum, b) => sum + b.out.total, 0);
@@ -429,10 +458,14 @@ export function resolveRoll(r: PendingRoll, all: PendingRoll[], manual?: number[
   return res;
 }
 
-/** HP changes the dice caused: per PC id (net) and per NPC name. */
-export function rollEffects(rolls: PendingRoll[], chars: GameCharacter[], npcs: Npc[]) {
+/**
+ * HP changes the dice caused: per PC id (net) and per NPC name. A PC who resists every type of a damage roll
+ * (`resists`: Rage) takes half, said in `resisted`.
+ */
+export function rollEffects(rolls: PendingRoll[], chars: GameCharacter[], npcs: Npc[], resists?: (c: GameCharacter) => string[]) {
   const pcs = new Map<string, { damage: number; heal: number; crit: boolean }>();
   const foes = new Map<string, { damage: number; heal: number }>();
+  const resisted: string[] = [];
   for (const r of rolls) {
     if (!r.result || r.result.skipped || (r.kind !== 'damage' && r.kind !== 'heal')) continue;
     const targetName = r.target ?? (r.kind === 'heal' ? r.actor : undefined);
@@ -440,7 +473,13 @@ export function rollEffects(rolls: PendingRoll[], chars: GameCharacter[], npcs: 
     const pc = chars.find((c) => sameName(c.name, targetName));
     if (pc) {
       const e = pcs.get(pc.id) ?? { damage: 0, heal: 0, crit: false };
-      if (r.kind === 'damage') e.damage += r.result.total;
+      const types = (r.damageType ?? '').toLowerCase().split(/,\s*/).filter(Boolean);
+      const resist = r.kind === 'damage' && types.length && resists?.(pc);
+      if (resist && types.every((t) => resist.includes(t))) {
+        const half = Math.floor(r.result.total / 2);
+        resisted.push(`${pc.name} resists ${types.join(', ')}: ${r.result.total} → ${half}`);
+        e.damage += half;
+      } else if (r.kind === 'damage') e.damage += r.result.total;
       else e.heal += r.result.total;
       e.crit ||= !!r.crit;
       pcs.set(pc.id, e);
@@ -454,7 +493,7 @@ export function rollEffects(rolls: PendingRoll[], chars: GameCharacter[], npcs: 
       foes.set(n.name, e);
     }
   }
-  return { pcs, foes };
+  return { pcs, foes, resisted };
 }
 
 export { DiceError };

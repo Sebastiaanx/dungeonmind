@@ -4,6 +4,7 @@ import { derive, itemByName } from './character.js';
 import { currentCampaign, withParty } from './campaign.js';
 import { readLog } from './log.js';
 import { npcView } from './monsters.js';
+import { featureLines } from './features.js';
 import { spellSummary } from './spells.js';
 import type { GameRow } from './store.js';
 import { clip, titleCase } from './text.js';
@@ -58,6 +59,8 @@ export function partyJson(ruleset: Ruleset, chars: GameCharacter[], state: GameS
         // With what the server will roll for them, so the AI asks for the right rolls.
         cantrips: c.cantrips?.map((id) => spellLine(r, id, c.level)),
         spells: c.spells?.map((id) => spellLine(r, id, c.level)),
+        // Class features with what the server does for them (Sneak Attack dice, Rage bonuses).
+        features: featureLines(r, c),
         weapons: c.inventory.filter((i) => i.equipped && itemByName(r, i.name)?.damage).map((i) => i.name),
         inventory: c.inventory.map((i) => (i.qty > 1 ? `${i.qty}× ${i.name}` : i.name)),
         gold: c.gold,
