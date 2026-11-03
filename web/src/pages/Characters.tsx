@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RULESET_NAMES, type Character, type CharacterBuild, type Derived, type Ruleset } from '@dungeonmind/shared';
+import { RULESET_NAMES, classLine, type Character, type CharacterBuild, type ClassLevels, type Derived, type Ruleset } from '@dungeonmind/shared';
 import { api } from '../api';
 import { Busy } from '../components/Busy';
 import { PortraitPicker } from '../components/PortraitPicker';
@@ -14,6 +14,7 @@ interface Summary {
   ruleset: Ruleset;
   class: string;
   subclass?: string;
+  multiclass?: ClassLevels[];
   species: string;
   level: number;
   portrait?: string;
@@ -119,7 +120,7 @@ export function CharacterCard({ c, onClick, selected }: { c: Summary; onClick?: 
       <span className="min-w-0">
         <span className="block truncate font-medium">{c.name}</span>
         <span className="block text-xs text-slate-400">
-          {titleCase(c.species)} {titleCase(c.class)} {c.level}
+          {titleCase(c.species)} {classLine(c, titleCase)}
         </span>
         <span className="block text-[10px] text-slate-500">{RULESET_NAMES[c.ruleset]}</span>
       </span>

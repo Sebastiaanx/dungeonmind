@@ -1,4 +1,4 @@
-import type { GameCharacter, GameState, Ruleset, RulesData } from '@dungeonmind/shared';
+import { classLevels, type GameCharacter, type GameState, type Ruleset, type RulesData } from '@dungeonmind/shared';
 import { findIn, rules } from '../rules/index.js';
 import { derive, itemByName } from './character.js';
 import { currentCampaign, withParty } from './campaign.js';
@@ -43,7 +43,8 @@ export function partyJson(ruleset: Ruleset, chars: GameCharacter[], state: GameS
         name: c.name,
         player: players[c.userId],
         species: titleCase(c.subspecies ?? c.species),
-        class: `${titleCase(c.class)}${c.subclass ? ` (${titleCase(c.subclass)})` : ''}`,
+        // "Fighter 5 (Champion) / Wizard 2": every class at its own level.
+        class: classLevels(c).map((x) => `${titleCase(x.class)}${classLevels(c).length > 1 ? ` ${x.level}` : ''}${x.subclass ? ` (${titleCase(x.subclass)})` : ''}`).join(' / '),
         level: c.level,
         hp: c.hp,
         maxHp: c.maxHp,

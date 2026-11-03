@@ -1,5 +1,5 @@
 import type { GameCharacter, GameSettings, Npc } from '@dungeonmind/shared';
-import { RULESET_NAMES } from '@dungeonmind/shared';
+import { RULESET_NAMES, classLine } from '@dungeonmind/shared';
 import { db } from '../db.js';
 import { titleCase } from './text.js';
 
@@ -44,7 +44,7 @@ export function renderCampaign(title: string, sections: Record<string, string>):
 export function partyTable(chars: GameCharacter[], npcs: Npc[] = []): string {
   const rows = chars.map(
     (c) =>
-      `| ${c.name} | ${titleCase(c.species)} ${titleCase(c.class)} ${c.level} | ${c.hp}/${c.maxHp}${c.tempHp ? ` +${c.tempHp}` : ''} | ${c.counters
+      `| ${c.name} | ${titleCase(c.species)} ${classLine(c, titleCase)} | ${c.hp}/${c.maxHp}${c.tempHp ? ` +${c.tempHp}` : ''} | ${c.counters
         .filter((k) => !k.name.startsWith('Hit Dice'))
         .map((k) => `${k.name} ${k.current}/${k.max}`)
         .join(', ') || '-'} | ${[...c.conditions.map((x) => x.name), ...(c.concentration ? [`concentrating: ${c.concentration}`] : [])].join(', ') || '-'} | ${c.xp} | ${c.absent ? 'away' : c.seated ? 'playing' : 'resting'} |`,

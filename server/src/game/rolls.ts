@@ -5,7 +5,7 @@ import { derive, itemByName } from './character.js';
 import { normalizeCounterName } from './bookkeeper.js';
 import { actionNamed, monsterAttack, monsterCheck, monsterOf, monsterSave, type MonsterAction } from './monsters.js';
 import { critOn, damageRiders, featureAdv, featureHeal } from './features.js';
-import { cantripTier, knownSpell, spellCount, spellDice, spellMod } from './spells.js';
+import { cantripTier, knownSpell, spellCount, spellDice, spellMod, spellSaveDc } from './spells.js';
 import { clip, sameName } from './text.js';
 
 /** What dnd-adjudicate returns. */
@@ -115,7 +115,7 @@ function spentSlots(chars: GameCharacter[], resources: Adjudication['resources']
   const slots = new Map<string, number[]>();
   for (const w of Array.isArray(resources) ? resources : []) {
     const c = chars.find((x) => sameName(x.name, w?.pc));
-    const m = c && /^Spell slot L(\d)$/.exec(normalizeCounterName(String(w?.name ?? '')));
+    const m = c && /^(?:Spell|Pact) slot L(\d)$/.exec(normalizeCounterName(String(w?.name ?? '')));
     if (!c || !m) continue;
     const free = slots.get(c.id) ?? [];
     for (let k = 0; k < Math.min(9, Math.max(1, Math.round(Number(w.amount) || 1))); k++) free.push(Number(m[1]));
@@ -228,7 +228,7 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
       let bonus = Number(r.bonus) || 0;
       let what = r.weapon || r.spell || 'attack';
       if (pc && d) {
-        if (r.spell) bonus = d.spellAttack ?? d.profBonus + Math.max(d.mods.int, d.mods.wis, d.mods.cha);
+        if (r.spell) bonus = d.profBonus + spellMod(rules, pc, findIn(rules.spells, r.spell));
         else {
           const item = (r.weapon && pc.inventory.find((it) => sameName(it.name, r.weapon))) || pc.inventory.find((it) => it.equipped && itemByName(rules, it.name)?.damage);
           const w = item ? itemByName(rules, item.name) : undefined;
@@ -260,9 +260,9 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
       // A PC's spell sets the ability and the DC: the caster's real spell save DC.
       const ab = effect?.save ?? ability ?? 'dex';
       const caster = cast && cast.caster !== pc ? cast.caster : undefined;
-      // A monster's breath, bite or gaze: its stat block sets the DC.
+      // A monster's breath, bite or gaze: its stat block sets the DC. A PC's spell: its own class's DC.
       const source = caster ? undefined : statBlockDc(rules, present, r.spell || r.weapon, actorName);
-      const dc = caster ? (derive(rules, caster).spellDc ?? Number(r.dc)) : (source ?? (Number(r.dc) || 10));
+      const dc = caster ? (spellSaveDc(rules, caster, cast?.spell) ?? Number(r.dc)) : (source ?? (Number(r.dc) || 10));
       Object.assign(base, {
         label: `${base.actor} ${ab.toUpperCase()} save`,
         bonus: pc && d ? d.saveBonus[ab] : mon ? monsterSave(mon, ab) : Number(r.bonus) || 0,
@@ -318,7 +318,7 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
       }
       if (cast && effect && (kind === 'damage' ? effect.damage?.length : effect.heal)) {
         const s = cast.spell;
-        const o = { mod: spellMod(rules, cast.caster), above: s.level ? Math.floor(Math.max(0, cast.slot - s.level) / (effect.upcastEvery ?? 1)) : 0 };
+        const o = { mod: spellMod(rules, cast.caster, s), above: s.level ? Math.floor(Math.max(0, cast.slot - s.level) / (effect.upcastEvery ?? 1)) : 0 };
         if (kind === 'heal') dice = spellDice(effect.heal!, { ...o, upcast: effect.upcast });
         else {
           const tier = s.level === 0 && effect.scales === 'dice' ? cantripTier(cast.caster.level) : 1;

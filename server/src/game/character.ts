@@ -16,15 +16,14 @@ import {
   type RulesData,
   type RulesItem,
 } from '@dungeonmind/shared';
-import { findIn, slug } from '../rules/index.js';
+import { findIn } from '../rules/index.js';
+import { classesOf, findSub, MULTICLASS_SKILLS, multiclassBlock, spellSlots, subclassLevel, topSlot, type ClassEntry } from './classes.js';
 import { featureCounters } from './features.js';
+
+export { findSub, subclassLevel } from './classes.js';
 
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 const POINT_COST: Record<number, number> = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
-
-/** 2014 subclass levels; 2024: every class picks at 3. */
-const SUBCLASS_LEVEL_2014: Record<string, number> = { cleric: 1, sorcerer: 1, warlock: 1, druid: 2, wizard: 2 };
-export const subclassLevel = (ruleset: string, cls: string) => (ruleset === 'srd51' ? (SUBCLASS_LEVEL_2014[cls] ?? 3) : 3);
 
 /** Extra free skill picks some species give. */
 const SPECIES_SKILLS: Record<string, { any?: number; fixed?: string[] }> = {
@@ -34,13 +33,6 @@ const SPECIES_SKILLS: Record<string, { any?: number; fixed?: string[] }> = {
   'srd52:human': { any: 1 },
   'srd52:elf': { any: 1 },
 };
-
-/** Subclass/subspecies by id or name; "life" finds "life-domain", "Hill" finds "hill-dwarf". */
-export function findSub<T extends { id: string; name: string }>(list: T[], x: string | undefined): T | undefined {
-  if (!x) return;
-  const k = slug(x);
-  return list.find((s) => s.id === x || s.id === k || slug(s.name) === k) ?? list.find((s) => s.id.startsWith(`${k}-`) || s.id.endsWith(`-${k}`) || slug(s.name).split('-').includes(k));
-}
 
 const totals = (...parts: (Partial<Abilities> | undefined)[]): Abilities => {
   const out = Object.fromEntries(ABILITIES.map((a) => [a, 0])) as Abilities;
@@ -56,20 +48,30 @@ export function asiCount(cls: RulesClass, level: number): number {
   return upTo.filter((l) => l.features.some((f) => /ability score improvement/i.test(f))).length;
 }
 
-/** Spells a character may know/prepare at a level (cantrips, leveled spells). */
-export function spellLimits(rules: RulesData, b: Pick<CharacterBuild, 'class' | 'level' | 'ruleset'>, abilities: Abilities) {
-  const cls = findIn(rules.classes, b.class);
-  const lv = cls?.levels.find((l) => l.level === b.level)?.spellcasting;
-  if (!cls || !lv) return { cantrips: 0, spells: 0, maxLevel: 0 };
-  const maxLevel = lv.slots.reduce((m, n, i) => (n > 0 ? i + 1 : m), 0);
+/** Spells one class may know/prepare at its own level (cantrips, leveled spells, its highest spell level). */
+export function classSpellLimits(e: ClassEntry, abilities: Abilities) {
+  const { cls, level } = e;
+  const lv = cls.levels.find((l) => l.level === level)?.spellcasting;
+  if (!lv) return { cantrips: 0, spells: 0, maxLevel: 0 };
   let spells = lv.known ?? lv.prepared;
   if (spells === undefined) {
     // 2014 prepared casters: ability modifier + level (paladin: half level); wizards also keep a spellbook.
     const m = cls.spellAbility ? mod(abilities[cls.spellAbility]) : 0;
-    spells = Math.max(1, m + (cls.id === 'paladin' ? Math.floor(b.level / 2) : b.level));
-    if (cls.id === 'wizard') spells = Math.max(spells, 6 + 2 * (b.level - 1));
+    spells = Math.max(1, m + (cls.id === 'paladin' ? Math.floor(level / 2) : level));
+    if (cls.id === 'wizard') spells = Math.max(spells, 6 + 2 * (level - 1));
   }
-  return { cantrips: lv.cantrips ?? 0, spells, maxLevel };
+  return { cantrips: lv.cantrips ?? 0, spells, maxLevel: topSlot(lv.slots) };
+}
+
+/** Spells a character may know/prepare: every class's own allowance added up (`per`: each class's). */
+export function spellLimits(rules: RulesData, b: Pick<CharacterBuild, 'class' | 'subclass' | 'level' | 'hpRolls' | 'multiclass'>, abilities: Abilities) {
+  const per = classesOf(rules, b).map((e) => ({ cls: e.cls, ...classSpellLimits(e, abilities) }));
+  return {
+    cantrips: per.reduce((n, x) => n + x.cantrips, 0),
+    spells: per.reduce((n, x) => n + x.spells, 0),
+    maxLevel: Math.max(0, ...per.map((x) => x.maxLevel)),
+    per,
+  };
 }
 
 export function finalAbilities(rules: RulesData, b: CharacterBuild): Abilities {
@@ -94,7 +96,26 @@ export function validateBuild(rules: RulesData, b: CharacterBuild, opts: { minLe
   if (sp && sp.subspecies.length && rules.ruleset === 'srd51' && !b.subspecies) errors.push(`Pick a subrace for ${sp.name}.`);
   if (sp && b.subspecies && !findSub(sp.subspecies, b.subspecies)) errors.push(`${b.subspecies} is not a ${sp.name} option.`);
   if (cls && b.subclass && !findSub(cls.subclasses, b.subclass)) errors.push(`${b.subclass} is not a ${cls.name} subclass in this ruleset.`);
-  if (cls && !b.subclass && b.level >= subclassLevel(rules.ruleset, cls.id) && cls.subclasses.length) errors.push(`A level ${b.level} ${cls.name} needs a subclass.`);
+  const classes = cls ? classesOf(rules, b) : [];
+  const firstLevel = classes[0]?.level ?? b.level;
+  if (cls && !b.subclass && firstLevel >= subclassLevel(rules.ruleset, cls.id) && cls.subclasses.length) errors.push(`A level ${firstLevel} ${cls.name} needs a subclass.`);
+
+  // Multiclassing: more classes, each with its own levels; the first class keeps what they leave.
+  const seen = new Set([cls?.id]);
+  for (const m of b.multiclass ?? []) {
+    const mc = findIn(rules.classes, m?.class);
+    if (!mc) {
+      errors.push(m?.class ? `Unknown class "${m.class}".` : 'Pick a class for each multiclass.');
+      continue;
+    }
+    if (seen.has(mc.id)) errors.push(`${mc.name} is listed twice: give it more levels instead.`);
+    seen.add(mc.id);
+    if (!Number.isInteger(m.level) || m.level < 1) errors.push(`Give ${mc.name} at least one level.`);
+    if (m.subclass && !findSub(mc.subclasses, m.subclass)) errors.push(`${m.subclass} is not a ${mc.name} subclass in this ruleset.`);
+    if (!m.subclass && m.level >= subclassLevel(rules.ruleset, mc.id) && mc.subclasses.length) errors.push(`A level ${m.level} ${mc.name} needs a subclass.`);
+    if ((m.hpRolls ?? []).some((v) => !Number.isInteger(v) || v < 1 || v > mc.hitDie)) errors.push(`${mc.name} hit points are rolled on a d${mc.hitDie}.`);
+  }
+  if (cls && firstLevel < 1) errors.push(`${cls.name} needs at least one level: the other classes have ${b.level - firstLevel} of the ${b.level}.`);
 
   // Ability scores.
   const base = ABILITIES.map((a) => b.baseAbilities?.[a]);
@@ -127,18 +148,25 @@ export function validateBuild(rules: RulesData, b: CharacterBuild, opts: { minLe
 
   // ASIs.
   if (cls) {
-    const allowed = asiCount(cls, b.level) * 2;
+    // Improvements come with class levels, so every class counts its own.
+    const allowed = classes.reduce((n, e) => n + asiCount(e.cls, e.level), 0) * 2;
     const used = Object.values(b.asi ?? {}).reduce((s, v) => s + (v ?? 0), 0);
     if (Object.values(b.asi ?? {}).some((v) => (v ?? 0) < 0)) errors.push('Ability Score Improvements only raise scores.');
     if (used > allowed) errors.push(`A level ${b.level} ${cls.name} has ${allowed} ability points from improvements, not ${used}.`);
   }
   const fin = finalAbilities(rules, b);
   if (ABILITIES.some((a) => fin[a] > 20)) errors.push('No ability can go above 20.');
+  // Every class of a multiclass character needs its prerequisite scores, the first one too.
+  if (b.multiclass?.length) for (const e of classes) {
+    const why = multiclassBlock(e.cls, fin);
+    if (why) errors.push(why);
+  }
 
   // Skills.
   if (cls && bg) {
     const fixed = new Set([...bg.skills, ...(SPECIES_SKILLS[`${rules.ruleset}:${sp?.id}`]?.fixed ?? [])]);
-    const extraAny = SPECIES_SKILLS[`${rules.ruleset}:${sp?.id}`]?.any ?? 0;
+    const fromClasses = (b.multiclass ?? []).reduce((n, m) => n + (MULTICLASS_SKILLS[findIn(rules.classes, m?.class)?.id ?? ''] ?? 0), 0);
+    const extraAny = (SPECIES_SKILLS[`${rules.ruleset}:${sp?.id}`]?.any ?? 0) + fromClasses;
     const picked = (b.skills ?? []).filter((s) => !fixed.has(s));
     const unknown = picked.filter((s) => !(s in SKILLS));
     if (unknown.length) errors.push(`Unknown skill: ${unknown.join(', ')}.`);
@@ -146,23 +174,27 @@ export function validateBuild(rules: RulesData, b: CharacterBuild, opts: { minLe
     const fromClass = picked.filter((s) => cls.skillChoices.from.includes(s));
     const outside = picked.length - Math.min(fromClass.length, cls.skillChoices.choose);
     if (picked.length > cls.skillChoices.choose + extraAny || outside > extraAny)
-      errors.push(`${cls.name}: choose ${cls.skillChoices.choose} skills from ${cls.skillChoices.from.join(', ')}${extraAny ? ` (+${extraAny} any from your species)` : ''}.`);
+      errors.push(`${cls.name}: choose ${cls.skillChoices.choose} skills from ${cls.skillChoices.from.join(', ')}${extraAny ? ` (+${extraAny} any from your ${fromClasses ? 'species and other classes' : 'species'})` : ''}.`);
     if (picked.length < cls.skillChoices.choose) errors.push(`Choose ${cls.skillChoices.choose - picked.length} more skill${cls.skillChoices.choose - picked.length > 1 ? 's' : ''}.`);
   }
 
   // Spells.
   if (cls) {
+    // A multiclass character picks from every class's list, up to each class's own spell level.
     const lim = spellLimits(rules, b, fin);
+    const who = classes.map((e) => e.cls.name).join(' / ') || cls.name;
     const cantrips = b.cantrips ?? [];
     const spells = b.spells ?? [];
-    if (cantrips.length > lim.cantrips) errors.push(`A level ${b.level} ${cls.name} knows ${lim.cantrips} cantrips, not ${cantrips.length}.`);
-    if (spells.length > lim.spells) errors.push(`A level ${b.level} ${cls.name} has ${lim.spells} spells, not ${spells.length}.`);
+    if (cantrips.length > lim.cantrips) errors.push(`A level ${b.level} ${who} knows ${lim.cantrips} cantrips, not ${cantrips.length}.`);
+    if (spells.length > lim.spells) errors.push(`A level ${b.level} ${who} has ${lim.spells} spells, not ${spells.length}.`);
     for (const id of [...cantrips, ...spells]) {
       const s = findIn(rules.spells, id);
+      const from = s ? lim.per.filter((x) => s.classes.includes(x.cls.id)) : [];
+      const top = Math.max(0, ...from.map((x) => x.maxLevel));
       if (!s) errors.push(`Unknown spell "${id}".`);
-      else if (!s.classes.includes(cls.id)) errors.push(`${s.name} is not on the ${cls.name} spell list.`);
+      else if (!from.length) errors.push(`${s.name} is not on the ${classes.map((e) => e.cls.name).join(' or ') || cls.name} spell list.`);
       else if (cantrips.includes(id) && s.level !== 0) errors.push(`${s.name} is not a cantrip.`);
-      else if (spells.includes(id) && (s.level === 0 || s.level > lim.maxLevel)) errors.push(`${s.name} (level ${s.level}) is above your highest slot (${lim.maxLevel}).`);
+      else if (spells.includes(id) && (s.level === 0 || s.level > top)) errors.push(`${s.name} (level ${s.level}) is above your highest slot (${top}).`);
     }
   }
   if ((b.equipment ?? []).length > 80) errors.push('Too many items.');
@@ -178,7 +210,8 @@ export function itemByName(rules: RulesData, name: string): RulesItem | undefine
 export function derive(rules: RulesData, c: Character): Derived {
   const pb = profBonus(c.level);
   const mods = Object.fromEntries(ABILITIES.map((a) => [a, mod(c.abilities[a])])) as Abilities;
-  const cls = findIn(rules.classes, c.class);
+  const classes = classesOf(rules, c);
+  const has = (id: string) => classes.some((e) => e.cls.id === id);
   const exhaustionPenalty = rules.ruleset === 'srd52' ? 2 * c.exhaustion : 0;
 
   // Armor Class from equipped armor and shield; unarmored defense for barbarians and monks.
@@ -192,16 +225,17 @@ export function derive(rules: RulesData, c: Character): Derived {
   }
   let ac: number;
   if (armor?.armor) ac = armor.armor.base + (armor.armor.dexBonus ? (armor.armor.maxBonus !== undefined ? Math.min(mods.dex, armor.armor.maxBonus) : mods.dex) : 0);
-  else if (cls?.id === 'barbarian') ac = 10 + mods.dex + mods.con;
-  else if (cls?.id === 'monk' && !shield) ac = 10 + mods.dex + mods.wis;
+  else if (has('barbarian')) ac = 10 + mods.dex + mods.con;
+  else if (has('monk') && !shield) ac = 10 + mods.dex + mods.wis;
   else ac = 10 + mods.dex;
   if (shield) ac += 2;
 
   const saveBonus = Object.fromEntries(ABILITIES.map((a) => [a, mods[a] + (c.saves.includes(a) ? pb : 0) - exhaustionPenalty])) as Abilities;
   const skillBonus = Object.fromEntries(Object.entries(SKILLS).map(([s, a]) => [s, mods[a] + (c.skills.includes(s) ? pb : 0) - exhaustionPenalty]));
-  const spellAbility = cls?.spellAbility && cls.levels.find((l) => l.level === c.level)?.spellcasting ? cls.spellAbility : undefined;
+  // The first class that casts at its level gives the save DC and attack (spells.ts picks per spell).
+  const spellAbility = classes.find((e) => e.cls.spellAbility && e.cls.levels.find((l) => l.level === e.level)?.spellcasting)?.cls.spellAbility;
   const sp = findIn(rules.species, c.species);
-  const lim = spellLimits(rules, c, c.abilities);
+  const { slots, pact } = spellSlots(rules, classes);
   return {
     profBonus: pb,
     mods,
@@ -214,7 +248,7 @@ export function derive(rules: RulesData, c: Character): Derived {
     spellAbility,
     spellDc: spellAbility ? 8 + pb + mods[spellAbility] : undefined,
     spellAttack: spellAbility ? pb + mods[spellAbility] : undefined,
-    maxSpellLevel: lim.maxLevel,
+    maxSpellLevel: Math.max(topSlot(slots), topSlot(pact)),
     nextLevelXp: c.level < 20 ? XP_TABLE[c.level + 1] : undefined,
   };
 }
@@ -228,15 +262,34 @@ export function maxHp(hitDie: number, level: number, conMod: number, hpRolls: nu
   return Math.max(1, hp);
 }
 
+/** Every class's levels on its own die: only the very first level is the full die; the others are rolled or fixed. */
+export function maxHpOf(classes: ClassEntry[], conMod: number): number {
+  const [first, ...more] = classes;
+  let hp = first.level >= 1 ? maxHp(first.cls.hitDie, first.level, conMod, first.hpRolls) : 0;
+  for (const e of more) for (let l = 1; l <= e.level; l++) hp += Math.max(1, (e.hpRolls?.[l - 1] ?? fixedHpPerLevel(e.cls.hitDie)) + conMod);
+  return Math.max(1, hp);
+}
+
 // ---- Counters (resource model) ----
 const C = (name: string, max: number, recharge: Recharge, source: string): Counter => ({ name, current: max, max, recharge, source });
 
-/** A class's counters at this level: its features' (server/data/<ruleset>/class-features.json) and its spell slots. */
-export function classCounters(rules: RulesData, cls: RulesClass, level: number, abilities: Abilities, subclass?: string): Counter[] {
-  const out = featureCounters(rules, cls, level, subclass, abilities);
-  // Spell slots: warlock pact slots come back on a short rest.
-  const slots = cls.levels.find((l) => l.level === level)?.spellcasting?.slots ?? [];
-  slots.forEach((n, i) => n > 0 && out.push(C(`Spell slot L${i + 1}`, n, cls.id === 'warlock' ? 'short' : 'long', `${cls.name} spellcasting`)));
+/**
+ * Counters from every class's features (the same counter from two classes keeps the larger one) and the spell slots.
+ * Pact Magic slots come back on a short rest, and are called "Pact slot" next to other spell slots.
+ */
+export function classCounters(rules: RulesData, classes: ClassEntry[], abilities: Abilities, charLevel: number): Counter[] {
+  const out: Counter[] = [];
+  for (const e of classes)
+    for (const k of featureCounters(rules, e.cls, e.level, e.subclass, abilities, charLevel)) {
+      const prev = out.find((x) => x.name === k.name);
+      if (!prev) out.push(k);
+      else if (k.max > prev.max) Object.assign(prev, k);
+    }
+  const { slots, pact } = spellSlots(rules, classes);
+  const casters = classes.filter((e) => e.cls.id !== 'warlock' && e.cls.spellAbility).map((e) => e.cls.name).join(' / ');
+  slots.forEach((n, i) => n > 0 && out.push(C(`Spell slot L${i + 1}`, n, 'long', `${casters} spellcasting`)));
+  const both = topSlot(slots) > 0;
+  pact.forEach((n, i) => n > 0 && out.push(C(`${both ? 'Pact' : 'Spell'} slot L${i + 1}`, n, 'short', 'Warlock spellcasting')));
   return out;
 }
 
@@ -253,12 +306,16 @@ const SPECIES_COUNTERS: Record<string, (pb: number) => Counter[]> = {
  * The counters a sheet should have. Spent amounts carry over (a rebuild or level-up never refills them),
  * and custom counters (items, ammo, homebrew) are kept.
  */
-export function buildCounters(rules: RulesData, c: Pick<Character, 'class' | 'subclass' | 'species' | 'level' | 'abilities' | 'counters' | 'hitDie'>): Counter[] {
-  const cls = findIn(rules.classes, c.class);
+export function buildCounters(rules: RulesData, c: Pick<Character, 'class' | 'subclass' | 'multiclass' | 'hpRolls' | 'species' | 'level' | 'abilities' | 'counters' | 'hitDie'>): Counter[] {
+  const classes = classesOf(rules, c);
   const sp = findIn(rules.species, c.species);
+  // Hit dice: one counter per die size, the biggest first.
+  const dice = new Map<number, number>();
+  for (const e of classes) dice.set(e.cls.hitDie, (dice.get(e.cls.hitDie) ?? 0) + e.level);
+  if (!dice.size) dice.set(c.hitDie, c.level);
   const fresh = [
-    C(`Hit Dice (d${c.hitDie})`, c.level, 'long', 'Hit Dice'),
-    ...(cls ? classCounters(rules, cls, c.level, c.abilities, findSub(cls.subclasses, c.subclass)?.id) : []),
+    ...[...dice].sort((x, y) => y[0] - x[0]).map(([d, n]) => C(`Hit Dice (d${d})`, n, 'long', 'Hit Dice')),
+    ...classCounters(rules, classes, c.abilities, c.level),
     ...(sp ? (SPECIES_COUNTERS[`${rules.ruleset}:${sp.id}`]?.(profBonus(c.level)) ?? []) : []),
   ];
   const old = c.counters ?? [];
@@ -307,7 +364,13 @@ export function buildCharacter(rules: RulesData, b: CharacterBuild, base: { id: 
   const cls = findIn(rules.classes, b.class)!;
   const abilities = finalAbilities(rules, b);
   const prev = base.prev;
-  const hp = maxHp(cls.hitDie, b.level, mod(abilities.con), b.hpRolls);
+  const multiclass = b.multiclass?.length
+    ? b.multiclass.map((m) => {
+        const mc = findIn(rules.classes, m.class)!;
+        return { class: mc.id, level: m.level, ...(findSub(mc.subclasses, m.subclass) ? { subclass: findSub(mc.subclasses, m.subclass)!.id } : {}), ...(m.hpRolls?.length ? { hpRolls: m.hpRolls } : {}) };
+      })
+    : undefined;
+  const hp = maxHpOf(classesOf(rules, { ...b, multiclass }), mod(abilities.con));
   const goldLines = (b.equipment ?? []).filter((l) => GOLD.test(l.trim()));
   const gold = goldLines.reduce((s, l) => s + Number(GOLD.exec(l.trim())![1]), 0);
   const inventory = prev?.inventory ?? autoEquip(rules, parseItems((b.equipment ?? []).filter((l) => !GOLD.test(l.trim()))));
@@ -316,6 +379,7 @@ export function buildCharacter(rules: RulesData, b: CharacterBuild, base: { id: 
     ...b,
     class: cls.id,
     subclass: findSub(cls.subclasses, b.subclass)?.id,
+    multiclass,
     species: findIn(rules.species, b.species)!.id,
     subspecies: findSub(findIn(rules.species, b.species)!.subspecies, b.subspecies)?.id,
     background: findIn(rules.backgrounds, b.background)!.id,
@@ -346,6 +410,6 @@ export function buildCharacter(rules: RulesData, b: CharacterBuild, base: { id: 
 
 /** The choices part of a sheet (to edit it in the builder again). */
 export function buildOf(c: Character): CharacterBuild {
-  const { ruleset, name, species, subspecies, class: cls, subclass, background, level, abilityMethod, baseAbilities, rollId, bonusChoices, asi, skills, cantrips, spells, equipment, alignment, appearance, personality, backstory, hpRolls } = c;
-  return { ruleset, name, species, subspecies, class: cls, subclass, background, level, abilityMethod, baseAbilities, rollId, bonusChoices, asi, skills, cantrips, spells, equipment, alignment, appearance, personality, backstory, hpRolls };
+  const { ruleset, name, species, subspecies, class: cls, subclass, background, level, abilityMethod, baseAbilities, rollId, bonusChoices, asi, skills, cantrips, spells, equipment, alignment, appearance, personality, backstory, hpRolls, multiclass } = c;
+  return { ruleset, name, species, subspecies, class: cls, subclass, background, level, abilityMethod, baseAbilities, rollId, bonusChoices, asi, skills, cantrips, spells, equipment, alignment, appearance, personality, backstory, hpRolls, multiclass };
 }

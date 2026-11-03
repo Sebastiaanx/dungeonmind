@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { classLine } from '@dungeonmind/shared';
 import { requireUser } from '../auth/index.js';
 import { db } from '../db.js';
 import { addLog, readLog } from '../game/log.js';
@@ -86,7 +87,7 @@ export function portraitRoutes(app: FastifyInstance) {
     const c = loadCharacter((req.params as { id: string }).id);
     if (!c || c.ownerId !== req.user!.id) return reply.code(404).send({ error: 'Not found' });
     const style = STYLES.includes(String((req.body as { style?: string })?.style)) ? (req.body as { style: string }).style : STYLES[0];
-    const who = `${c.name}, a ${titleCase(c.subspecies ?? c.species)} ${titleCase(c.class)}${c.appearance ? `. ${c.appearance}` : ''}`;
+    const who = `${c.name}, a ${titleCase(c.subspecies ?? c.species)} ${classLine(c, titleCase, false)}${c.appearance ? `. ${c.appearance}` : ''}`;
     return background(req, reply, async () => ({ options: await generateImages('dnd-portrait', 'portraits', who, { style }, 'option'), styles: STYLES }));
   });
 

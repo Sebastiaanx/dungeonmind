@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RULESET_NAMES, type GameDetail, type Pitch, type SetupField } from '@dungeonmind/shared';
+import { RULESET_NAMES, classLine, type GameDetail, type Pitch, type SetupField } from '@dungeonmind/shared';
 import { api } from '../api';
 import { Busy } from '../components/Busy';
 import { useMe } from '../me';
@@ -186,7 +186,7 @@ function Table({ g, reload }: { g: GameDetail; reload: () => void }) {
           <li key={c.id} className="flex items-center gap-2">
             <span className="font-medium">{c.name}</span>
             <span className="text-xs text-slate-400">
-              {titleCase(c.species)} {titleCase(c.class)} {c.level} · {g.members.find((m) => m.userId === c.userId)?.username}
+              {titleCase(c.species)} {classLine(c, titleCase)} · {g.members.find((m) => m.userId === c.userId)?.username}
             </span>
             {(host || c.userId === me.id) && g.status === 'setup' && (
               <button className="ml-auto text-xs text-red-300 hover:underline" onClick={() => api(`/api/games/${g.id}/characters/${c.id}`, { method: 'DELETE' }).then(reload)}>

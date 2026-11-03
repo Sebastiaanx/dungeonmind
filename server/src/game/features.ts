@@ -1,5 +1,6 @@
 import { ABILITIES, mod, profBonus, type Abilities, type Ability, type Counter, type FeatureEffect, type GameCharacter, type LevelValue, type RulesClass, type RulesData, type RulesEntry, type RulesItem } from '@dungeonmind/shared';
-import { findIn, slug } from '../rules/index.js';
+import { slug } from '../rules/index.js';
+import { classesOf } from './classes.js';
 import { parseDice } from './dice.js';
 
 /** What a feature's numbers are worked out with: class level, proficiency bonus, ability modifiers, the class table's numbers. */
@@ -94,11 +95,12 @@ export interface ActiveFeature {
 }
 
 /** Every feature with numbers a character has, with what its numbers are worked out from. */
-export function characterFeatures(rules: RulesData, c: Pick<GameCharacter, 'class' | 'subclass' | 'level' | 'abilities'>): ActiveFeature[] {
-  const cls = findIn(rules.classes, c.class);
-  if (!cls) return [];
-  const vars = featureVars(cls, c.level, c.abilities);
-  return classFeatures(rules, cls.id, c.level, c.subclass).map((feature) => ({ feature, effect: feature.effect!, vars }));
+export function characterFeatures(rules: RulesData, c: Pick<GameCharacter, 'class' | 'subclass' | 'level' | 'multiclass' | 'abilities'>): ActiveFeature[] {
+  // Each class at its own level: a Fighter 5 / Rogue 3 has Sneak Attack 2d6.
+  return classesOf(rules, c).flatMap((e) => {
+    const vars = featureVars(e.cls, e.level, c.abilities, c.level);
+    return classFeatures(rules, e.cls.id, e.level, e.subclass).map((feature) => ({ feature, effect: feature.effect!, vars }));
+  });
 }
 
 /** The features whose triggers work right now (Rage's only while raging). */
@@ -109,8 +111,8 @@ export function activeFeatures(rules: RulesData, c: GameCharacter): ActiveFeatur
 // ---- Counters ----
 
 /** The counters a class gives at this class level; later features change earlier ones with the same name. Unlimited (the table's 9999) shows as 99. */
-export function featureCounters(rules: RulesData, cls: RulesClass, classLevel: number, subclass: string | undefined, abilities: Abilities): Counter[] {
-  const vars = featureVars(cls, classLevel, abilities);
+export function featureCounters(rules: RulesData, cls: RulesClass, classLevel: number, subclass: string | undefined, abilities: Abilities, charLevel = classLevel): Counter[] {
+  const vars = featureVars(cls, classLevel, abilities, charLevel);
   const out: Counter[] = [];
   for (const f of classFeatures(rules, cls.id, classLevel, subclass)) {
     const k = f.effect!.counter;

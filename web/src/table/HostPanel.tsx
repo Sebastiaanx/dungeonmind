@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import type { GameCharacter, GameDetail } from '@dungeonmind/shared';
+import { classLevels, type GameCharacter, type GameDetail } from '@dungeonmind/shared';
 import { api } from '../api';
 import { Modal } from '../components/Modal';
 import { useMe } from '../me';
+import { titleCase, useBuilderData } from '../rules';
 
 export function Approvals({ g }: { g: GameDetail }) {
   if (!g.state.approvals.length) return null;
@@ -144,9 +145,16 @@ export function SheetActions({ g, c }: { g: GameDetail; c: GameCharacter }) {
 }
 
 function LevelUp({ g, c, onClose }: { g: GameDetail; c: GameCharacter; onClose: () => void }) {
+  const data = useBuilderData(g.ruleset);
+  const mine = classLevels(c);
+  // Which class gets the level: one the character has, or a new one (multiclassing).
+  const [klass, setKlass] = useState(c.class);
+  const has = mine.find((x) => x.class === klass);
+  const hitDie = data?.classes.find((x) => x.id === klass)?.hitDie ?? c.hitDie;
   const [hp, setHp] = useState<'fixed' | 'roll' | 'manual'>('fixed');
   const [die, setDie] = useState('');
   const [subclass, setSubclass] = useState(c.subclass ?? '');
+  const [skill, setSkill] = useState('');
   const [spells, setSpells] = useState((c.spells ?? []).join(', '));
   const [cantrips, setCantrips] = useState((c.cantrips ?? []).join(', '));
   const [asi, setAsi] = useState('');
@@ -155,24 +163,54 @@ function LevelUp({ g, c, onClose }: { g: GameDetail; c: GameCharacter; onClose: 
   return (
     <Modal title={`${c.name}: level ${c.level + 1}`} onClose={onClose}>
       <div className="space-y-3 text-sm">
+        <label className="block">
+          <span className="label">Class that gets this level</span>
+          <select
+            className="input"
+            value={klass}
+            onChange={(e) => {
+              setKlass(e.target.value);
+              setSubclass(mine.find((x) => x.class === e.target.value)?.subclass ?? '');
+            }}
+          >
+            {mine.map((x) => (
+              <option key={x.class} value={x.class}>
+                {titleCase(x.class)} {x.level} → {x.level + 1}
+              </option>
+            ))}
+            {data?.classes
+              .filter((x) => !mine.some((m) => m.class === x.id))
+              .map((x) => (
+                <option key={x.id} value={x.id}>
+                  Multiclass: {x.name} 1 (needs 13 in its main ability)
+                </option>
+              ))}
+          </select>
+        </label>
+        {!has && ['bard', 'ranger', 'rogue'].includes(klass) && (
+          <label className="block">
+            <span className="label">A new skill from {titleCase(klass)}</span>
+            <input className="input" placeholder="e.g. stealth" value={skill} onChange={(e) => setSkill(e.target.value)} />
+          </label>
+        )}
         <div>
           <span className="label">Hit points</span>
           <div className="flex flex-wrap gap-2">
             <label className="chip cursor-pointer">
-              <input type="radio" checked={hp === 'fixed'} onChange={() => setHp('fixed')} /> Fixed ({c.hitDie / 2 + 1})
+              <input type="radio" checked={hp === 'fixed'} onChange={() => setHp('fixed')} /> Fixed ({hitDie / 2 + 1})
             </label>
             <label className="chip cursor-pointer">
-              <input type="radio" checked={hp === 'roll'} onChange={() => setHp('roll')} /> 🎲 Server rolls d{c.hitDie}
+              <input type="radio" checked={hp === 'roll'} onChange={() => setHp('roll')} /> 🎲 Server rolls d{hitDie}
             </label>
             <label className="chip cursor-pointer">
               <input type="radio" checked={hp === 'manual'} onChange={() => setHp('manual')} /> I roll myself
             </label>
-            {hp === 'manual' && <input className="input w-20 py-1" placeholder={`d${c.hitDie}`} value={die} onChange={(e) => setDie(e.target.value.replace(/\D/g, ''))} />}
+            {hp === 'manual' && <input className="input w-20 py-1" placeholder={`d${hitDie}`} value={die} onChange={(e) => setDie(e.target.value.replace(/\D/g, ''))} />}
           </div>
           <p className="mt-1 text-xs text-slate-500">Plus your Constitution modifier.</p>
         </div>
         <label className="block">
-          <span className="label">Subclass (if this level gives one)</span>
+          <span className="label">{titleCase(klass)} subclass (if this level gives one)</span>
           <input className="input" value={subclass} onChange={(e) => setSubclass(e.target.value)} />
         </label>
         <label className="block">
@@ -203,7 +241,15 @@ function LevelUp({ g, c, onClose }: { g: GameDetail; c: GameCharacter; onClose: 
             for (const [k, v] of Object.entries(extra)) merged[k] = (merged[k] ?? 0) + v;
             try {
               await api(`/api/games/${g.id}/characters/${c.id}/level-up`, {
-                body: { hp: hp === 'manual' ? Number(die) : hp, subclass: subclass || undefined, spells: list(spells), cantrips: list(cantrips), asi: merged },
+                body: {
+                  class: klass,
+                  hp: hp === 'manual' ? Number(die) : hp,
+                  subclass: subclass || undefined,
+                  spells: list(spells),
+                  cantrips: list(cantrips),
+                  asi: merged,
+                  ...(list(skill).length ? { skills: [...c.skills, ...list(skill)] } : {}),
+                },
                 quiet: true,
               });
               onClose();

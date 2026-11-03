@@ -1,4 +1,4 @@
-import type { CharacterBuild, GameCharacter } from '@dungeonmind/shared';
+import { classLine, type CharacterBuild, type GameCharacter } from '@dungeonmind/shared';
 import { newId } from '../crypto.js';
 import { db, json, tx } from '../db.js';
 import { buildCharacter } from '../game/character.js';
@@ -293,7 +293,7 @@ async function playerAction(ruleset: string, c: GameCharacter & { persona?: stri
       vars: {
         ruleset,
         persona: c.persona ?? 'reckless fighter',
-        character: JSON.stringify({ name: c.name, class: c.class, level: c.level, hp: c.hp, maxHp: c.maxHp, counters: c.counters, inventory: c.inventory.map((i) => i.name), spells: c.spells, cantrips: c.cantrips }),
+        character: JSON.stringify({ name: c.name, class: classLine(c, (x) => x, false), level: c.level, hp: c.hp, maxHp: c.maxHp, counters: c.counters, inventory: c.inventory.map((i) => i.name), spells: c.spells, cantrips: c.cantrips }),
         scene: clip(scene, 4000),
         choices: choices.join('\n') || '(none)',
       },

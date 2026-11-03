@@ -20,11 +20,11 @@ export const emptyResult = (): BookResult => ({ changes: [], notes: [], approval
 
 // ---- Counters ----
 
-/** "1st-level spell slot", "spell slot 1", "Level 1 slot", "L1 slot" → "Spell slot L1". */
+/** "1st-level spell slot", "spell slot 1", "Level 1 slot", "L1 slot" → "Spell slot L1"; "pact slot 3" → "Pact slot L3". */
 export function normalizeCounterName(name: string): string {
   const s = name.trim();
   const slot = /(?:spell\s*)?slot/i.test(s) && (/(?:L|level\s*|lvl\s*)(\d)/i.exec(s) ?? /(\d)(?:st|nd|rd|th)?[-\s]*level/i.exec(s) ?? /slot\s*(\d)/i.exec(s));
-  if (slot) return `Spell slot L${slot[1]}`;
+  if (slot) return `${/pact/i.test(s) ? 'Pact' : 'Spell'} slot L${slot[1]}`;
   return s;
 }
 
@@ -495,16 +495,21 @@ export function rest(chars: GameCharacter[], kind: 'short' | 'long', ruleset: Ru
         refilled.push(`${k.current - before} ${k.name}`);
       }
     }
-    const hd = c.counters.find((k) => k.name.startsWith('Hit Dice'));
+    // A multiclass character has one Hit Dice counter per die size; the biggest dice go first.
+    const die = (k: Counter) => Number(/d(\d+)/.exec(k.name)?.[1]) || c.hitDie;
+    const hds = c.counters.filter((k) => k.name.startsWith('Hit Dice')).sort((x, y) => die(y) - die(x));
     if (kind === 'short') {
-      const n = Math.max(0, Math.min(hd?.current ?? 0, Math.round(hitDice[c.id] ?? 0)));
-      if (n && hd && c.hp > 0) {
-        const r = roll(`${n}d${c.hitDie}`);
+      let left = Math.max(0, Math.min(hds.reduce((s, k) => s + k.current, 0), Math.round(hitDice[c.id] ?? 0)));
+      for (const hd of hds) {
+        const n = Math.min(hd.current, left);
+        if (!n || c.hp <= 0) continue;
+        left -= n;
+        const r = roll(`${n}d${die(hd)}`);
         const gain = r.dice.reduce((s, d) => s + Math.max(0, d.value + mod(c.abilities.con)), 0);
         hd.current -= n;
         const before = c.hp;
         c.hp = Math.min(c.maxHp, c.hp + gain);
-        out.push(`${c.name} spends ${n} Hit ${n > 1 ? 'Dice' : 'Die'} (${r.dice.map((d) => d.value).join(', ')} + CON): ${before} → ${c.hp} HP`);
+        out.push(`${c.name} spends ${n} Hit ${n > 1 ? 'Dice' : 'Die'} (${hds.length > 1 ? `d${die(hd)}: ` : ''}${r.dice.map((d) => d.value).join(', ')} + CON): ${before} → ${c.hp} HP`);
       }
     } else {
       const before = c.hp;
@@ -515,9 +520,12 @@ export function rest(chars: GameCharacter[], kind: 'short' | 'long', ruleset: Ru
       }
       c.tempHp = 0;
       c.deathSaves = { success: 0, fail: 0 };
-      if (hd) {
-        const regain = ruleset === 'srd52' ? hd.max : Math.max(1, Math.floor(hd.max / 2));
-        hd.current = Math.min(hd.max, hd.current + regain);
+      // 2024: all hit dice back; 2014: half the total (at least one), the biggest dice first.
+      let regain = ruleset === 'srd52' ? Infinity : Math.max(1, Math.floor(hds.reduce((s, k) => s + k.max, 0) / 2));
+      for (const hd of hds) {
+        const n = Math.min(hd.max - hd.current, regain);
+        hd.current += n;
+        regain -= n;
       }
       if (c.exhaustion > 0) c.exhaustion--;
       if (before !== c.hp) out.push(`${c.name}: ${before} → ${c.hp} HP`);

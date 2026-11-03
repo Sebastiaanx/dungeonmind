@@ -1,10 +1,10 @@
 import type { FastifyInstance } from 'fastify';
-import { ABILITIES, RULESETS, type Abilities, type Character, type CharacterBuild, type Ruleset } from '@dungeonmind/shared';
+import { ABILITIES, RULESETS, type Abilities, type Character, type CharacterBuild, type Ruleset, type SpellLimits } from '@dungeonmind/shared';
 import { requireUser } from '../auth/index.js';
 import { newId } from '../crypto.js';
 import { db, json } from '../db.js';
 import { rollAbilityScores } from '../game/dice.js';
-import { buildCharacter, buildOf, derive, STANDARD_ARRAY, subclassLevel, validateBuild } from '../game/character.js';
+import { buildCharacter, buildOf, derive, finalAbilities, spellLimits, STANDARD_ARRAY, subclassLevel, validateBuild } from '../game/character.js';
 import { outputJson, runCanvas, withRetry } from '../hivemind.js';
 import { background } from '../jobs.js';
 import { findIn, isRuleset, rules, slug } from '../rules/index.js';
@@ -106,6 +106,7 @@ const summary = (c: Character) => ({
   ruleset: c.ruleset,
   class: c.class,
   subclass: c.subclass,
+  multiclass: c.multiclass,
   species: c.species,
   level: c.level,
   portrait: c.portrait,
@@ -136,9 +137,15 @@ export function characterRoutes(app: FastifyInstance) {
     if (!isRuleset(b?.ruleset)) return reply.code(400).send({ error: 'Pick a ruleset' });
     const d = rules(b.ruleset);
     const errors = validateBuild(d, b, { rolled: rolledValues(b.rollId, req.user!.id) });
-    if (errors.length) return { errors };
+    // What every class lets the character pick, so the builder can show the spell counts of a multiclass character too.
+    let limits: SpellLimits | undefined;
+    try {
+      const l = spellLimits(d, b, finalAbilities(d, b));
+      limits = { cantrips: l.cantrips, spells: l.spells, classes: l.per.map((x) => ({ class: x.cls.id, maxLevel: x.maxLevel })) };
+    } catch {}
+    if (errors.length) return { errors, limits };
     const c = buildCharacter(d, b, { id: 'preview', ownerId: req.user!.id });
-    return { errors, character: c, derived: derive(d, c) };
+    return { errors, limits, character: c, derived: derive(d, c) };
   });
 
   app.post('/api/characters', { preHandler: requireUser }, async (req, reply) => {

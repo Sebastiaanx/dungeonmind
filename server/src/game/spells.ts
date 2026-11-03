@@ -1,6 +1,7 @@
 import type { GameCharacter, RulesData, RulesSpell, SpellEffect } from '@dungeonmind/shared';
 import { findIn, slug } from '../rules/index.js';
 import { derive } from './character.js';
+import { classesOf } from './classes.js';
 import { parseDice, type DiceTerm } from './dice.js';
 
 /** Cantrip tier at character level 5, 11 and 17. */
@@ -12,10 +13,22 @@ export function knownSpell(rules: RulesData, c: GameCharacter | undefined, name:
   return s && [...(c!.spells ?? []), ...(c!.cantrips ?? [])].some((x) => x === s.id || slug(x) === s.id) ? s : undefined;
 }
 
-/** The caster's spellcasting modifier; without a class that casts (a racial spell), the best mental one. */
-export function spellMod(rules: RulesData, c: GameCharacter): number {
+/**
+ * The caster's spellcasting modifier for a spell: the best one of the classes that have it on their list (a Cleric/Wizard
+ * casts Fireball with INT); else the first class that casts; without one (a racial spell), the best mental one.
+ */
+export function spellMod(rules: RulesData, c: GameCharacter, spell?: RulesSpell): number {
   const d = derive(rules, c);
+  const own = spell ? classesOf(rules, c).flatMap((e) => (e.cls.spellAbility && spell.classes.includes(e.cls.id) ? [d.mods[e.cls.spellAbility]] : [])) : [];
+  if (own.length) return Math.max(...own);
   return d.spellAbility ? d.mods[d.spellAbility] : Math.max(d.mods.int, d.mods.wis, d.mods.cha);
+}
+
+/** The spell save DC for a spell; undefined for a caster without any spellcasting class (the AI's number stands). */
+export function spellSaveDc(rules: RulesData, c: GameCharacter, spell?: RulesSpell): number | undefined {
+  const d = derive(rules, c);
+  const own = !!spell && classesOf(rules, c).some((e) => e.cls.spellAbility && spell.classes.includes(e.cls.id));
+  return own || d.spellAbility ? 8 + d.profBonus + spellMod(rules, c, spell) : undefined;
 }
 
 /** Darts, rays or beams at this slot (cantrips: at this character level). */
