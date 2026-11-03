@@ -99,6 +99,8 @@ export interface SpellEffect {
   tempHp?: string;
   /** Added to the first damage part (or the healing) per slot level above the spell's level. */
   upcast?: string;
+  /** `upcast` comes once per this many slot levels above (2014 Spiritual Weapon: 2). */
+  upcastEvery?: number;
   /** Cantrips at character level 5, 11 and 17: "dice" means 2, 3, 4 times the dice; "count" means 2, 3, 4 beams. */
   scales?: 'dice' | 'count';
   /** Separate rays, darts or beams, each with its own damage. */

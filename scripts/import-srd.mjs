@@ -134,7 +134,8 @@ function spells(ver) {
       ritual: !!s.ritual,
       components: [...(s.components ?? [])].join(', ') + (s.material ? ` (${s.material})` : ''),
       desc: text(s.desc ?? s.description),
-      higher: text(s.higher_level) || undefined,
+      // The 5e-database has Moonbeam's "1d10" as "1dl0".
+      higher: text(s.higher_level)?.replace(/(\d)dl0\b/g, '$1d10') || undefined,
       attack: s.attack_type || undefined,
       save: s.dc?.dc_type?.index || undefined,
       damage: dmg ? `${Object.values(dmg)[0]}${s.damage.damage_type ? ' ' + s.damage.damage_type.name.toLowerCase() : ''}` : undefined,

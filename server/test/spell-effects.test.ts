@@ -6,13 +6,13 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { parseDice } from '../src/game/dice.js';
 
 /** Spell levels whose effects are all written; raise this as more levels land. */
-const COVERED = [0, 1];
+const COVERED = [0, 1, 2, 3];
 
 const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 const DAMAGE_TYPES = ['acid', 'bludgeoning', 'cold', 'fire', 'force', 'lightning', 'necrotic', 'piercing', 'poison', 'psychic', 'radiant', 'slashing', 'thunder'];
 // SRD conditions plus the ones the table tracks for Bless and Guidance.
 const CONDITIONS = ['blessed', 'guided', 'blinded', 'charmed', 'deafened', 'exhaustion', 'frightened', 'grappled', 'incapacitated', 'invisible', 'paralyzed', 'petrified', 'poisoned', 'prone', 'restrained', 'stunned', 'unconscious'];
-const FIELDS = ['attack', 'save', 'half', 'autoHit', 'rider', 'damage', 'heal', 'tempHp', 'upcast', 'scales', 'count', 'countUpcast', 'area', 'conditions', 'note'];
+const FIELDS = ['attack', 'save', 'half', 'autoHit', 'rider', 'damage', 'heal', 'tempHp', 'upcast', 'upcastEvery', 'scales', 'count', 'countUpcast', 'area', 'conditions', 'note'];
 
 const squash = (s: string) => s.toLowerCase().replace(/\s+/g, '');
 /** The "NdM" parts of a dice expression ("1d8+mod" → ["1d8"]). */
@@ -45,6 +45,7 @@ describe.each(['srd51', 'srd52'])('%s spell effects', (ruleset) => {
     }
     for (const d of e.damage ?? []) for (const t of d.type.split('|')) expect([...DAMAGE_TYPES, 'weapon']).toContain(t);
     if (e.upcast) expect(s.level > 0 && !!(e.damage?.length || e.heal || e.tempHp), 'upcast needs a leveled spell with damage, healing or temp HP').toBe(true);
+    if (e.upcastEvery) expect(e.upcast && e.upcastEvery > 1, 'upcastEvery goes with upcast').toBeTruthy();
     if (e.scales) expect(s.level, 'only cantrips scale').toBe(0);
     if (s.level === 0 && e.damage?.length) expect(e.scales, 'a damage cantrip scales').toBeTruthy();
     if (e.scales === 'count' || e.countUpcast) expect(e.count, 'needs a count').toBeGreaterThan(0);
@@ -88,6 +89,18 @@ describe('rolling PC spells', () => {
     expect(S.spellDice('1d8+mod', { mod: -1, upcast: '1d8', above: 2 })).toBe('3d8-1');
     expect(S.spellDice('1d10', { mod: 0, tier: 3 })).toBe('3d10');
     expect(S.spellDice('1d4+1', { mod: 0, times: 3 })).toBe('3d4+3');
+  });
+
+  it('upcasts every two slot levels when the spell says so', () => {
+    const { rules, cleric } = party.srd51;
+    const spell = { ...rules.spells.find((x) => x.id === 'guiding-bolt')!, effect: { attack: 'ranged' as const, damage: [{ dice: '1d8+mod', type: 'force' }], upcast: '1d8', upcastEvery: 2 } };
+    const r = { ...rules, spells: rules.spells.map((x) => (x.id === spell.id ? spell : x)) };
+    const roll = (slot: number) =>
+      R.buildRolls(r, [cleric], [hag()], {
+        rolls: [{ actor: 'Esva', kind: 'damage', target: 'The Bell-Hag', spell: 'Guiding Bolt' }],
+        resources: [{ pc: 'Esva', name: `Spell slot L${slot}`, amount: 1 }],
+      })[0].dice;
+    expect([roll(2), roll(3)]).toEqual([`1d8+${S.spellMod(rules, cleric)}`, `2d8+${S.spellMod(rules, cleric)}`]);
   });
 
   it.each(['srd51', 'srd52'])('%s: cantrips grow with the level, slots add dice, never the AI dice', (ruleset) => {

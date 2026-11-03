@@ -267,7 +267,7 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
       }
       if (cast && effect && (kind === 'damage' ? effect.damage?.length : effect.heal)) {
         const s = cast.spell;
-        const o = { mod: spellMod(rules, cast.caster), above: s.level ? Math.max(0, cast.slot - s.level) : 0 };
+        const o = { mod: spellMod(rules, cast.caster), above: s.level ? Math.floor(Math.max(0, cast.slot - s.level) / (effect.upcastEvery ?? 1)) : 0 };
         if (kind === 'heal') dice = spellDice(effect.heal!, { ...o, upcast: effect.upcast });
         else {
           const tier = s.level === 0 && effect.scales === 'dice' ? cantripTier(cast.caster.level) : 1;

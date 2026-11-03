@@ -1,4 +1,15 @@
 {
+  "acid-arrow": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "4d4",
+        "type": "acid"
+      }
+    ],
+    "upcast": "1d4",
+    "note": "On a hit it takes 2d4 acid again at the end of its next turn (also +1d4 per slot level above 2nd); on a miss it takes half the initial damage only."
+  },
   "acid-splash": {
     "save": "dex",
     "damage": [
@@ -9,6 +20,12 @@
     ],
     "scales": "dice",
     "note": "Can target two creatures within 5 feet of each other."
+  },
+  "aid": {
+    "note": "Up to three targets; each one's hit point maximum and current hit points rise by 5 for 8 hours, plus 5 per slot level above 2nd."
+  },
+  "alter-self": {
+    "note": "Natural Weapons option: your unarmed strikes deal 1d6 bludgeoning, piercing or slashing damage with a +1 bonus to attack and damage rolls."
   },
   "animal-friendship": {
     "save": "wis",
@@ -23,6 +40,10 @@
     "save": "cha",
     "note": "Up to three targets subtract a d4 from attack rolls and saving throws; one more target per slot level above 1st."
   },
+  "bestow-curse": {
+    "save": "wis",
+    "note": "Cursed for the duration with one option: disadvantage on one ability's checks and saves, disadvantage on attacks against you, a Wis save each turn or lose its action, or an extra 1d8 necrotic from your attacks and spells."
+  },
   "bless": {
     "conditions": [
       {
@@ -31,6 +52,30 @@
       }
     ],
     "note": "Up to three targets; one more per slot level above 1st."
+  },
+  "blindness-deafness": {
+    "save": "con",
+    "conditions": [
+      {
+        "name": "blinded",
+        "rounds": 10
+      }
+    ],
+    "note": "Blinded or deafened (your choice); it saves again at the end of each of its turns; one more target per slot level above 2nd."
+  },
+  "blink": {
+    "note": "Roll a d20 at the end of each of your turns; on 11 or higher you vanish to the Ethereal Plane until the start of your next turn."
+  },
+  "branding-smite": {
+    "rider": true,
+    "damage": [
+      {
+        "dice": "2d6",
+        "type": "radiant"
+      }
+    ],
+    "upcast": "1d6",
+    "note": "Only your next weapon hit; the target becomes visible, sheds dim light and can't turn invisible until the spell ends."
   },
   "burning-hands": {
     "save": "dex",
@@ -43,6 +88,24 @@
     ],
     "upcast": "1d6",
     "area": "15-foot cone"
+  },
+  "call-lightning": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "3d10",
+        "type": "lightning"
+      }
+    ],
+    "upcast": "1d10",
+    "area": "within 5 feet of a point",
+    "note": "You can call another bolt as your action on each of your turns; outdoors in a storm the damage increases by 1d10."
+  },
+  "calm-emotions": {
+    "save": "cha",
+    "area": "20-foot-radius sphere",
+    "note": "Humanoids only; on a failed save you suppress charmed or frightened effects on it, or make it indifferent to creatures it is hostile toward."
   },
   "charm-person": {
     "save": "wis",
@@ -82,6 +145,10 @@
     "heal": "1d8+mod",
     "upcast": "1d8"
   },
+  "detect-thoughts": {
+    "save": "wis",
+    "note": "Only when you probe deeper: on a failed save you learn its reasoning and emotional state; on a success the spell ends."
+  },
   "divine-favor": {
     "rider": true,
     "damage": [
@@ -103,6 +170,14 @@
     "scales": "count",
     "count": 1
   },
+  "enhance-ability": {
+    "tempHp": "2d6",
+    "note": "Temporary hit points only with Bear's Endurance; every option gives advantage on one ability's checks; one more target per slot level above 2nd."
+  },
+  "enlarge-reduce": {
+    "save": "con",
+    "note": "Only an unwilling target saves; enlarged it has advantage on Strength checks and saves and its weapons deal 1d4 extra, reduced the reverse and 1d4 less."
+  },
   "entangle": {
     "save": "str",
     "conditions": [
@@ -114,6 +189,10 @@
     "area": "20-foot square",
     "note": "A restrained creature can use its action for a Strength check against your spell save DC to free itself."
   },
+  "enthrall": {
+    "save": "wis",
+    "note": "On a failed save it has disadvantage on Perception checks to notice anyone but you; advantage on the save if you're fighting it."
+  },
   "faerie-fire": {
     "save": "dex",
     "area": "20-foot cube",
@@ -122,6 +201,17 @@
   "false-life": {
     "tempHp": "1d4+4",
     "upcast": "5"
+  },
+  "fear": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "frightened",
+        "rounds": 10
+      }
+    ],
+    "area": "30-foot cone",
+    "note": "It drops what it holds and must Dash away from you; it saves again when it ends a turn out of your line of sight."
   },
   "fire-bolt": {
     "attack": "ranged",
@@ -132,6 +222,55 @@
       }
     ],
     "scales": "dice"
+  },
+  "fireball": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "8d6",
+        "type": "fire"
+      }
+    ],
+    "upcast": "1d6",
+    "area": "20-foot-radius sphere"
+  },
+  "flame-blade": {
+    "attack": "melee",
+    "damage": [
+      {
+        "dice": "3d6",
+        "type": "fire"
+      }
+    ],
+    "upcast": "1d6",
+    "upcastEvery": 2,
+    "note": "Each attack with the blade takes your action while the spell lasts."
+  },
+  "flaming-sphere": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "2d6",
+        "type": "fire"
+      }
+    ],
+    "upcast": "1d6",
+    "note": "A creature saves when it ends its turn within 5 feet of the sphere or when you ram the sphere into it as a bonus action."
+  },
+  "glyph-of-warding": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "5d8",
+        "type": "acid|cold|fire|lightning|thunder"
+      }
+    ],
+    "upcast": "1d8",
+    "area": "20-foot-radius sphere",
+    "note": "Explosive runes only, when the glyph is triggered; a spell glyph casts the stored spell instead."
   },
   "goodberry": {
     "heal": "1",
@@ -166,9 +305,25 @@
     "upcast": "1d6",
     "note": "The next attack roll against the target before the end of your next turn has advantage."
   },
+  "gust-of-wind": {
+    "save": "str",
+    "area": "line 60 feet long and 10 feet wide",
+    "note": "A creature that starts its turn in the line saves or is pushed 15 feet away; moving toward you costs double."
+  },
   "healing-word": {
     "heal": "1d4+mod",
     "upcast": "1d4"
+  },
+  "heat-metal": {
+    "autoHit": true,
+    "damage": [
+      {
+        "dice": "2d8",
+        "type": "fire"
+      }
+    ],
+    "upcast": "1d8",
+    "note": "Hits any creature touching the object, again as a bonus action each turn; a holder makes a Con save or drops it, else has disadvantage on attacks and checks."
   },
   "hellish-rebuke": {
     "save": "dex",
@@ -198,6 +353,16 @@
     ],
     "note": "Saves again at the end of each of its turns and when it takes damage (with advantage); no effect on Intelligence 4 or less."
   },
+  "hold-person": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "paralyzed",
+        "rounds": 10
+      }
+    ],
+    "note": "Humanoids only; it saves again at the end of each of its turns; one more humanoid per slot level above 2nd."
+  },
   "hunters-mark": {
     "rider": true,
     "damage": [
@@ -208,6 +373,21 @@
     ],
     "note": "Only on your weapon hits against the marked target; the mark can move to a new target when it drops to 0 hit points."
   },
+  "hypnotic-pattern": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "charmed",
+        "rounds": 10
+      },
+      {
+        "name": "incapacitated",
+        "rounds": 10
+      }
+    ],
+    "area": "30-foot cube",
+    "note": "Only creatures that see the pattern; speed 0 while charmed; ends for a creature that takes damage or is shaken out of it."
+  },
   "inflict-wounds": {
     "attack": "melee",
     "damage": [
@@ -217,6 +397,35 @@
       }
     ],
     "upcast": "1d10"
+  },
+  "invisibility": {
+    "conditions": [
+      {
+        "name": "invisible"
+      }
+    ],
+    "note": "Ends for a target that attacks or casts a spell; one more target per slot level above 2nd."
+  },
+  "levitate": {
+    "save": "con",
+    "note": "Only an unwilling creature saves; on a failure it rises up to 20 feet and hangs there for the duration."
+  },
+  "lightning-bolt": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "8d6",
+        "type": "lightning"
+      }
+    ],
+    "upcast": "1d6",
+    "area": "line 100 feet long and 5 feet wide"
+  },
+  "magic-circle": {
+    "save": "cha",
+    "area": "10-foot-radius, 20-foot-tall cylinder",
+    "note": "Only a creature of a chosen type that tries to teleport in saves; such creatures have disadvantage on attacks against those inside and can't charm, frighten or possess them."
   },
   "magic-missile": {
     "autoHit": true,
@@ -229,6 +438,30 @@
     "count": 3,
     "countUpcast": 1
   },
+  "mass-healing-word": {
+    "heal": "1d4+mod",
+    "upcast": "1d4",
+    "note": "Up to six creatures; no effect on undead or constructs."
+  },
+  "meld-into-stone": {
+    "note": "If the stone is partly destroyed or reshaped you are expelled, take 6d6 bludgeoning and fall prone (50 bludgeoning if it is destroyed)."
+  },
+  "mirror-image": {
+    "note": "When a creature attacks you, roll a d20 (6+ with three duplicates, 8+ with two, 11+ with one) to hit a duplicate instead; a duplicate has AC 10 + your Dex modifier."
+  },
+  "moonbeam": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "2d10",
+        "type": "radiant"
+      }
+    ],
+    "upcast": "1d10",
+    "area": "5-foot radius, 40-foot-high cylinder",
+    "note": "A creature saves when it enters the beam for the first time on a turn or starts its turn there; shapechangers save with disadvantage."
+  },
   "poison-spray": {
     "save": "con",
     "damage": [
@@ -239,6 +472,11 @@
     ],
     "scales": "dice"
   },
+  "prayer-of-healing": {
+    "heal": "2d8+mod",
+    "upcast": "1d8",
+    "note": "Up to six creatures; no effect on undead or constructs."
+  },
   "produce-flame": {
     "attack": "ranged",
     "damage": [
@@ -248,6 +486,10 @@
       }
     ],
     "scales": "dice"
+  },
+  "ray-of-enfeeblement": {
+    "attack": "ranged",
+    "note": "On a hit its Strength weapon attacks deal half damage; it makes a Con save at the end of each of its turns to end the spell."
   },
   "ray-of-frost": {
     "attack": "ranged",
@@ -263,6 +505,9 @@
   "resistance": {
     "note": "Once before the spell ends, the target adds a d4 to one saving throw."
   },
+  "revivify": {
+    "note": "Only a creature that died within the last minute; it returns to life with 1 hit point."
+  },
   "sacred-flame": {
     "save": "dex",
     "damage": [
@@ -273,6 +518,30 @@
     ],
     "scales": "dice",
     "note": "The target gets no benefit from cover for this save."
+  },
+  "scorching-ray": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "2d6",
+        "type": "fire"
+      }
+    ],
+    "count": 3,
+    "countUpcast": 1
+  },
+  "shatter": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "3d8",
+        "type": "thunder"
+      }
+    ],
+    "upcast": "1d8",
+    "area": "10-foot-radius sphere",
+    "note": "Creatures made of inorganic material have disadvantage on the save."
   },
   "shocking-grasp": {
     "attack": "melee",
@@ -285,6 +554,15 @@
     "scales": "dice",
     "note": "Advantage against a target in metal armor; on a hit it can't take reactions until the start of its next turn."
   },
+  "silence": {
+    "conditions": [
+      {
+        "name": "deafened"
+      }
+    ],
+    "area": "20-foot-radius sphere",
+    "note": "Only while entirely inside; creatures there are immune to thunder damage and can't cast spells with a verbal component."
+  },
   "sleep": {
     "conditions": [
       {
@@ -294,6 +572,66 @@
     ],
     "area": "20-foot radius",
     "note": "Roll 5d8 (plus 2d8 per slot level above 1st) for the hit points of creatures put to sleep, lowest first; undead and charm-immune creatures are unaffected; damage or a shake wakes a sleeper."
+  },
+  "sleet-storm": {
+    "save": "dex",
+    "conditions": [
+      {
+        "name": "prone"
+      }
+    ],
+    "area": "40-foot radius, 20-foot-tall cylinder",
+    "note": "Saves when it enters the area for the first time on a turn or starts its turn there; a concentrating creature there makes a Con save or loses concentration."
+  },
+  "slow": {
+    "save": "wis",
+    "area": "40-foot cube",
+    "note": "Up to six targets: half speed, -2 AC and Dex saves, no reactions, action or bonus action, one attack, d20 11+ delays its spells; saves again at the end of each turn."
+  },
+  "spike-growth": {
+    "autoHit": true,
+    "damage": [
+      {
+        "dice": "2d4",
+        "type": "piercing"
+      }
+    ],
+    "area": "20-foot radius",
+    "note": "For every 5 feet a creature moves into or within the area, which is difficult terrain."
+  },
+  "spirit-guardians": {
+    "save": "wis",
+    "half": true,
+    "damage": [
+      {
+        "dice": "3d8",
+        "type": "radiant|necrotic"
+      }
+    ],
+    "upcast": "1d8",
+    "area": "15 feet around you",
+    "note": "A creature saves when it enters the area for the first time on a turn or starts its turn there; its speed is halved there; necrotic only if you are evil."
+  },
+  "spiritual-weapon": {
+    "attack": "melee",
+    "damage": [
+      {
+        "dice": "1d8+mod",
+        "type": "force"
+      }
+    ],
+    "upcast": "1d8",
+    "upcastEvery": 2,
+    "note": "You can move the weapon and attack again as a bonus action on each of your turns for 1 minute."
+  },
+  "stinking-cloud": {
+    "save": "con",
+    "area": "20-foot-radius sphere",
+    "note": "Each creature completely in the cloud at the start of its turn saves or spends its action retching; creatures that don't breathe or are immune to poison succeed."
+  },
+  "suggestion": {
+    "save": "wis",
+    "note": "On a failed save it follows a reasonable suggested course of action; ends if you or your companions damage it; charm-immune creatures are unaffected."
   },
   "thunderwave": {
     "save": "con",
@@ -308,6 +646,17 @@
     "area": "15-foot cube",
     "note": "On a failed save the creature is also pushed 10 feet away."
   },
+  "vampiric-touch": {
+    "attack": "melee",
+    "damage": [
+      {
+        "dice": "3d6",
+        "type": "necrotic"
+      }
+    ],
+    "upcast": "1d6",
+    "note": "You regain hit points equal to half the necrotic damage dealt; you can attack again as an action each turn for 1 minute."
+  },
   "vicious-mockery": {
     "save": "wis",
     "damage": [
@@ -318,5 +667,32 @@
     ],
     "scales": "dice",
     "note": "On a failed save it also has disadvantage on its next attack roll before the end of its next turn."
+  },
+  "web": {
+    "save": "dex",
+    "conditions": [
+      {
+        "name": "restrained"
+      }
+    ],
+    "area": "20-foot cube",
+    "note": "Saves when it starts its turn in or enters the webs; a Strength check against your DC frees it; burning webs deal 2d4 fire to creatures starting their turn in the fire."
+  },
+  "wind-wall": {
+    "save": "str",
+    "half": true,
+    "damage": [
+      {
+        "dice": "3d8",
+        "type": "bludgeoning"
+      }
+    ],
+    "area": "wall up to 50 feet long, 15 feet high and 1 foot thick",
+    "note": "Only creatures in the wall when it appears; it blocks Small or smaller fliers, gases and ordinary arrows and bolts."
+  },
+  "zone-of-truth": {
+    "save": "cha",
+    "area": "15-foot-radius sphere",
+    "note": "Saves when it enters the area for the first time on a turn or starts its turn there; on a failure it can't speak a deliberate lie."
   }
 }
