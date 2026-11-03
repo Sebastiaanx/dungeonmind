@@ -52,6 +52,7 @@ const SECTIONS: { id: string; title: string; img?: string; body: React.ReactNode
         <p>When a game has ended, the host can <b>Keep playing</b> from where it stopped, or <b>Start a similar game</b>: a new adventure with the same rules and players, and ideas in the same style.</p>
         <p>Colours show who is who, in the story and on the board: <b className="text-emerald-300">you are green</b>, <b className="text-amber-300">allies yellow</b>, <b className="text-red-400">enemies red</b>. Dice lines stand out in their own block. All distances are in metres.</p>
         <p>The menu stays on top, with a tab for the game you're in, so you can look at something else and go straight back.</p>
+        <p>Under the story everyone sees a light per player: green has chosen, yellow is typing, red is still choosing.</p>
         <p>The DM always waits for everyone. In a fight, actions happen in initiative order. If you're away, the host can skip you: your character stays quietly with the group.</p>
       </>
     ),

@@ -2,6 +2,29 @@ import { useState } from 'react';
 import type { GameCharacter, GameDetail } from '@dungeonmind/shared';
 import { api } from '../api';
 import { useMe } from '../me';
+import { sendTyping, useTyping } from './typing';
+
+/** Everyone at the table sees who has chosen (green), who is typing (yellow) and who we still wait for (red). */
+export function ActionLights({ g }: { g: GameDetail }) {
+  const typing = useTyping(g.id);
+  if (g.status !== 'playing' || g.state.phase !== 'collect') return null;
+  const active = g.characters.filter((c) => c.seated && !c.absent && c.hp > 0 && (!g.state.combat || g.state.combat.order.some((o) => o.characterId === c.id)));
+  if (!active.length) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5" aria-label="Who has chosen">
+      {active.map((c) => {
+        const state = g.state.actions[c.id] ? 'ready' : typing(c.id) ? 'typing' : 'waiting';
+        const look = { ready: ['bg-emerald-400', 'border-emerald-700 text-emerald-200', 'chose'], typing: ['bg-amber-400 animate-pulse', 'border-amber-600 text-amber-200', 'typing…'], waiting: ['bg-red-500', 'border-red-800 text-red-200', 'choosing'] }[state];
+        return (
+          <span key={c.id} className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs ${look[1]}`}>
+            <span className={`h-2.5 w-2.5 rounded-full ${look[0]}`} />
+            <b>{c.name}</b> {look[2]}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
 
 /** 4 choices + Other for each of my characters; shows who we still wait for. */
 export function ChoiceBox({ g }: { g: GameDetail }) {
@@ -9,7 +32,6 @@ export function ChoiceBox({ g }: { g: GameDetail }) {
   const host = g.myRole === 'host';
   const active = g.characters.filter((c) => c.seated && !c.absent && c.hp > 0 && (!g.state.combat || g.state.combat.order.some((o) => o.characterId === c.id)));
   const mine = active.filter((c) => c.userId === me.id || (host && c.absent));
-  const waiting = active.filter((c) => !g.state.actions[c.id]);
   if (g.status !== 'playing' || g.state.phase !== 'collect') return null;
   const dying = g.characters.filter((c) => c.seated && !c.absent && c.hp <= 0 && !c.conditions.some((x) => x.name === 'dead' || x.name === 'stable'));
   return (
@@ -42,7 +64,6 @@ export function ChoiceBox({ g }: { g: GameDetail }) {
       {mine.map((c) => (
         <CharacterChoices key={c.id} g={g} c={c} />
       ))}
-      {waiting.length > 0 && <p className="text-xs text-slate-500">Waiting for: {waiting.map((c) => c.name).join(', ')}</p>}
     </div>
   );
 }
@@ -56,6 +77,7 @@ function CharacterChoices({ g, c }: { g: GameDetail; c: GameCharacter }) {
     try {
       await api(`/api/games/${g.id}/actions`, { body: { characterId: c.id, ...body } });
       setOther('');
+      sendTyping(g.id, c.id, false);
     } finally {
       setBusy(false);
     }
@@ -91,7 +113,13 @@ function CharacterChoices({ g, c }: { g: GameDetail; c: GameCharacter }) {
           if (other.trim()) send({ text: other });
         }}
       >
-        <input className="input" placeholder="Other: write your own action…" maxLength={600} value={other} onChange={(e) => setOther(e.target.value)} />
+        <input className="input" placeholder="Other: write your own action…" maxLength={600} value={other}
+          onChange={(e) => {
+            setOther(e.target.value);
+            sendTyping(g.id, c.id, !!e.target.value.trim());
+          }}
+          onBlur={() => sendTyping(g.id, c.id, false)}
+        />
         <button className="btn" disabled={busy || !other.trim()}>
           Go
         </button>

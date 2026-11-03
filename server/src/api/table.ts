@@ -12,7 +12,7 @@ import { broadcast, gameCharacters, saveGame, saveGameCharacter } from '../game/
 import { activeCharacters, playersOf, redoNarration, resolveLater, retry, startGame, submitAction } from '../game/turn.js';
 import { HiveMindError, outputText, runCanvas, withRetry } from '../hivemind.js';
 import { readImage } from '../images.js';
-import { emitToGame } from '../realtime.js';
+import { emitToGame, onSocket } from '../realtime.js';
 import { recordCall } from '../trainer/records.js';
 import { gameFor } from './games.js';
 
@@ -71,6 +71,14 @@ export function tableRoutes(app: FastifyInstance) {
     if (!r) return;
     if (!retry(r.g)) return reply.code(400).send({ error: 'Nothing to retry' });
     return { ok: true };
+  });
+
+  /** "Is typing…": passed on to the table, only for your own character in a game you play in. */
+  onSocket('game:typing', (user, _event, payload) => {
+    const { gameId, characterId, typing } = (payload ?? {}) as { gameId?: unknown; characterId?: unknown; typing?: unknown };
+    if (typeof gameId !== 'string' || typeof characterId !== 'string') return;
+    if (!gameCharacters(gameId).some((c) => c.id === characterId && c.userId === user.id)) return;
+    emitToGame(gameId, 'game:typing', { gameId, characterId, typing: !!typing });
   });
 
   /** The story comes out wrong: stop the DM and write it again. Same dice, and no reroll used. */

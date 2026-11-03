@@ -9,7 +9,7 @@ import { navigate } from '../router';
 import { useGame } from '../useGame';
 import { CampaignModal } from './CampaignModal';
 import { SidesProvider } from './sides';
-import { AskBox, ChoiceBox } from './ChoiceBox';
+import { ActionLights, AskBox, ChoiceBox } from './ChoiceBox';
 import { StoryLog } from './StoryLog';
 import { useLog } from './useLog';
 import { tableExtras } from './extras';
@@ -222,6 +222,7 @@ export function Table({ id }: { id: string }) {
           <StoryLog log={log} streaming={streaming} written={written} onOlder={loadOlder} renderNarration={Narr ? (e, last) => <Narr g={g} e={e} last={last} /> : undefined} />
           <div className="scroll-thin max-h-[32dvh] shrink-0 space-y-2 overflow-y-auto lg:max-h-[42dvh]">
             {Dock && <Dock g={g} />}
+            <ActionLights g={g} />
             {g.myRole !== 'spectator' && (
               <>
                 <ChoiceBox g={g} />
