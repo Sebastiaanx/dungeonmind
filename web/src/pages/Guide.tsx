@@ -64,7 +64,7 @@ const SECTIONS: { id: string; title: string; img?: string; body: React.ReactNode
       <>
         <p>When your action needs a roll, it appears in the dice tray with everything already worked out: your bonus from the sheet, advantage or disadvantage, the target's AC or the DC.</p>
         <p>
-          Press <b>🎲 Roll</b> and the server rolls. Or press <b>I roll myself</b>, roll your real dice, and type in what each die shows. The server checks every value (a d6 shows 1 to 6) and marks the roll ✋ in the story. Damage is only rolled after a hit; a natural 20 doubles the damage dice.
+          Press <b>🎲 Roll</b> and the server rolls. Or press <b>I roll myself</b>, roll your real dice, and type in what each die shows. The server checks every value (a d6 shows 1 to 6) and marks the roll ✋ in the story. Damage is only rolled after a hit; a natural 20 doubles the damage dice. <b>🎲 Attack + damage</b> does both in one go. If the host set a time to roll, a ⏱ shows how long you have; when it runs out, the server rolls for you.
         </p>
       </>
     ),

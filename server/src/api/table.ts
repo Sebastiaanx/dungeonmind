@@ -4,6 +4,7 @@ import { zipSync } from 'fflate';
 import { requireUser } from '../auth/index.js';
 import { db } from '../db.js';
 import { applyPatches, currentCampaign, parseSections, saveCampaign, SECTIONS, withParty } from '../game/campaign.js';
+import { armRollTimers } from '../game/engine.js';
 import { addLog, readLog } from '../game/log.js';
 import { campaignFor, partyJson, recentTurns } from '../game/prompt.js';
 import { think } from '../game/queue.js';
@@ -98,6 +99,8 @@ export function tableRoutes(app: FastifyInstance) {
       addLog(g.id, g.state.turn, 'system', 'The host paused the game.');
     } else if (to === 'playing' && g.status === 'paused') {
       g.status = 'playing';
+      // The roll timer doesn't run during a pause: waiting rolls get their full time again.
+      armRollTimers(g, true);
       addLog(g.id, g.state.turn, 'system', 'The game continues.');
     } else if (to === 'ended') {
       g.status = 'ended';

@@ -124,6 +124,14 @@ describe('resolving rolls', () => {
     expect(mixed[0].result!.faces).toEqual([{ sides: 6, value: 3 }, { sides: 6, value: 5 }, { sides: 4, value: 2 }]);
   });
 
+  it('marks a roll the server made after the time ran out, and can leave the AC out of the text', () => {
+    const c = pair();
+    R.resolveRoll(c[0], c, undefined, { timedOut: true, hideTargets: true });
+    expect(c[0].result!.timedOut).toBe(true);
+    expect(c[0].result!.text).toMatch(/ — (hit|miss|critical hit!|natural 1, miss) \(time ran out, the server rolled\)$/);
+    expect(c[0].result!.text).not.toMatch(/AC/);
+  });
+
   it('refuses impossible "I roll myself" values', () => {
     const c = pair();
     expect(() => R.resolveRoll(c[0], c, [21])).toThrow(/d20 shows 1-20/);

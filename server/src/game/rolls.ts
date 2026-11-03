@@ -198,8 +198,9 @@ export function ready(r: PendingRoll, all: PendingRoll[]): boolean {
  * Rolls (or takes the player's dice for) one roll. Throws DiceError for impossible manual values.
  * Then skips the children that no longer happen (a miss, a made save) and marks crits.
  */
-export function resolveRoll(r: PendingRoll, all: PendingRoll[], manual?: number[]): RollOutcome {
+export function resolveRoll(r: PendingRoll, all: PendingRoll[], manual?: number[], opts: { timedOut?: boolean; hideTargets?: boolean } = {}): RollOutcome {
   const parent = all.find((x) => x.id === (r.onHit ?? r.onFail));
+  const who = manual ? ' (rolled by the player)' : opts.timedOut ? ' (time ran out, the server rolled)' : '';
   if (r.kind === 'damage' || r.kind === 'heal' || r.kind === 'hitdie') {
     const out = roll(r.dice, { manual, crit: r.crit });
     let total = Math.max(0, out.total);
@@ -210,8 +211,9 @@ export function resolveRoll(r: PendingRoll, all: PendingRoll[], manual?: number[
       faces: out.dice,
       total,
       manual: out.manual,
+      ...(opts.timedOut ? { timedOut: true } : {}),
       crit: r.crit,
-      text: `${r.label}: ${r.dice}${r.crit ? ' (critical, dice doubled)' : ''} → [${out.dice.map((x) => x.value).join(', ')}] = ${out.total}${halved ? `, halved: ${total}` : ''}${out.manual ? ' (rolled by the player)' : ''}`,
+      text: `${r.label}: ${r.dice}${r.crit ? ' (critical, dice doubled)' : ''} → [${out.dice.map((x) => x.value).join(', ')}] = ${out.total}${halved ? `, halved: ${total}` : ''}${who}`,
     };
     r.result = res;
     return res;
@@ -219,15 +221,16 @@ export function resolveRoll(r: PendingRoll, all: PendingRoll[], manual?: number[
   const d = rollD20(r.bonus, (r.adv ?? 'none') as Adv, manual);
   let success: boolean | undefined;
   let vs = '';
+  // Hidden targets: the log (which the players read) says hit or miss, not the number.
   if (r.kind === 'attack') {
     success = d.crit || (!d.fumble && d.total >= (r.targetAc ?? 10));
-    vs = ` vs AC ${r.targetAc} — ${d.crit ? 'critical hit!' : d.fumble ? 'natural 1, miss' : success ? 'hit' : 'miss'}`;
+    vs = `${opts.hideTargets ? '' : ` vs AC ${r.targetAc}`} — ${d.crit ? 'critical hit!' : d.fumble ? 'natural 1, miss' : success ? 'hit' : 'miss'}`;
   } else if (r.kind === 'death') {
     success = d.natural >= 10;
     vs = d.natural === 20 ? ' — natural 20!' : d.natural === 1 ? ' — natural 1, two failures' : success ? ' — success' : ' — failure';
   } else if (r.dc !== undefined) {
     success = d.total >= r.dc;
-    vs = ` vs DC ${r.dc} — ${success ? 'success' : 'failure'}`;
+    vs = `${opts.hideTargets ? '' : ` vs DC ${r.dc}`} — ${success ? 'success' : 'failure'}`;
   }
   const advText = d.adv === 'none' ? '' : ` (${d.adv === 'adv' ? 'advantage' : 'disadvantage'}: ${d.rolls.join(' / ')})`;
   // On a tie the first die counts and the second is the dropped one.
@@ -238,10 +241,11 @@ export function resolveRoll(r: PendingRoll, all: PendingRoll[], manual?: number[
     natural: d.natural,
     total: d.total,
     manual: d.manual,
+    ...(opts.timedOut ? { timedOut: true } : {}),
     success,
     crit: d.crit,
     fumble: d.fumble,
-    text: `${r.label}: d20 ${d.natural}${advText} ${r.bonus >= 0 ? '+' : '−'} ${Math.abs(r.bonus)} = ${d.total}${vs}${d.manual ? ' (rolled by the player)' : ''}`,
+    text: `${r.label}: d20 ${d.natural}${advText} ${r.bonus >= 0 ? '+' : '−'} ${Math.abs(r.bonus)} = ${d.total}${vs}${who}`,
   };
   r.result = res;
   // Children: damage after a hit (doubled dice on a crit), damage after a failed save.

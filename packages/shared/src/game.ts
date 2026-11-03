@@ -48,6 +48,10 @@ export interface GameSettings {
   tutorial?: boolean;
   /** The host's opt-out: this game's DM calls are not recorded as AI training data (recorded by default). */
   noTraining?: boolean;
+  /** Seconds a player has for a roll before the server rolls it for them (0 or missing: no limit). */
+  rollTimer?: number;
+  /** Players don't see DCs and ACs (the host still does). */
+  hideTargets?: boolean;
 }
 
 export interface GameMember {
@@ -156,6 +160,8 @@ export interface PendingRoll {
   /** The server rolls this one itself (NPCs, away players). */
   auto?: boolean;
   reason?: string;
+  /** The host's roll timer: when the server rolls this one if the player hasn't (ISO time). */
+  deadline?: string;
   result?: RollOutcome;
 }
 
@@ -174,6 +180,8 @@ export interface RollOutcome {
   natural?: number;
   total: number;
   manual: boolean;
+  /** The player ran out of time and the server rolled for them. */
+  timedOut?: boolean;
   success?: boolean;
   crit?: boolean;
   fumble?: boolean;

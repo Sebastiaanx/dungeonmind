@@ -3,6 +3,7 @@ import { ensureAdmin } from './auth/index.js';
 import { config } from './config.js';
 import { cancelActiveRuns } from './hivemind.js';
 import { moveImagesToHiveMind } from './images.js';
+import { startRollTimers } from './game/engine.js';
 import { recoverInterrupted } from './game/turn.js';
 import { startScheduler } from './jobs.js';
 import { logProblem } from './problems.js';
@@ -18,6 +19,7 @@ recoverInterrupted();
 recoverSims();
 const app = await buildApp();
 startScheduler();
+startRollTimers();
 void moveImagesToHiveMind();
 
 // Clean stop (docker stop, Unraid update): Node as PID 1 ignores SIGTERM unless handled.

@@ -4,6 +4,7 @@ import { requireUser } from '../auth/index.js';
 import { newId } from '../crypto.js';
 import { db, tx } from '../db.js';
 import { validateBuild } from '../game/character.js';
+import { armRollTimers } from '../game/engine.js';
 import { broadcast, DEFAULT_SETTINGS, detail, freshState, gameCharacters, loadGame, roleIn, saveGame, summaries, type GameRow } from '../game/store.js';
 import { HiveMindError, outputJson, runCanvas, withRetry } from '../hivemind.js';
 import { background } from '../jobs.js';
@@ -36,6 +37,8 @@ export function cleanSettings(input: Partial<GameSettings>, base: GameSettings =
   if (typeof input.houseRules === 'string') s.houseRules = input.houseRules.slice(0, 4000);
   if (input.sceneImages !== undefined) s.sceneImages = !!input.sceneImages;
   if (input.noTraining !== undefined) s.noTraining = !!input.noTraining;
+  if (input.rollTimer !== undefined) s.rollTimer = int(input.rollTimer, 0, 600, base.rollTimer ?? 0);
+  if (input.hideTargets !== undefined) s.hideTargets = !!input.hideTargets;
   if (input.formValues && typeof input.formValues === 'object') s.formValues = JSON.parse(JSON.stringify(input.formValues).slice(0, 20_000));
   if (input.pitch && typeof input.pitch === 'object') s.pitch = { title: String(input.pitch.title ?? '').slice(0, 200), hook: String(input.pitch.hook ?? '').slice(0, 2000), tone: input.pitch.tone?.slice(0, 200) };
   return s;
@@ -202,8 +205,14 @@ export function gameRoutes(app: FastifyInstance) {
       g.settings = cleanSettings(body, g.settings);
       if (g.settings.rerolls !== before) g.state.rerollsLeft = g.settings.rerolls;
     } else {
-      // During play only the approval thresholds and house rules can change.
-      g.settings = cleanSettings({ approvalXp: body.approvalXp, approvalGold: body.approvalGold, houseRules: body.houseRules, sceneImages: body.sceneImages, noTraining: body.noTraining }, g.settings);
+      // During play only the approval thresholds, house rules and table options can change.
+      const before = g.settings.rollTimer;
+      g.settings = cleanSettings(
+        { approvalXp: body.approvalXp, approvalGold: body.approvalGold, houseRules: body.houseRules, sceneImages: body.sceneImages, noTraining: body.noTraining, rollTimer: body.rollTimer, hideTargets: body.hideTargets },
+        g.settings,
+      );
+      // A new roll timer starts counting now for the rolls already waiting.
+      if (g.settings.rollTimer !== before) armRollTimers(g, true);
     }
     saveGame(g);
     broadcast(g);

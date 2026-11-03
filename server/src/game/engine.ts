@@ -1,5 +1,5 @@
 import type { GameCharacter, PendingRoll } from '@dungeonmind/shared';
-import { tx } from '../db.js';
+import { db, tx } from '../db.js';
 import { outputJson } from '../hivemind.js';
 import { rules } from '../rules/index.js';
 import { applyDamage, applyDeltas, applyHeal, applySpend, applyXp, checkResources, damageNpc, usedUpIn, deathSave, healNpc, levelCheck, rechargeTurn, tickConditions } from './bookkeeper.js';
@@ -10,7 +10,7 @@ import { campaignFor, partyJson, recentTurns } from './prompt.js';
 import { buildRolls, ready, resolveRoll, rollEffects, type Adjudication } from './rolls.js';
 import { broadcast, gameCharacters, loadGame, saveGame, saveGameCharacter, type GameRow } from './store.js';
 import { clip, sameName } from './text.js';
-import { actionsText, addTurnHooks, dm, orderedActions, playersOf, setPhase, type StateJson } from './turn.js';
+import { actionsText, addTurnHooks, dm, orderedActions, playersOf, resolveLater, setPhase, type StateJson } from './turn.js';
 import { cleanZones } from './zones.js';
 
 /** Rolls the server makes itself: NPCs, and characters whose player is away. Returns true if anything moved. */
@@ -19,12 +19,49 @@ export function autoResolve(g: GameRow, chars: GameCharacter[]): boolean {
   for (let pass = 0; pass < 40; pass++) {
     const r = g.state.rolls.find((x) => ready(x, g.state.rolls) && (x.auto || chars.find((c) => c.id === x.characterId)?.absent));
     if (!r) break;
-    resolveRoll(r, g.state.rolls);
+    resolveRoll(r, g.state.rolls, undefined, { hideTargets: g.settings.hideTargets });
     logRoll(g, r);
     moved = true;
   }
   // Children skipped by a parent's result get logged too.
+  armRollTimers(g);
   return moved;
+}
+
+/** The host's roll timer: every roll a player can make now gets a deadline (fresh: start counting again). */
+export function armRollTimers(g: GameRow, fresh = false) {
+  const secs = g.settings.rollTimer;
+  for (const r of g.state.rolls) {
+    if (!secs || !ready(r, g.state.rolls)) delete r.deadline;
+    else if (fresh || !r.deadline) r.deadline = new Date(Date.now() + secs * 1000).toISOString();
+  }
+}
+
+/** Rolls past their deadline: the server rolls them (marked as such), then the turn goes on. */
+export function rollOverdue(now = Date.now()) {
+  for (const { id } of db.prepare("SELECT id FROM games WHERE status = 'playing'").all() as { id: string }[]) {
+    const g = loadGame(id);
+    if (g?.state.phase !== 'rolling') continue;
+    const late = g.state.rolls.filter((r) => r.deadline && Date.parse(r.deadline) <= now && ready(r, g.state.rolls));
+    if (!late.length) continue;
+    for (const r of late) {
+      resolveRoll(r, g.state.rolls, undefined, { timedOut: true, hideTargets: g.settings.hideTargets });
+      logRoll(g, r);
+    }
+    autoResolve(g, gameCharacters(g.id));
+    const done = !pendingRolls(g).length;
+    if (done) g.state.phase = 'narrating';
+    saveGame(g);
+    broadcast(g);
+    if (done) resolveLater(g.id);
+  }
+}
+
+/** Checks the roll timers every few seconds (main.ts starts it; tests call rollOverdue directly). */
+export function startRollTimers() {
+  const timer = setInterval(() => rollOverdue(), 5_000);
+  timer.unref();
+  return timer;
 }
 
 export function logRoll(g: GameRow, r: PendingRoll) {
@@ -167,8 +204,11 @@ export function registerEngine() {
   addTurnHooks({ beforeNarrate, applyState });
 }
 
-/** A player rolls (server or "I roll myself"); when the last roll is in, the DM narrates. */
-export function playerRoll(g: GameRow, rollId: string, userId: string, isHost: boolean, manual?: number[]): { error?: string; done?: boolean } {
+/**
+ * A player rolls (server or "I roll myself"); when the last roll is in, the DM narrates.
+ * withDamage ("Roll attack + damage"): after a hit, the server also rolls the attacker's damage right away.
+ */
+export function playerRoll(g: GameRow, rollId: string, userId: string, isHost: boolean, manual?: number[], withDamage = false): { error?: string; done?: boolean } {
   if (g.state.phase !== 'rolling') return { error: 'No rolls are waiting' };
   const r = g.state.rolls.find((x) => x.id === rollId);
   if (!r) return { error: 'No such roll' };
@@ -177,12 +217,18 @@ export function playerRoll(g: GameRow, rollId: string, userId: string, isHost: b
   const chars = gameCharacters(g.id);
   const c = chars.find((x) => x.id === r.characterId);
   if (!c || (c.userId !== userId && !isHost)) return { error: "That's not your roll" };
+  const opts = { hideTargets: g.settings.hideTargets };
   try {
-    resolveRoll(r, g.state.rolls, manual);
+    resolveRoll(r, g.state.rolls, manual, opts);
   } catch (err) {
     return { error: (err as Error).message };
   }
   logRoll(g, r);
+  if (withDamage && r.kind === 'attack')
+    for (const d of g.state.rolls.filter((x) => x.onHit === r.id && x.characterId === r.characterId && ready(x, g.state.rolls))) {
+      resolveRoll(d, g.state.rolls, undefined, opts);
+      logRoll(g, d);
+    }
   autoResolve(g, chars);
   const done = !pendingRolls(g).length;
   if (done) g.state.phase = 'narrating';

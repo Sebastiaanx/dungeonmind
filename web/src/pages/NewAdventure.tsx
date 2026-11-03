@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { RULESET_NAMES, type Ruleset } from '@dungeonmind/shared';
 import { api } from '../api';
 import { navigate } from '../router';
+import { ROLL_TIMERS } from '../table/DiceTray';
 import { TRAINING_DISCLAIMER } from './Login';
 
 export function SettingsFields({ v, set, locked }: { v: Record<string, any>; set: (patch: Record<string, any>) => void; locked?: boolean }) {
@@ -36,6 +37,20 @@ export function SettingsFields({ v, set, locked }: { v: Record<string, any>; set
           <option value="public">Public (anyone can watch)</option>
           <option value="private">Private</option>
         </select>
+      </label>
+      <label>
+        <span className="label">Time to roll</span>
+        <select className="input" value={v.rollTimer ?? 0} onChange={(e) => set({ rollTimer: Number(e.target.value) })} title="If a player hasn't rolled in time, the server rolls for them">
+          {ROLL_TIMERS.map(([s, name]) => (
+            <option key={s} value={s}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" className="accent-indigo-500" checked={!!v.hideTargets} onChange={(e) => set({ hideTargets: e.target.checked })} />
+        Hide DCs and ACs from the players
       </label>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" className="accent-indigo-500" disabled={locked} checked={v.multiChars} onChange={(e) => set({ multiChars: e.target.checked })} />

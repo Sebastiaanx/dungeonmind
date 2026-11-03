@@ -20,8 +20,9 @@ export function bookkeepingRoutes(app: FastifyInstance) {
   app.post('/api/games/:id/rolls/:rid', { preHandler: requireUser }, async (req, reply) => {
     const r = await gameFor(req, reply, 'member');
     if (!r) return;
-    const { mode, values } = (req.body ?? {}) as { mode?: 'server' | 'manual'; values?: number[] };
-    const res = playerRoll(r.g, (req.params as { rid: string }).rid, req.user!.id, r.role === 'host', mode === 'manual' ? (values ?? []) : undefined);
+    const { mode, values, withDamage } = (req.body ?? {}) as { mode?: 'server' | 'manual'; values?: number[]; withDamage?: boolean };
+    const manual = mode === 'manual' ? (values ?? []) : undefined;
+    const res = playerRoll(r.g, (req.params as { rid: string }).rid, req.user!.id, r.role === 'host', manual, !manual && !!withDamage);
     if (res.error) return reply.code(400).send({ error: res.error });
     if (res.done) resolveLater(r.g.id);
     return res;
