@@ -6,7 +6,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { parseDice } from '../src/game/dice.js';
 
 /** Spell levels whose effects are all written; raise this as more levels land. */
-const COVERED = [0, 1, 2, 3, 4, 5];
+const COVERED = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 const DAMAGE_TYPES = ['acid', 'bludgeoning', 'cold', 'fire', 'force', 'lightning', 'necrotic', 'piercing', 'poison', 'psychic', 'radiant', 'slashing', 'thunder'];

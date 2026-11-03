@@ -39,6 +39,15 @@
   "animate-objects": {
     "note": "Up to ten objects (Medium counts as two, Large four, Huge eight) become constructs you command as a bonus action; each slams for its size's bludgeoning damage, from 1d4 + 4 (Tiny) to 2d12 + 4 (Huge); two more objects per slot level above 5th."
   },
+  "antipathy-sympathy": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "frightened"
+      }
+    ],
+    "note": "Only the kind of creature you name, when it sees the target or comes within 60 feet; antipathy frightens it and drives it away, sympathy makes it approach and stay; it saves again when it ends a turn out of range and sight, and every 24 hours."
+  },
   "arcane-hand": {
     "attack": "melee",
     "damage": [
@@ -49,6 +58,16 @@
     ],
     "upcast": "2d8",
     "note": "Clenched fist shown; each turn as a bonus action the hand can strike again, push, grapple, or crush a creature it grapples for 2d6 + your modifier bludgeoning (+2d6 per slot level above 5th)."
+  },
+  "arcane-sword": {
+    "attack": "melee",
+    "damage": [
+      {
+        "dice": "3d10",
+        "type": "force"
+      }
+    ],
+    "note": "As a bonus action on each of your turns you can move the sword up to 20 feet and attack again."
   },
   "awaken": {
     "conditions": [
@@ -92,6 +111,18 @@
     ],
     "area": "20-foot square",
     "note": "A creature saves when it enters the area for the first time on a turn or starts its turn there; one already restrained takes 3d6 again at the start of its turn without a save, and can use its action for a Str or Dex check against your spell save DC to get free."
+  },
+  "blade-barrier": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "6d10",
+        "type": "slashing"
+      }
+    ],
+    "area": "straight wall up to 100 feet long, 20 feet high and 5 feet thick, or a ringed wall up to 60 feet in diameter",
+    "note": "A creature saves when it enters the wall for the first time on a turn or starts its turn there; the wall gives three-quarters cover and is difficult terrain."
   },
   "bless": {
     "conditions": [
@@ -168,6 +199,17 @@
     "area": "20-foot-radius sphere",
     "note": "Humanoids only; on a failed save you suppress charmed or frightened effects on it, or make it indifferent to creatures it is hostile toward."
   },
+  "chain-lightning": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "10d8",
+        "type": "lightning"
+      }
+    ],
+    "note": "The first target and up to three others within 30 feet of it, one bolt each; one more bolt per slot level above 6th."
+  },
   "charm-person": {
     "save": "wis",
     "conditions": [
@@ -187,6 +229,18 @@
     ],
     "scales": "dice",
     "note": "Can't regain hit points until the start of your next turn; an undead target also has disadvantage on attacks against you."
+  },
+  "circle-of-death": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "8d6",
+        "type": "necrotic"
+      }
+    ],
+    "upcast": "2d6",
+    "area": "60-foot-radius sphere"
   },
   "cloudkill": {
     "save": "con",
@@ -256,9 +310,25 @@
     ],
     "note": "Whirlpool only: a creature saves when it enters the vortex for the first time on a turn or starts its turn there and on a failure is caught in it; objects take 2d8 each round in the vortex."
   },
+  "control-weather": {
+    "note": "Each change moves precipitation, temperature or wind one stage up or down and takes 1d4 x 10 minutes to set in."
+  },
   "cure-wounds": {
     "heal": "1d8+mod",
     "upcast": "1d8"
+  },
+  "delayed-blast-fireball": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "12d6",
+        "type": "fire"
+      }
+    ],
+    "upcast": "1d6",
+    "area": "20-foot-radius sphere",
+    "note": "The bead explodes when the spell ends; the damage grows by 1d6 at the end of each of your turns before then; a creature touching it saves or sets it off, else it can throw it 40 feet."
   },
   "detect-thoughts": {
     "save": "wis",
@@ -266,6 +336,17 @@
   },
   "dimension-door": {
     "note": "If you would arrive in a space occupied by an object or creature, you and any creature with you each take 4d6 force damage and the teleport fails."
+  },
+  "disintegrate": {
+    "save": "dex",
+    "damage": [
+      {
+        "dice": "10d6+40",
+        "type": "force"
+      }
+    ],
+    "upcast": "3d6",
+    "note": "A creature reduced to 0 hit points turns to dust; it also destroys a Large or smaller nonmagical object or force creation, or a 10-foot cube of a bigger one."
   },
   "dispel-evil-and-good": {
     "attack": "melee",
@@ -282,6 +363,16 @@
     ],
     "note": "On every weapon hit until the spell ends."
   },
+  "divine-word": {
+    "save": "cha",
+    "conditions": [
+      {
+        "name": "deafened",
+        "rounds": 10
+      }
+    ],
+    "note": "By its current hit points: 50 or fewer deafened 1 minute, 40 or fewer also blinded for 10 minutes, 30 or fewer also stunned for 1 hour, 20 or fewer killed; a celestial, elemental, fey or fiend that fails is sent home for 24 hours."
+  },
   "dominate-beast": {
     "save": "wis",
     "conditions": [
@@ -291,6 +382,15 @@
       }
     ],
     "note": "Beasts only; advantage on the save if you or your friends are fighting it; it saves again each time it takes damage; with a 9th-level slot it lasts up to 8 hours."
+  },
+  "dominate-monster": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "charmed"
+      }
+    ],
+    "note": "Advantage on the save if you or your friends are fighting it; it saves again each time it takes damage; with a 9th-level slot it lasts up to 8 hours."
   },
   "dominate-person": {
     "save": "wis",
@@ -311,6 +411,23 @@
       }
     ],
     "note": "Only if the messenger appears monstrous: on a failed save the target gets no benefit from that rest and takes the damage when it wakes; a piece of its body gives it disadvantage on the save."
+  },
+  "earthquake": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "5d6",
+        "type": "bludgeoning"
+      }
+    ],
+    "conditions": [
+      {
+        "name": "prone"
+      }
+    ],
+    "area": "100-foot-radius circle",
+    "note": "The damage is only for a creature near a collapsing structure (buried on a failure, DC 20 Athletics to escape); everyone on the ground saves on cast and at the end of each of your turns or falls prone, concentrators make a Con save, and 1d6 fissures open at the start of your next turn."
   },
   "eldritch-blast": {
     "attack": "ranged",
@@ -346,6 +463,16 @@
     "save": "wis",
     "note": "On a failed save it has disadvantage on Perception checks to notice anyone but you; advantage on the save if you're fighting it."
   },
+  "eyebite": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "unconscious",
+        "rounds": 10
+      }
+    ],
+    "note": "Asleep shown (wakes on damage or a shake); Panicked frightens it and makes it Dash away, Sickened gives disadvantage on attacks and checks with a new save each turn; you can target another creature as your action each turn."
+  },
   "faerie-fire": {
     "save": "dex",
     "area": "20-foot cube",
@@ -376,6 +503,27 @@
     "area": "30-foot cone",
     "note": "It drops what it holds and must Dash away from you; it saves again when it ends a turn out of your line of sight."
   },
+  "feeblemind": {
+    "save": "int",
+    "damage": [
+      {
+        "dice": "4d6",
+        "type": "psychic"
+      }
+    ],
+    "note": "It takes the damage whether or not it saves; on a failure its Intelligence and Charisma become 1 and it can't cast spells or communicate, with a new save every 30 days."
+  },
+  "finger-of-death": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "7d8+30",
+        "type": "necrotic"
+      }
+    ],
+    "note": "A humanoid killed by it rises at the start of your next turn as a zombie under your command."
+  },
   "fire-bolt": {
     "attack": "ranged",
     "damage": [
@@ -395,6 +543,17 @@
       }
     ],
     "note": "Hits a creature within 5 feet that hits you with a melee attack; the warm shield deals fire and gives you resistance to cold, the chill shield deals cold and gives resistance to fire."
+  },
+  "fire-storm": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "7d10",
+        "type": "fire"
+      }
+    ],
+    "area": "up to ten 10-foot cubes"
   },
   "fireball": {
     "save": "dex",
@@ -448,6 +607,44 @@
     ],
     "upcast": "1d6",
     "note": "A creature saves when it ends its turn within 5 feet of the sphere or when you ram the sphere into it as a bonus action."
+  },
+  "flesh-to-stone": {
+    "save": "con",
+    "conditions": [
+      {
+        "name": "restrained",
+        "rounds": 10
+      }
+    ],
+    "note": "Only a creature of flesh; it saves again at the end of each of its turns: three failures petrify it, three successes end the spell; full concentration makes the stone permanent."
+  },
+  "forbiddance": {
+    "autoHit": true,
+    "damage": [
+      {
+        "dice": "5d10",
+        "type": "radiant|necrotic"
+      }
+    ],
+    "area": "up to 40,000 square feet, 30 feet high",
+    "note": "Only the creature types you chose (celestials, elementals, fey, fiends, undead), when they enter for the first time on a turn or start their turn there; the password protects; nothing can teleport or travel by plane into the area."
+  },
+  "forcecage": {
+    "save": "cha",
+    "note": "A creature completely inside is trapped; only one trying to teleport or travel by plane out saves, and on a failure that magic is wasted."
+  },
+  "freezing-sphere": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "10d6",
+        "type": "cold"
+      }
+    ],
+    "upcast": "1d6",
+    "area": "60-foot-radius sphere",
+    "note": "You can keep the globe and throw it later (it explodes after 1 minute); it freezes water 6 inches deep over 30 feet square."
   },
   "geas": {
     "save": "wis",
@@ -539,6 +736,22 @@
     "area": "radius up to 60 feet",
     "note": "Celestials, elementals, fey, fiends and undead can't enter or charm, frighten or possess anyone inside; a creature saves against the bound extra effect when it enters for the first time on a turn or starts its turn there."
   },
+  "harm": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "14d6",
+        "type": "necrotic"
+      }
+    ],
+    "note": "It can't drop below 1 hit point; on a failed save its hit point maximum is reduced by the damage for 1 hour."
+  },
+  "heal": {
+    "heal": "70",
+    "upcast": "10",
+    "note": "Also ends blindness, deafness and diseases; no effect on constructs or undead."
+  },
   "healing-word": {
     "heal": "1d4+mod",
     "upcast": "1d4"
@@ -564,6 +777,9 @@
       }
     ],
     "upcast": "1d10"
+  },
+  "heroes-feast": {
+    "note": "Up to twelve creatures after an hour of feasting: cured of disease and poison, immune to poison and fear, advantage on Wis saves, and hit point maximum and hit points up by 2d10 for 24 hours."
   },
   "heroism": {
     "tempHp": "mod",
@@ -601,6 +817,16 @@
       }
     ],
     "note": "Humanoids only; it saves again at the end of each of its turns; one more humanoid per slot level above 2nd."
+  },
+  "holy-aura": {
+    "save": "con",
+    "conditions": [
+      {
+        "name": "blinded",
+        "rounds": 10
+      }
+    ],
+    "note": "Creatures you choose within 30 feet get advantage on saves and attacks against them have disadvantage; only a fiend or undead that hits one of them in melee saves, or is blinded until the spell ends."
   },
   "hunters-mark": {
     "rider": true,
@@ -644,6 +870,22 @@
     "area": "20-foot-radius, 40-foot-high cylinder",
     "note": "The area is difficult terrain until the end of your next turn."
   },
+  "imprisonment": {
+    "save": "wis",
+    "note": "On a failure it is bound in the form you chose (burial, chaining, which restrains, hedged prison, minimus containment, or endless slumber) until your end condition happens; a success makes it immune to this spell."
+  },
+  "incendiary-cloud": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "10d8",
+        "type": "fire"
+      }
+    ],
+    "area": "20-foot-radius sphere",
+    "note": "A creature also saves when it enters the cloud for the first time on a turn or ends its turn there; the cloud is heavily obscured and moves 10 feet away from you at the start of each of your turns."
+  },
   "inflict-wounds": {
     "attack": "melee",
     "damage": [
@@ -675,6 +917,9 @@
     ],
     "note": "Ends for a target that attacks or casts a spell; one more target per slot level above 2nd."
   },
+  "irresistible-dance": {
+    "note": "No save to start; the target dances in place with disadvantage on Dex saves and attacks, others have advantage against it, and it can use its action for a Wis save to end it; charm-immune creatures are immune."
+  },
   "levitate": {
     "save": "con",
     "note": "Only an unwilling creature saves; on a failure it rises up to 20 feet and hangs there for the duration."
@@ -696,6 +941,10 @@
     "area": "10-foot-radius, 20-foot-tall cylinder",
     "note": "Only a creature of a chosen type that tries to teleport in saves; such creatures have disadvantage on attacks against those inside and can't charm, frighten or possess them."
   },
+  "magic-jar": {
+    "save": "cha",
+    "note": "Only a humanoid within 100 feet; on a failure you possess its body and its soul is trapped in the container; on a success you can't try it again for 24 hours."
+  },
   "magic-missile": {
     "autoHit": true,
     "damage": [
@@ -712,13 +961,39 @@
     "upcast": "1d8",
     "note": "Up to six creatures in a 30-foot-radius sphere; no effect on undead or constructs."
   },
+  "mass-heal": {
+    "note": "Up to 700 hit points divided as you choose among creatures you can see; also cures diseases, blindness and deafness; no effect on undead or constructs."
+  },
   "mass-healing-word": {
     "heal": "1d4+mod",
     "upcast": "1d4",
     "note": "Up to six creatures; no effect on undead or constructs."
   },
+  "mass-suggestion": {
+    "save": "wis",
+    "note": "Up to twelve creatures that hear and understand you follow a reasonable suggested course of action; damage from you or your companions ends it; charm-immune creatures are unaffected; higher slots make it last longer."
+  },
+  "maze": {
+    "note": "The target is banished to a labyrinth demiplane; it can use its action for a DC 20 Intelligence check to escape."
+  },
   "meld-into-stone": {
     "note": "If the stone is partly destroyed or reshaped you are expelled, take 6d6 bludgeoning and fall prone (50 bludgeoning if it is destroyed)."
+  },
+  "meteor-swarm": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "20d6",
+        "type": "fire"
+      },
+      {
+        "dice": "20d6",
+        "type": "bludgeoning"
+      }
+    ],
+    "area": "40-foot-radius sphere",
+    "note": "Four spheres; a creature in more than one is affected only once."
   },
   "mirror-image": {
     "note": "When a creature attacks you, roll a d20 (6+ with three duplicates, 8+ with two, 11+ with one) to hit a duplicate instead; a duplicate has AC 10 + your Dex modifier."
@@ -779,6 +1054,11 @@
     "save": "cha",
     "note": "Celestial, elemental, fey or fiend only; on a failed save it must serve you for 24 hours, longer with a higher slot."
   },
+  "plane-shift": {
+    "attack": "melee",
+    "save": "cha",
+    "note": "Only to banish an unwilling creature: on a hit it saves, and on a failure it is sent to a random place on the plane you name."
+  },
   "poison-spray": {
     "save": "con",
     "damage": [
@@ -793,10 +1073,45 @@
     "save": "wis",
     "note": "Only an unwilling creature saves and shapechangers succeed; it becomes a beast of its CR or level or lower with that beast's statistics and hit points, and reverts at 0 hit points with excess damage carrying over."
   },
+  "power-word-kill": {
+    "note": "If it has 100 hit points or fewer it dies; otherwise nothing happens."
+  },
+  "power-word-stun": {
+    "conditions": [
+      {
+        "name": "stunned"
+      }
+    ],
+    "note": "Only if it has 150 hit points or fewer, otherwise nothing happens; it makes a Con save at the end of each of its turns to end the stun."
+  },
   "prayer-of-healing": {
     "heal": "2d8+mod",
     "upcast": "1d8",
     "note": "Up to six creatures; no effect on undead or constructs."
+  },
+  "prismatic-spray": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "10d6",
+        "type": "fire|acid|lightning|poison|cold"
+      }
+    ],
+    "area": "60-foot cone",
+    "note": "Roll a d8 per target: 1-5 deal the damage (red fire, orange acid, yellow lightning, green poison, blue cold), 6 restrains it until three Con saves free or petrify it, 7 blinds it until a Wis save or it is sent to another plane, 8 rolls twice more."
+  },
+  "prismatic-wall": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "10d6",
+        "type": "fire|acid|lightning|poison|cold"
+      }
+    ],
+    "area": "wall up to 90 feet long, 30 feet high and 1 inch thick, or a sphere up to 30 feet in diameter",
+    "note": "A creature passing through saves once per layer (red fire, orange acid, yellow lightning, green poison, blue cold, indigo restrains, violet blinds); one that comes within 20 feet makes a Con save or is blinded for 1 minute."
   },
   "produce-flame": {
     "attack": "ranged",
@@ -826,6 +1141,10 @@
     "scales": "dice",
     "note": "Its speed drops by 10 feet until the start of your next turn."
   },
+  "regenerate": {
+    "heal": "4d8+15",
+    "note": "It also regains 1 hit point at the start of each of its turns for 1 hour, and severed body parts regrow after 2 minutes."
+  },
   "reincarnate": {
     "note": "Only a humanoid dead no longer than 10 days; the GM rolls d100 on the race table, or chooses, for its new adult body."
   },
@@ -835,6 +1154,14 @@
   },
   "resistance": {
     "note": "Once before the spell ends, the target adds a d4 to one saving throw."
+  },
+  "resurrection": {
+    "note": "Only a creature dead no longer than a century; it returns with all its hit points and a -4 penalty to attacks, saves and checks that drops by 1 each long rest."
+  },
+  "reverse-gravity": {
+    "save": "dex",
+    "area": "50-foot-radius, 100-foot-high cylinder",
+    "note": "Unanchored creatures and objects fall upward; a made save lets a creature grab a fixed object it can reach; they fall back down when the spell ends."
   },
   "revivify": {
     "note": "Only a creature that died within the last minute; it returns to life with 1 hit point."
@@ -868,6 +1195,14 @@
   "seeming": {
     "save": "cha",
     "note": "Only an unwilling target saves; an Intelligence (Investigation) check against your spell save DC sees through the disguise."
+  },
+  "sequester": {
+    "conditions": [
+      {
+        "name": "invisible"
+      }
+    ],
+    "note": "A willing creature or an object is hidden from divination; a creature is in suspended animation until your end condition or until it takes damage."
   },
   "shatter": {
     "save": "con",
@@ -968,9 +1303,73 @@
     "area": "20-foot-radius sphere",
     "note": "Each creature completely in the cloud at the start of its turn saves or spends its action retching; creatures that don't breathe or are immune to poison succeed."
   },
+  "storm-of-vengeance": {
+    "save": "con",
+    "damage": [
+      {
+        "dice": "2d6",
+        "type": "thunder"
+      }
+    ],
+    "conditions": [
+      {
+        "name": "deafened"
+      }
+    ],
+    "area": "360-foot radius",
+    "note": "Deafened for 5 minutes; on later turns: round 2 1d6 acid, round 3 six bolts of 10d6 lightning (Dex save for half), round 4 2d6 bludgeoning, rounds 5-10 1d6 cold, all without saves except the bolts."
+  },
   "suggestion": {
     "save": "wis",
     "note": "On a failed save it follows a reasonable suggested course of action; ends if you or your companions damage it; charm-immune creatures are unaffected."
+  },
+  "sunbeam": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "6d8",
+        "type": "radiant"
+      }
+    ],
+    "conditions": [
+      {
+        "name": "blinded",
+        "rounds": 1
+      }
+    ],
+    "area": "5-foot-wide, 60-foot-long line",
+    "note": "Blinded until your next turn; undead and oozes save with disadvantage; you can make a new line as your action each turn for 1 minute."
+  },
+  "sunburst": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "12d6",
+        "type": "radiant"
+      }
+    ],
+    "conditions": [
+      {
+        "name": "blinded",
+        "rounds": 10
+      }
+    ],
+    "area": "60-foot radius",
+    "note": "Undead and oozes save with disadvantage; a blinded creature saves again at the end of each of its turns; it dispels magical darkness in the area."
+  },
+  "symbol": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "10d10",
+        "type": "necrotic"
+      }
+    ],
+    "area": "60-foot-radius sphere",
+    "note": "Death glyph shown, when triggered and for creatures entering or ending a turn in the sphere for 10 minutes; other glyphs give 1 minute of discord, fear, hopelessness, insanity, pain or stunning, or 10 minutes of sleep, each with its own save."
   },
   "telekinesis": {
     "conditions": [
@@ -979,6 +1378,9 @@
       }
     ],
     "note": "Your spellcasting ability check against its Strength check moves it up to 30 feet, and it is restrained until the end of your next turn; you can repeat this as your action each round."
+  },
+  "teleport": {
+    "note": "The GM rolls d100 by familiarity; off target is 1d10 x 1d10 percent of the distance away, and a mishap deals 3d10 force damage to each traveler and rolls again."
   },
   "thunderwave": {
     "save": "con",
@@ -992,6 +1394,16 @@
     "upcast": "1d8",
     "area": "15-foot cube",
     "note": "On a failed save the creature is also pushed 10 feet away."
+  },
+  "time-stop": {
+    "note": "You take 1d4 + 1 turns in a row; it ends if you affect another creature or what it wears or carries, or move more than 1,000 feet away."
+  },
+  "true-polymorph": {
+    "save": "wis",
+    "note": "Only an unwilling creature saves and shapechangers are unaffected; it becomes another creature or an object (or an object a creature), permanent if you concentrate the full hour, and reverts at 0 hit points with excess damage carrying over."
+  },
+  "true-resurrection": {
+    "note": "Only a creature dead no longer than 200 years, even without a body; it returns with all its hit points, cured of poisons, diseases and curses."
   },
   "vampiric-touch": {
     "attack": "melee",
@@ -1028,9 +1440,35 @@
     "area": "wall up to 60 feet long, 20 feet high and 1 foot thick, or a ring up to 20 feet in diameter",
     "note": "The save is when the wall appears; after that a creature takes the damage when it ends its turn within 10 feet of your chosen side or inside the wall, or enters the wall for the first time on a turn."
   },
+  "wall-of-ice": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "10d6",
+        "type": "cold"
+      }
+    ],
+    "upcast": "2d6",
+    "area": "dome or sphere up to 10-foot radius, or ten 10-foot-square panels",
+    "note": "Only creatures in the wall's space when it appears; a breached section leaves frigid air that deals 5d6 cold (Con save for half, +1d6 per slot level above 6th) to a creature moving through it for the first time on a turn."
+  },
   "wall-of-stone": {
     "save": "dex",
     "note": "Only a creature the wall would enclose saves; on a success it can use its reaction to move up to its speed out; each panel has AC 15 and 30 hit points per inch of thickness."
+  },
+  "wall-of-thorns": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "7d8",
+        "type": "piercing"
+      }
+    ],
+    "upcast": "1d8",
+    "area": "wall up to 60 feet long, 10 feet high and 5 feet thick, or a circle 20 feet in diameter and up to 20 feet high",
+    "note": "The save is when the wall appears; after that a creature entering the wall for the first time on a turn or ending its turn there saves against 7d8 slashing (also +1d8 per slot level above 6th); moving through costs 4 feet per foot."
   },
   "web": {
     "save": "dex",
@@ -1041,6 +1479,23 @@
     ],
     "area": "20-foot cube",
     "note": "Saves when it starts its turn in or enters the webs; a Strength check against your DC frees it; burning webs deal 2d4 fire to creatures starting their turn in the fire."
+  },
+  "weird": {
+    "save": "wis",
+    "damage": [
+      {
+        "dice": "4d10",
+        "type": "psychic"
+      }
+    ],
+    "conditions": [
+      {
+        "name": "frightened",
+        "rounds": 10
+      }
+    ],
+    "area": "30-foot-radius sphere",
+    "note": "The first failed save only frightens it; at the start of each of its turns it saves again or takes the damage, and a made save ends the spell for it."
   },
   "wind-wall": {
     "save": "str",
@@ -1053,6 +1508,9 @@
     ],
     "area": "wall up to 50 feet long, 15 feet high and 1 foot thick",
     "note": "Only creatures in the wall when it appears; it blocks Small or smaller fliers, gases and ordinary arrows and bolts."
+  },
+  "wish": {
+    "note": "Any use but duplicating a spell of 8th level or lower stresses you: 1d10 necrotic per spell level for each spell you cast until a long rest, Strength 3 for 2d4 days, and a 33 percent chance you can never cast wish again."
   },
   "zone-of-truth": {
     "save": "cha",
