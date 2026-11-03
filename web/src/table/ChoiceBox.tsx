@@ -3,7 +3,7 @@ import type { GameCharacter, GameDetail } from '@dungeonmind/shared';
 import { api } from '../api';
 import { useMe } from '../me';
 
-/** 4 choices + Other for each of my characters; shows who we still wait for. */
+/** Suggested choices (on request) + Other for each of my characters; shows who we still wait for. */
 export function ChoiceBox({ g }: { g: GameDetail }) {
   const me = useMe();
   const host = g.myRole === 'host';
@@ -50,6 +50,15 @@ export function ChoiceBox({ g }: { g: GameDetail }) {
 function CharacterChoices({ g, c }: { g: GameDetail; c: GameCharacter }) {
   const [other, setOther] = useState('');
   const [busy, setBusy] = useState(false);
+  const [thinking, setThinking] = useState(false);
+  const suggest = async () => {
+    setThinking(true);
+    try {
+      await api(`/api/games/${g.id}/suggest`, { body: { characterId: c.id } });
+    } finally {
+      setThinking(false);
+    }
+  };
   const done = g.state.actions[c.id];
   const send = async (body: { choice?: number; text?: string }) => {
     setBusy(true);
@@ -75,7 +84,12 @@ function CharacterChoices({ g, c }: { g: GameDetail; c: GameCharacter }) {
   const choices = g.state.choices[c.id] ?? [];
   return (
     <div className="space-y-1.5">
-      <p className="text-xs font-medium uppercase tracking-wide text-indigo-300">What does {c.name} do?</p>
+      <div className="flex items-center gap-2">
+        <p className="flex-1 text-xs font-medium uppercase tracking-wide text-indigo-300">What does {c.name} do?</p>
+        <button className="text-xs text-indigo-300 hover:underline disabled:opacity-60" disabled={thinking} onClick={suggest}>
+          {thinking ? <span className="dm-breathe">The DM is thinking…</span> : choices.length ? '✦ Other ideas' : '✦ Suggest actions'}
+        </button>
+      </div>
       <div className="grid gap-1.5 sm:grid-cols-2">
         {choices.map((x, i) => (
           <button key={i} disabled={busy} className="dm-choice rounded-md border border-[#30363d] bg-[#0d1117] px-2 py-1.5 text-left text-sm hover:border-indigo-500 hover:bg-indigo-950/40" onClick={() => send({ choice: i })}>

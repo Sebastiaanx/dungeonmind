@@ -223,7 +223,7 @@ DungeonMind shows what's missing and refuses to start a game until the required 
   - It only sees and installs matching canvases, never runs an ad-hoc graph, and a block using another memory key fails with a clear message.
   - It can't make new tokens.
 - **"Tabletop" template set** in `web/src/canvas/templates.ts` with the DungeonMind canvases (below), so people can see and tweak them.
-  *Built:* `dnd-setup`, `dnd-adjudicate`, `dnd-narrate`, `dnd-chronicle`, `dnd-ask`, `dnd-sheet`, `dnd-portrait` and `dnd-sim`.
+  *Built:* `dnd-setup`, `dnd-adjudicate`, `dnd-narrate`, `dnd-chronicle`, `dnd-ask`, `dnd-suggest`, `dnd-sheet`, `dnd-portrait` and `dnd-sim`.
 
 ## Implementation order (M0)
 
@@ -265,9 +265,10 @@ DungeonMind keeps the JSON in its repo under `hivemind/*.canvas.json` and instal
 |---|---|---|
 | `dnd-setup` | input → llm `pitch` (JSON) | Adventure pitches + a **dynamic setup form** `{fields:[{id,label,type:"select|slider|text|multi",options?,min?,max?,default}]}` |
 | `dnd-adjudicate` | input → memory search `rules:{{vars.ruleset}}` → llm `rolls` (JSON) | `{rolls:[{pc,kind:"attack|save|skill|damage|heal",stat,dc?,targetAc?,adv,dice?}], resources:[{pc,name,amount}]}`. It never invents results. |
-| `dnd-narrate` | input → memory search `dnd:{{vars.tableId}}` + memory search rules → llm `narration` (numCtx 32K) → llm `state` (JSON) → memory save `dnd:{{vars.tableId}}` | `state`: `{deltas, xp, conditions, items, positions:{zone:[names]}, zones:[{name,distances}], choices:{pc:[4 strings]}, speakers:[{name,kind,gender}], image?, sceneEnd}` |
+| `dnd-narrate` | input → memory search `dnd:{{vars.tableId}}` + memory search rules → llm `narration` (numCtx 32K) → llm `state` (JSON) → memory save `dnd:{{vars.tableId}}` | `state`: `{deltas, xp, conditions, items, positions:{zone:[names]}, zones:[{name,distances}], speakers:[{name,kind,gender}], image?, sceneEnd}` |
 | `dnd-chronicle` | input → llm `patches` (JSON) | `{patches:[{section,op:"replace|append",text}]}` for the campaign.md sections |
 | `dnd-ask` | input → memory search rules + campaign → llm `answer` | An out-of-turn answer that doesn't move the story forward |
+| `dnd-suggest` | input → llm `choices` (JSON) | `{choices:{pc:[4 strings]}}`, only when a player asks (and once for the opening scene) |
 | `dnd-sheet` | input → memory search rules → llm `sheet` (JSON) | A full legal character sheet. DungeonMind validates it. |
 | `dnd-portrait` | input → llm `prompt` → image `portraits` (batch 4) | 4 portrait image links |
 | `dnd-sim` | see Part 2 | Simulation turns |

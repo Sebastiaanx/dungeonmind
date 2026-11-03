@@ -14,6 +14,7 @@ import { campaignFor, partyJson, recentTurns } from './prompt.js';
 import { think } from './queue.js';
 import { broadcast, gameCharacters, loadGame, members, saveGame, saveGameCharacter, type GameRow } from './store.js';
 import { clip, garbled, sameName } from './text.js';
+import { suggestForOpening } from './suggest.js';
 import { tutorialRun } from './tutorial.js';
 
 /** The state JSON the dnd-narrate canvas returns (see hivemind/dnd-narrate.canvas.json). */
@@ -187,7 +188,7 @@ async function narrateOpening(gameId: string) {
       },
       true,
     );
-    await finishNarration(g.id, r, '[]');
+    await finishNarration(g.id, r, '[]', true);
   } catch (err) {
     fail(g, err);
   }
@@ -310,7 +311,7 @@ export function loadSnapshot(gameId: string, turn: number): { state: GameState; 
 }
 
 /** Narration + state JSON in: one transaction applies everything, then the Chronicler updates campaign.md. */
-export async function finishNarration(gameId: string, r: RunResult, results: string) {
+export async function finishNarration(gameId: string, r: RunResult, results: string, opening = false) {
   const narration = toMetric(outputText(r, 'narration'));
   const state = outputJson<StateJson>(r, 'state');
   const g = loadGame(gameId)!;
@@ -321,12 +322,13 @@ export async function finishNarration(gameId: string, r: RunResult, results: str
     logId = addLog(g.id, g.state.turn, 'narration', narration, 'DM', { speakers: state.speakers ?? [], results: json(results, []) }).id;
     if (Array.isArray(state.npcs)) g.state.npcs = mergeNpcs(g.state.npcs, state.npcs, new Set(g.state.rolls.filter((r) => (r.kind === 'damage' || r.kind === 'heal') && r.result && !r.result.skipped && r.target).map((r) => r.target!)), rules(g.ruleset));
     for (const h of hooks) h.applyState?.(g, chars, state, results);
-    // Choices: 4 per character, keyed by id.
+    // Choices: the DM suggests them only when asked (suggest.ts); the scripted tutorial still brings its own.
     g.state.choices = {};
     for (const c of activeCharacters(chars)) {
       const key = Object.keys(state.choices ?? {}).find((k) => sameName(k, c.name));
       const list = key ? (state.choices![key] as unknown[]) : [];
-      g.state.choices[c.id] = (Array.isArray(list) ? list : []).map((x) => clip(String(x), 200)).filter(Boolean).slice(0, 4);
+      const clean = (Array.isArray(list) ? list : []).map((x) => clip(String(x), 200)).filter(Boolean).slice(0, 4);
+      if (clean.length) g.state.choices[c.id] = clean;
     }
     g.state.speakers = Array.isArray(state.speakers) ? state.speakers.slice(0, 12) : [];
     g.state.scenePrompt = state.image ? clip(String(state.image), 600) : undefined;
@@ -348,6 +350,7 @@ export async function finishNarration(gameId: string, r: RunResult, results: str
   labelTurn(g.id, g.state.turn - 1, false);
   if (g.state.turn >= 2) labelTurn(g.id, g.state.turn - 2, true);
   for (const h of hooks) h.afterTurn?.(g, narration, state, logId);
+  if (opening) suggestForOpening(g);
   await chronicle(g, narration, state);
 }
 
