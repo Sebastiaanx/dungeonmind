@@ -1,5 +1,5 @@
 import type { GameDetail } from '@dungeonmind/shared';
-import { DiceTray } from './DiceTray';
+import { DiceTray, FreeRoll } from './DiceTray';
 import { tableExtras } from './extras';
 import { Approvals, HostTools, RerollBar, SheetActions } from './HostPanel';
 import { Initiative, ZoneBoard } from './ZoneBoard';
@@ -21,6 +21,7 @@ function Dock({ g }: { g: GameDetail }) {
       <Approvals g={g} />
       <DiceTray g={g} />
       <HostTools g={g} />
+      <FreeRoll g={g} />
     </>
   );
 }

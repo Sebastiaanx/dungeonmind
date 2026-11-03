@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { GameDetail, PendingRoll } from '@dungeonmind/shared';
+import { SKILLS, type GameDetail, type PendingRoll } from '@dungeonmind/shared';
 import { api } from '../api';
 import { useMe } from '../me';
 
@@ -185,6 +185,87 @@ export function DiceTray({ g }: { g: GameDetail }) {
           <RollRow key={r.id} g={g} r={r} />
         ))}
       </ul>
+    </div>
+  );
+}
+
+const ABILITY_NAMES: [string, string][] = [
+  ['str', 'Strength'],
+  ['dex', 'Dexterity'],
+  ['con', 'Constitution'],
+  ['int', 'Intelligence'],
+  ['wis', 'Wisdom'],
+  ['cha', 'Charisma'],
+];
+const title = (s: string) => s.replace(/-/g, ' ').replace(/\b\w/g, (x) => x.toUpperCase());
+
+/** Rolls outside the turn: any dice just for fun, or a check the player asks for. Never changes the game. */
+export function FreeRoll({ g }: { g: GameDetail }) {
+  const me = useMe();
+  const [open, setOpen] = useState(false);
+  const [expr, setExpr] = useState('1d20');
+  const [check, setCheck] = useState('perception');
+  const [error, setError] = useState('');
+  if ((g.myRole !== 'host' && g.myRole !== 'player') || (g.status !== 'playing' && g.status !== 'paused')) return null;
+  const mine = g.characters.find((c) => c.userId === me.id && c.seated);
+  const roll = async (body: object) => {
+    setError('');
+    try {
+      await api(`/api/games/${g.id}/free-roll`, { body, quiet: true });
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+  if (!open)
+    return (
+      <button className="text-xs text-indigo-300 hover:underline" onClick={() => setOpen(true)}>
+        🎲 Free roll or ask for a check (never changes the game)
+      </button>
+    );
+  return (
+    <div className="space-y-1.5 text-sm">
+      <form
+        className="flex flex-wrap items-center gap-1.5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          roll({ expr });
+        }}
+      >
+        <input className="input w-28 py-1 font-mono" aria-label="Dice to roll" placeholder="2d6+3" value={expr} maxLength={60} onChange={(e) => setExpr(e.target.value)} />
+        <button className="btn-ghost py-1" disabled={!expr.trim()}>
+          Roll for fun
+        </button>
+        {mine && (
+          <>
+            <select className="input w-auto py-1" aria-label="Check to ask for" value={check} onChange={(e) => setCheck(e.target.value)}>
+              <optgroup label="Skills">
+                {Object.keys(SKILLS)
+                  .sort()
+                  .map((s) => (
+                    <option key={s} value={s}>
+                      {title(s)}
+                    </option>
+                  ))}
+              </optgroup>
+              <optgroup label="Abilities">
+                {ABILITY_NAMES.map(([a, name]) => (
+                  <option key={a} value={a}>
+                    {name}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+            <button type="button" className="btn-ghost py-1" onClick={() => roll({ characterId: mine.id, ...(check in SKILLS ? { skill: check } : { ability: check }) })}>
+              Ask for this check
+            </button>
+          </>
+        )}
+        <button type="button" className="text-xs text-slate-500 hover:underline" onClick={() => setOpen(false)}>
+          close
+        </button>
+      </form>
+      {error && <p className="text-xs text-amber-300">{error}</p>}
+      <p className="text-xs text-slate-500">Everyone sees the roll. The DM ignores rolls for fun, but sees a check you ask for and can use it in the story.</p>
     </div>
   );
 }

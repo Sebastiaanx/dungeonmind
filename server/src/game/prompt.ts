@@ -8,7 +8,8 @@ import { clip, titleCase } from './text.js';
 
 /** Last turns verbatim, newest last, within a character budget. */
 export function recentTurns(gameId: string, budget = 12_000, maxTurns = 12): string {
-  const entries = readLog(gameId, { limit: 400, kinds: ['narration', 'action', 'roll', 'change', 'refused', 'levelup', 'system'] });
+  // Free rolls ("just for fun") stay out of the DM's view; checks a player asked for go in.
+  const entries = readLog(gameId, { limit: 400, kinds: ['narration', 'action', 'roll', 'change', 'refused', 'levelup', 'system'] }).filter((e) => e.data?.kind !== 'free');
   const turns = [...new Set(entries.map((e) => e.turn))].slice(-maxTurns);
   const out: string[] = [];
   let used = 0;

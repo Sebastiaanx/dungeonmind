@@ -1,13 +1,14 @@
-import type { GameCharacter, PendingRoll } from '@dungeonmind/shared';
+import { SKILLS, type Ability, type GameCharacter, type PendingRoll } from '@dungeonmind/shared';
 import { db, tx } from '../db.js';
 import { outputJson } from '../hivemind.js';
 import { rules } from '../rules/index.js';
 import { applyDamage, applyDeltas, applyHeal, applySpend, applyXp, checkResources, damageNpc, usedUpIn, deathSave, healNpc, levelCheck, rechargeTurn, tickConditions } from './bookkeeper.js';
 import { derive } from './character.js';
+import { DiceError, roll } from './dice.js';
 import { rollInitiative, nextRound, pruneCombat } from './initiative.js';
 import { addLog, readLog } from './log.js';
 import { campaignFor, partyJson, recentTurns } from './prompt.js';
-import { buildRolls, ready, resolveRoll, rollEffects, type Adjudication } from './rolls.js';
+import { buildRolls, conditionAdv, ready, resolveRoll, rollEffects, type Adjudication } from './rolls.js';
 import { broadcast, gameCharacters, loadGame, saveGame, saveGameCharacter, type GameRow } from './store.js';
 import { clip, sameName } from './text.js';
 import { actionsText, addTurnHooks, dm, orderedActions, playersOf, resolveLater, setPhase, type StateJson } from './turn.js';
@@ -242,4 +243,64 @@ export function playerRoll(g: GameRow, rollId: string, userId: string, isHost: b
   saveGame(g);
   broadcast(g);
   return { done };
+}
+
+const ABILITIES: Ability[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+const lastFreeRoll = new Map<string, number>();
+
+/**
+ * A roll outside the turn, logged for everyone; it never changes the game.
+ * - expr ("2d6+3"): just for fun. The DM doesn't see these (recentTurns leaves them out).
+ * - skill or ability: a check the player asks for ("Can I roll Perception?"), with the sheet's modifier,
+ *   conditions and Halfling Luck. The DM sees it in the story and can use it in the next narration.
+ */
+export function freeRoll(g: GameRow, user: { id: string; username: string }, body: { expr?: string; characterId?: string; skill?: string; ability?: string }): { error?: string } {
+  if (g.status !== 'playing' && g.status !== 'paused') return { error: 'The game is not running' };
+  const now = Date.now();
+  if (now - (lastFreeRoll.get(user.id) ?? 0) < 1000) return { error: 'One roll a second, please' };
+  const chars = gameCharacters(g.id);
+  const mine = chars.filter((c) => c.userId === user.id && c.seated);
+  const c = mine.find((x) => x.id === body.characterId) ?? mine[0];
+  if (body.skill || body.ability) {
+    const skill = body.skill && body.skill in SKILLS ? body.skill : undefined;
+    const ability = skill ? SKILLS[skill] : ABILITIES.find((a) => a === body.ability);
+    if (!ability) return { error: 'Pick a skill or ability' };
+    if (!c) return { error: 'Only players with a character at the table can ask for a check' };
+    const d = derive(rules(g.ruleset), c);
+    const exh2024 = g.ruleset === 'srd52' ? 2 * c.exhaustion : 0;
+    const r: PendingRoll = {
+      id: 'asked',
+      actor: c.name,
+      characterId: c.id,
+      kind: 'check',
+      label: `${c.name} asks for a ${skill ? skill.replace(/-/g, ' ') : ability.toUpperCase()} check`,
+      dice: '1d20',
+      adv: conditionAdv(c, 'check', ability, g.ruleset),
+      bonus: skill ? d.skillBonus[skill] : d.mods[ability] - exh2024,
+      ...(c.species === 'halfling' ? { luck: true } : {}),
+    };
+    resolveRoll(r, [r]);
+    lastFreeRoll.set(user.id, now);
+    logRoll(g, r);
+    return {};
+  }
+  const expr = String(body.expr ?? '').replace(/\s+/g, '');
+  let out;
+  try {
+    out = roll(expr);
+  } catch (err) {
+    if (err instanceof DiceError) return { error: err.message };
+    throw err;
+  }
+  lastFreeRoll.set(user.id, now);
+  const name = c?.name ?? user.username;
+  const flat = out.flat ? ` ${out.flat > 0 ? '+' : '−'} ${Math.abs(out.flat)}` : '';
+  addLog(g.id, g.state.turn, 'roll', `${name} rolls ${expr} just for fun: [${out.dice.map((x) => x.value).join(', ')}]${flat} = ${out.total}`, name, {
+    kind: 'free',
+    dice: out.dice.filter((x) => !x.dropped).map((x) => x.value),
+    faces: out.dice,
+    total: out.total,
+    fumble: false,
+  });
+  return {};
 }

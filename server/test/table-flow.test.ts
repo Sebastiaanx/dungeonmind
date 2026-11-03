@@ -136,4 +136,28 @@ describe('table flow', () => {
     expect(esva.conditions.map((c: any) => c.name)).toEqual(['blessed']);
     expect((await log()).at(-1).text).toContain('d20 11 + Bless 1d4 (2) + Bardic Inspiration 1d6 (5)');
   });
+
+  it('free rolls are logged for everyone and never change the game; the DM only sees asked checks', async () => {
+    const before = await game();
+    const free = await t.as(t.pl, 'POST', `/api/games/${t.id}/free-roll`, { expr: '2d6 + 3' });
+    expect(free.statusCode).toBe(200);
+    expect((await t.as(t.pl, 'POST', `/api/games/${t.id}/free-roll`, { expr: '1d20' })).json().error).toMatch(/One roll a second/);
+    const fun = (await log()).at(-1);
+    expect(fun.text).toMatch(/^Esva rolls 2d6\+3 just for fun: \[\d, \d\] \+ 3 = \d+$/);
+    expect(fun.data).toMatchObject({ kind: 'free', faces: [{ sides: 6 }, { sides: 6 }] });
+    const after = await game();
+    expect(after.state).toEqual(before.state);
+    expect(after.characters).toEqual(before.characters);
+
+    await new Promise((r) => setTimeout(r, 1000));
+    expect((await t.as(t.host, 'POST', `/api/games/${t.id}/free-roll`, { expr: '2d7' })).json().error).toMatch(/no d7/);
+    expect((await t.as(t.host, 'POST', `/api/games/${t.id}/free-roll`, { characterId: t.hostChar, skill: 'perception' })).statusCode).toBe(200);
+    const asked = (await log()).at(-1);
+    expect(asked.text).toMatch(/^Turks asks for a perception check: d20 \d+ \+ \d+ = \d+$/);
+
+    const { recentTurns } = await import('../src/game/prompt.js');
+    const seen = recentTurns(t.id);
+    expect(seen).toContain('Turks asks for a perception check');
+    expect(seen).not.toContain('just for fun');
+  });
 });

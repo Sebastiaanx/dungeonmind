@@ -6,7 +6,7 @@ import { labelTurn, markRerolled } from '../trainer/records.js';
 import { applyHeal, levelCheck, rest } from '../game/bookkeeper.js';
 import { buildCharacter, buildOf, subclassLevel, validateBuild } from '../game/character.js';
 import { rollDie } from '../game/dice.js';
-import { playerRoll } from '../game/engine.js';
+import { freeRoll, playerRoll } from '../game/engine.js';
 import { addLog, hideLogFrom } from '../game/log.js';
 import { tally, voters } from '../game/rerolls.js';
 import { broadcast, gameCharacters, loadGame, saveGame, saveGameCharacter } from '../game/store.js';
@@ -26,6 +26,15 @@ export function bookkeepingRoutes(app: FastifyInstance) {
     if (res.error) return reply.code(400).send({ error: res.error });
     if (res.done) resolveLater(r.g.id);
     return res;
+  });
+
+  // ---- Free rolls: anyone at the table rolls anything, or asks for a check; never changes the game ----
+  app.post('/api/games/:id/free-roll', { preHandler: requireUser }, async (req, reply) => {
+    const r = await gameFor(req, reply, 'member');
+    if (!r) return;
+    const res = freeRoll(r.g, req.user!, (req.body ?? {}) as { expr?: string; characterId?: string; skill?: string; ability?: string });
+    if (res.error) return reply.code(400).send(res);
+    return { ok: true };
   });
 
   /** Host: go on without waiting (e.g. everyone is down and only death saves are left). */
