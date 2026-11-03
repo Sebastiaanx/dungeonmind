@@ -70,7 +70,7 @@ function StreamingText({ text, written }: { text: string; written: boolean }) {
   return (
     <div>
       <div className="story whitespace-pre-wrap">{paced ? (`${text} `.match(new RegExp(`^\\s*(?:\\S+\\s+){${shown}}`))?.[0] ?? '') : text}</div>
-      {written && <p className="dm-breathe mt-2 text-xs text-indigo-300">The story is written. The DM is updating the game…</p>}
+      {written && <p className="dm-breathe mt-2 text-xs text-indigo-300">The story is written. The DM is updating the game, and your choices follow…</p>}
     </div>
   );
 }

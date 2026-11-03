@@ -8,11 +8,11 @@ const SECTIONS: { id: string; title: string; img?: string; body: React.ReactNode
     title: 'Getting started',
     body: (
       <>
-        <p>DungeonMind is a table for Dungeons &amp; Dragons 5e where an AI is the Dungeon Master. It tells the story, plays the monsters and suggests what you could do. The server keeps every number honest: dice, hit points, spell slots, uses of every feature, XP.</p>
+        <p>DungeonMind is a table for Dungeons &amp; Dragons 5e where an AI is the Dungeon Master. It tells the story, plays the monsters and gives everyone choices. The server keeps every number honest: dice, hit points, spell slots, uses of every feature, XP.</p>
         <ol className="list-decimal pl-5">
           <li>Make a character in <b>Characters</b> (step by step, let the AI build one, or import one).</li>
           <li>Start an adventure from the <b>Lobby</b>, or accept an invite.</li>
-          <li>Play: write what you do (or press Suggest actions for 4 ideas from the DM), roll when asked, and listen to the narrator.</li>
+          <li>Play: pick one of four choices or write your own, roll when asked, and listen to the narrator.</li>
         </ol>
         <p>New here? Play the <b>tutorial</b> first: a short scripted adventure that shows every part of the table in five minutes, no AI needed.</p>
       </>

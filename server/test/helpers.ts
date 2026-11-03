@@ -45,7 +45,7 @@ export async function settle(app: FastifyInstance, cookie: string, res: { status
   throw new Error(`job ${jobId} never finished`);
 }
 
-export const CANVASES =['dnd-setup', 'dnd-adjudicate', 'dnd-narrate', 'dnd-chronicle', 'dnd-ask', 'dnd-suggest', 'dnd-sheet', 'dnd-portrait', 'dnd-scene'];
+export const CANVASES =['dnd-setup', 'dnd-adjudicate', 'dnd-narrate', 'dnd-chronicle', 'dnd-ask', 'dnd-sheet', 'dnd-portrait', 'dnd-scene'];
 
 export const fighterBuild = (name: string, over: Record<string, unknown> = {}) => ({
   ruleset: 'srd51',

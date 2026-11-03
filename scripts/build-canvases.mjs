@@ -137,6 +137,7 @@ ${PARTY_CONTEXT}
 "combat":{"start"?:boolean,"end"?:boolean,"enemies"?:[string]}|null,
 "zones":[{"name":string,"distances":{[otherZone:string]:number}}],
 "positions":{[zone:string]:[string]},
+"choices":{[pc:string]:[string,string,string,string]},
 "speakers":[{"name":string,"kind":"narrator"|"npc"|"monster","gender"?:"male"|"female"|"neutral","age"?:"child"|"young"|"adult"|"old"}],
 "image":string|null,
 "sceneEnd":boolean,
@@ -147,6 +148,7 @@ ${PARTY_CONTEXT}
 - "npcs": every NPC/monster that matters now, status changes included. A creature from the SRD bestiary gets "monster": its stat block's name (e.g. {"name":"Grishnak","monster":"Goblin Boss"}, {"name":"Wolf 2","monster":"Wolf"}): the server sets its HP, AC and attacks from the stat block, so leave hp/maxHp/ac out. Give hp/maxHp/ac only for creatures with no stat block.
 - "combat": {"start":true,"enemies":[names]} when a fight begins, {"end":true} when it ends, else null.
 - "zones" + "positions": the named areas of the current scene with distances in feet between them, and who stands where (every PC and NPC present).
+- "choices": for EVERY player character exactly 4 short, distinct, actionable options that fit their class and situation (the player can always write their own).
 - "speakers": who speaks in the narration, in order, starting with the narrator.
 - "image": a one-sentence visual description of the scene for an illustration when the scene changes a lot, else null.
 - "sceneEnd": true when this scene is over (a rest, a journey, a chapter end).
@@ -225,31 +227,6 @@ Reply with JSON only.`,
       }),
     ],
     [edge('in', 'rules'), edge('in', 'memory'), edge('rules', 'answer'), edge('memory', 'answer')],
-  ),
-  canvas(
-    'dnd-suggest',
-    'DungeonMind: suggest actions',
-    'Four ideas for what a character could do next, only when a player asks (DungeonMind).',
-    [
-      node('in', 'input', 'input', 0),
-      node('choices', 'llm', 'choices', 300, {
-        ...limit(400),
-        json: true,
-        numCtx: JSON_CTX,
-        temperature: 0.7,
-        jsonSchema: `{"choices":{[pc:string]:[string,string,string,string]}}`,
-        system: `You are the Dungeon Master suggesting what player characters could do next in a D&D 5e campaign ({{vars.ruleset}}). ${TONE}
-- For each character named, exactly 4 short, distinct, actionable options that fit their class, their resources and the current scene. Mix safe and risky ones.
-- Only actions the character can take now: no spells without a slot, no features with no uses left.
-- Never move the story forward or decide what happens.
-Reply with JSON only.`,
-        prompt: `${PARTY_CONTEXT}
-
-## Suggest actions for
-{{question}}`,
-      }),
-    ],
-    [edge('in', 'choices')],
   ),
   canvas(
     'dnd-sheet',

@@ -9,11 +9,9 @@ import { addLog, readLog } from '../game/log.js';
 import { campaignFor, partyJson, recentTurns } from '../game/prompt.js';
 import { think } from '../game/queue.js';
 import { broadcast, gameCharacters, saveGame, saveGameCharacter } from '../game/store.js';
-import { suggestChoices } from '../game/suggest.js';
 import { activeCharacters, playersOf, redoNarration, resolveLater, retry, startGame, submitAction } from '../game/turn.js';
 import { HiveMindError, outputText, runCanvas, withRetry } from '../hivemind.js';
 import { readImage } from '../images.js';
-import { background } from '../jobs.js';
 import { emitToGame } from '../realtime.js';
 import { recordCall } from '../trainer/records.js';
 import { gameFor } from './games.js';
@@ -52,24 +50,6 @@ export function tableRoutes(app: FastifyInstance) {
     const res = submitAction(r.g, req.user!.id, (req.body ?? {}) as { characterId: string; choice?: number; text?: string }, r.role === 'host');
     if (res.error) return reply.code(400).send({ error: res.error });
     return res;
-  });
-
-  /** Suggest Actions: the DM's 4 ideas for one of my characters, into state.choices. Never part of the turn. */
-  app.post('/api/games/:id/suggest', { preHandler: requireUser }, async (req, reply) => {
-    const r = await gameFor(req, reply, 'member');
-    if (!r) return;
-    const { g } = r;
-    const { characterId } = (req.body ?? {}) as { characterId?: string };
-    const c = gameCharacters(g.id).find((x) => x.id === characterId);
-    if (!c) return reply.code(404).send({ error: 'No such character at this table' });
-    if (c.userId !== req.user!.id && !(r.role === 'host' && c.absent)) return reply.code(403).send({ error: "That's not your character" });
-    if (g.settings.tutorial || g.status !== 'playing' || g.state.phase !== 'collect') return reply.code(400).send({ error: 'The DM is not waiting for actions right now' });
-    if (rateLimited(`suggest:${req.user!.id}`, 6, 60_000)) return reply.code(429).send({ error: 'One request at a time, please' });
-    // A busy GPU can take minutes: a background job, like the other slow AI work.
-    return background(req, reply, async () => {
-      await suggestChoices(g, [c.id]);
-      return { ok: true };
-    });
   });
 
   /** Take back a declared action while the DM still waits. */

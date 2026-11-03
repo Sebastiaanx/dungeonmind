@@ -65,7 +65,6 @@ DungeonMind does no AI itself. Everything goes through your [HiveMind](https://g
 | `dnd-narrate` | narration with the real dice results, then the state JSON, then memory save |
 | `dnd-chronicle` | campaign.md section patches after every turn |
 | `dnd-ask` | out-of-turn "Ask the DM" answers |
-| `dnd-suggest` | 4 suggested actions for a character, only when a player asks (and once for the opening scene) |
 | `dnd-sheet` | a full character sheet from a description |
 | `dnd-portrait` | 4 portrait options (image batch) |
 | `dnd-scene` | one scene illustration |
@@ -112,7 +111,7 @@ Every logged-in user can create adventures (**Lobby → New adventure**). A play
 ## 8. Playing
 
 - **The table:** your sheet on the left (tabs for the rest of the party), the zone board in the middle (scene image, positions and ranges), the story log on the right with the dice and the choice boxes at the bottom. A phone shows the same game on one screen; only the full sheet sits behind the **Stats** button.
-- **Turns:** every seated player writes what their character does ("Other"), or presses **Suggest actions** for 4 ideas from the DM. The opening scene comes with ideas for everyone. The DM always waits for everyone; there's no timer. In combat the actions go in initiative order.
+- **Turns:** every seated player picks one of 4 choices or writes their own ("Other"). The DM always waits for everyone; there's no timer. In combat the actions go in initiative order.
 - **Ask the DM:** an out-of-turn question (rules, what your character knows). It never moves the story and never blocks the turn.
 - **Robustness:** a HiveMind crash, timeout or invalid output is retried automatically (3 tries, no reroll used). If it still fails, the turn stays exactly as it was and anyone at the table can press **Retry**. A server restart mid-turn does the same.
 - **The DM queue:** DungeonMind keeps its own queue in front of HiveMind; at most *N* tables think at once (admin setting `maxThinking`, default 2). Waiting tables see "The DM is thinking… (#2 in queue)".
