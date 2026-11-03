@@ -107,7 +107,7 @@ const SECTIONS: { id: string; title: string; img?: string; body: React.ReactNode
     img: '/guide/mobile.jpg',
     body: (
       <p>
-        The narrator's audio is made while the text appears, so ▶ next to a narration plays right away. Turn on auto-read in <b>Settings → Narrator voice</b> to hear it without pressing anything. Pick your narrator and speed there, and set the volume with the slider at the table; NPCs get their own voices, monsters sound like monsters. The spoken word lights up as it's read. Select any text and press <b>Read this aloud</b>. Stop and Skip are always at the bottom left.
+        The narrator's audio is made while the text appears, so ▶ next to a narration plays right away. Turn on auto-read in <b>Settings → Narrator voice</b> to hear it without pressing anything. Pick your narrator and speed there, and set the volume, auto-read and speed right at the table; NPCs get their own voices, monsters sound like monsters. The spoken word lights up as it's read. Select any text and press <b>Read this aloud</b>. Stop and Skip are always at the bottom left.
       </p>
     ),
   },

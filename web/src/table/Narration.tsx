@@ -89,33 +89,52 @@ function Thumbs({ gameId, logId }: { gameId: string; logId: number }) {
   );
 }
 
-/** The narrator's volume, right at the table. It changes what's playing now and is remembered for next time. */
+/** At the table: narrator volume, auto-read on or off, and speed. Remembered for next time. */
 export function VolumeSlider() {
   const me = useMe();
-  const [v, setV] = useState(prefsOf(me.prefs).volume ?? 1);
-  const save = async () => {
-    const narrator = { ...prefsOf(me.prefs), volume: v };
+  const [p, setP] = useState<NarratorPrefs>(() => prefsOf(me.prefs));
+  const v = p.volume ?? 1;
+  const save = async (patch: NarratorPrefs) => {
+    const narrator = { ...prefsOf(me.prefs), ...patch };
+    setP(narrator);
     Object.assign(me.prefs, await api('/api/me/prefs', { method: 'PUT', body: { narrator } }));
   };
   return (
-    <label className="flex items-center gap-1 text-xs text-slate-400" title={`Narrator volume: ${Math.round(v * 100)}%`}>
-      🔊
-      <input
-        type="range"
-        min={0}
-        max={1}
-        step={0.05}
-        value={v}
-        aria-label="Narrator volume"
-        className="w-16 accent-indigo-500 sm:w-24"
-        onChange={(e) => {
-          setV(Number(e.target.value));
-          setVolume(Number(e.target.value));
-        }}
-        onPointerUp={save}
-        onKeyUp={save}
-      />
-    </label>
+    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+      <label className="flex items-center gap-1" title={`Narrator volume: ${Math.round(v * 100)}%`}>
+        🔊
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          value={v}
+          aria-label="Narrator volume"
+          className="w-16 accent-indigo-500 sm:w-24"
+          onChange={(e) => {
+            setP({ ...p, volume: Number(e.target.value) });
+            setVolume(Number(e.target.value));
+          }}
+          onPointerUp={() => save({ volume: v })}
+          onKeyUp={() => save({ volume: v })}
+        />
+      </label>
+      <button
+        className={`rounded-full border px-2 py-0.5 ${p.autoplay ? 'border-indigo-400 bg-indigo-950 text-indigo-100' : 'border-[#30363d] text-slate-400'}`}
+        title={p.autoplay ? 'Auto-read is on: new story text is read aloud by itself' : 'Auto-read is off: press ▶ to hear a narration'}
+        aria-pressed={!!p.autoplay}
+        onClick={() => save({ autoplay: !p.autoplay })}
+      >
+        Auto-read {p.autoplay ? 'on' : 'off'}
+      </button>
+      <select className="rounded-md border border-[#30363d] bg-[#0d1117] px-1 py-0.5 text-slate-300" title="Narrator speed (from the next narration)" aria-label="Narrator speed" value={String(p.speed ?? 1)} onChange={(e) => save({ speed: Number(e.target.value) })}>
+        {[0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4].map((x) => (
+          <option key={x} value={String(x)}>
+            {x}×
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 
