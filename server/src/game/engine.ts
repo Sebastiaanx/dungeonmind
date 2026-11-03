@@ -28,7 +28,7 @@ export function autoResolve(g: GameRow, chars: GameCharacter[]): boolean {
 }
 
 export function logRoll(g: GameRow, r: PendingRoll) {
-  addLog(g.id, g.state.turn, 'roll', r.result!.text, r.actor, { rollId: r.id, kind: r.kind, dice: r.result!.dice, total: r.result!.total, manual: r.result!.manual, success: r.result!.success, crit: r.result!.crit });
+  addLog(g.id, g.state.turn, 'roll', r.result!.text, r.actor, { rollId: r.id, kind: r.kind, adv: r.adv, dice: r.result!.dice, faces: r.result!.faces, total: r.result!.total, manual: r.result!.manual, success: r.result!.success, crit: r.result!.crit, fumble: r.result!.fumble });
 }
 
 export const pendingRolls = (g: GameRow) => g.state.rolls.filter((r) => !r.result);

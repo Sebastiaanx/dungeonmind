@@ -174,7 +174,7 @@ Every turn runs on the server, step by step, and every step is in the story log:
 
 ## 12. Animations
 
-- **3D dice** with [`@3d-dice/dice-box`](https://github.com/3d-dice/dice-box) (MIT). Every roll at the table plays for everyone: a short physics tumble, then the **server's real faces** pop up (gold on a critical, red on a natural 1, ✋ when the player rolled their own dice). dice-box can't force results, so the tumble only sets the mood; the numbers are always the server's. The physics engine loads only on the first roll.
+- **Dice** for every roll at the table, for everyone: the dice tumble, then land on the **server's real faces**, each with its own size (a 2d6+1d4 shows two d6 and a d4). With advantage or disadvantage both d20s show and the dropped one is dimmed. Gold on a critical, red on a natural 1, ✋ when the player rolled their own dice. With reduced motion the dice show their faces at once.
 - **Ink text:** a new narration writes itself out word by word, and keeps pace with the narrator voice when it's playing.
 - **Effects:** HP bars shake and flash red on damage and glow green on healing, spent spell-slot pips fade out, and a level-up bursts gold.
 - Turn them off in **Settings → Reading → Animations**; the system "reduce motion" setting is respected too.

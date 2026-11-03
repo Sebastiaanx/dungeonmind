@@ -159,8 +159,17 @@ export interface PendingRoll {
   result?: RollOutcome;
 }
 
+/** One die as it landed: its size, its face and whether it was dropped (advantage, 4d6kh3). */
+export interface DieFace {
+  sides: number;
+  value: number;
+  dropped?: boolean;
+}
+
 export interface RollOutcome {
   dice: number[];
+  /** Every die thrown, dropped ones included. Missing on rolls saved before it existed. */
+  faces?: DieFace[];
   /** d20 tests: the die that counts. */
   natural?: number;
   total: number;

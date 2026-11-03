@@ -417,7 +417,7 @@ export function Reading() {
         </label>
         <label className="flex items-end gap-2 pb-2 text-sm">
           <input type="checkbox" className="accent-indigo-500" checked={p.animations !== false} onChange={(e) => set({ animations: e.target.checked })} />
-          Animations (3D dice, ink text, effects)
+          Animations (dice, ink text, effects)
         </label>
       </div>
       <p className="story rounded-md border border-[#30363d] bg-[#0d1117] p-3">The torchlight gutters. Somewhere below, something old is waking.</p>

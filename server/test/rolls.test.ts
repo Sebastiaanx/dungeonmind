@@ -110,6 +110,20 @@ describe('resolving rolls', () => {
     expect(f[0].result!.success).toBe(false);
   });
 
+  it('keeps every face with its die size, and marks the dropped d20', () => {
+    const adv = pair();
+    adv[0].adv = 'adv';
+    R.resolveRoll(adv[0], adv, [4, 17]);
+    expect(adv[0].result!.faces).toEqual([{ sides: 20, value: 4, dropped: true }, { sides: 20, value: 17 }]);
+    const tie = pair();
+    tie[0].adv = 'dis';
+    R.resolveRoll(tie[0], tie, [9, 9]);
+    expect(tie[0].result!.faces).toEqual([{ sides: 20, value: 9 }, { sides: 20, value: 9, dropped: true }]);
+    const mixed = R.buildRolls(rules, [esva], [hag()], { rolls: [{ id: 'd', actor: 'Esva', kind: 'damage', target: 'The Bell-Hag', dice: '2d6+1d4', spell: 'Chaos Bolt' }] });
+    R.resolveRoll(mixed[0], mixed, [3, 5, 2]);
+    expect(mixed[0].result!.faces).toEqual([{ sides: 6, value: 3 }, { sides: 6, value: 5 }, { sides: 4, value: 2 }]);
+  });
+
   it('refuses impossible "I roll myself" values', () => {
     const c = pair();
     expect(() => R.resolveRoll(c[0], c, [21])).toThrow(/d20 shows 1-20/);

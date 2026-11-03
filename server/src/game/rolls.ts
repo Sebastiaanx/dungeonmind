@@ -207,6 +207,7 @@ export function resolveRoll(r: PendingRoll, all: PendingRoll[], manual?: number[
     if (halved) total = Math.floor(total / 2);
     const res: RollOutcome = {
       dice: out.dice.filter((x) => !x.dropped).map((x) => x.value),
+      faces: out.dice,
       total,
       manual: out.manual,
       crit: r.crit,
@@ -229,8 +230,11 @@ export function resolveRoll(r: PendingRoll, all: PendingRoll[], manual?: number[
     vs = ` vs DC ${r.dc} — ${success ? 'success' : 'failure'}`;
   }
   const advText = d.adv === 'none' ? '' : ` (${d.adv === 'adv' ? 'advantage' : 'disadvantage'}: ${d.rolls.join(' / ')})`;
+  // On a tie the first die counts and the second is the dropped one.
+  const kept = d.rolls.indexOf(d.natural);
   const res: RollOutcome = {
     dice: d.rolls,
+    faces: d.rolls.map((value, i) => ({ sides: 20, value, ...(i !== kept ? { dropped: true } : {}) })),
     natural: d.natural,
     total: d.total,
     manual: d.manual,

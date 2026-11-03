@@ -103,10 +103,12 @@ html[data-dyslexia='1'] .story, html[data-dyslexia='1'] .readable { font-family:
 @keyframes dm-reveal-in { 0% { opacity: 0; transform: scale(0.6) rotate(-8deg); } 60% { transform: scale(1.08) rotate(1deg); } 100% { opacity: 1; transform: none; } }
 .dm-reveal { animation: dm-reveal-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1); }
 .dm-crit { box-shadow: 0 0 40px 6px rgba(212, 175, 55, 0.5); }
-.dm-face { animation: dm-reveal-in 0.5s both; }
+@keyframes dm-tumble { 0% { transform: rotate(0) scale(0.9); } 50% { transform: rotate(180deg) scale(1.05); } 100% { transform: rotate(360deg) scale(0.9); } }
+.dm-tumble { animation: dm-tumble 0.4s linear infinite; }
+.dm-land { animation: dm-reveal-in 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .dm-ink, .dm-hp-hit, .dm-hp-hit .dm-hp-bar, .dm-hp-heal .dm-hp-bar, .dm-pip-spent, .dm-levelup-burst, .dm-reveal, .dm-face, .dm-levelup { animation: none !important; }
+  .dm-ink, .dm-hp-hit, .dm-hp-hit .dm-hp-bar, .dm-hp-heal .dm-hp-bar, .dm-pip-spent, .dm-levelup-burst, .dm-reveal, .dm-tumble, .dm-land, .dm-levelup { animation: none !important; }
 }
 
 /* ---- M10: mobile polish ---- */
