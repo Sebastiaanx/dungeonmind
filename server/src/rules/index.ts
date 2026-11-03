@@ -1,6 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { RULESETS, type RulesData, type Ruleset } from '@dungeonmind/shared';
+import { RULESETS, type RulesData, type Ruleset, type SpellEffect } from '@dungeonmind/shared';
 import { config } from '../config.js';
 
 const cache = new Map<Ruleset, RulesData>();
@@ -22,6 +22,12 @@ function loadBase(ruleset: Ruleset): RulesData {
   let d = base.get(ruleset);
   if (!d) {
     d = JSON.parse(readFileSync(join(config.rulesDir, ruleset, 'rules.json'), 'utf8')) as RulesData;
+    // The spells' numbers are written by hand next to the imported data.
+    const effects = join(config.rulesDir, ruleset, 'spell-effects.json');
+    if (existsSync(effects)) {
+      const byId = JSON.parse(readFileSync(effects, 'utf8')) as Record<string, SpellEffect>;
+      for (const s of d.spells) if (byId[s.id]) s.effect = byId[s.id];
+    }
     base.set(ruleset, d);
   }
   return d;

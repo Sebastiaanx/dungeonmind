@@ -74,6 +74,43 @@ export interface RulesSpell {
   attack?: string;
   save?: Ability;
   damage?: string;
+  /** Hand-written numbers the server rolls with (server/data/<ruleset>/spell-effects.json). */
+  effect?: SpellEffect;
+}
+
+/**
+ * What a spell does in numbers. Dice may use "mod" for the caster's spellcasting modifier ("1d8+mod").
+ * Everything is per target, and per ray, dart or beam when the spell has a `count`.
+ */
+export interface SpellEffect {
+  /** A spell attack roll; damage follows on a hit. */
+  attack?: 'melee' | 'ranged';
+  /** The target makes this saving throw against the caster's spell save DC. */
+  save?: Ability;
+  /** A made save still takes half the damage. */
+  half?: boolean;
+  /** Hits without a roll (Magic Missile). */
+  autoHit?: boolean;
+  /** Extra damage on the caster's own attack hits (smites, Hex, Hunter's Mark). */
+  rider?: boolean;
+  /** Damage parts; several for spells like Flame Strike (fire + radiant). A type the caster picks lists the options: "acid|cold|fire"; "weapon" is the weapon's type. */
+  damage?: { dice: string; type: string }[];
+  heal?: string;
+  tempHp?: string;
+  /** Added to the first damage part (or the healing) per slot level above the spell's level. */
+  upcast?: string;
+  /** Cantrips at character level 5, 11 and 17: "dice" means 2, 3, 4 times the dice; "count" means 2, 3, 4 beams. */
+  scales?: 'dice' | 'count';
+  /** Separate rays, darts or beams, each with its own damage. */
+  count?: number;
+  /** More of `count` per slot level above. */
+  countUpcast?: number;
+  /** "20-foot-radius sphere": every creature in it is a target. */
+  area?: string;
+  /** Conditions a target gets on a hit or failed save (or simply when cast, without attack or save). */
+  conditions?: { name: string; rounds?: number }[];
+  /** Ongoing or conditional parts the story has to handle ("2d4 acid again at the end of its next turn"). */
+  note?: string;
 }
 
 export interface RulesItem {

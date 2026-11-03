@@ -1,0 +1,448 @@
+{
+  "acid-splash": {
+    "save": "dex",
+    "damage": [
+      {
+        "dice": "1d6",
+        "type": "acid"
+      }
+    ],
+    "scales": "dice",
+    "area": "5-foot-radius Sphere"
+  },
+  "animal-friendship": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "charmed"
+      }
+    ],
+    "note": "Beasts only; ends if you or an ally damages it; one more Beast per slot level above 1."
+  },
+  "bane": {
+    "save": "cha",
+    "note": "Up to three targets; a target that fails subtracts 1d4 from attack rolls and saves for the duration; one more target per slot level above 1."
+  },
+  "bless": {
+    "conditions": [
+      {
+        "name": "blessed",
+        "rounds": 10
+      }
+    ],
+    "note": "Up to three creatures; one more per slot level above 1."
+  },
+  "burning-hands": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "3d6",
+        "type": "fire"
+      }
+    ],
+    "upcast": "1d6",
+    "area": "15-foot Cone",
+    "note": "Unattended flammable objects in the Cone start burning."
+  },
+  "charm-person": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "charmed"
+      }
+    ],
+    "note": "Humanoids only; Advantage on the save if you or allies are fighting it; ends if you or allies damage it; one more target per slot level above 1."
+  },
+  "chill-touch": {
+    "attack": "melee",
+    "damage": [
+      {
+        "dice": "1d10",
+        "type": "necrotic"
+      }
+    ],
+    "scales": "dice",
+    "note": "On a hit the target can't regain Hit Points until the end of your next turn."
+  },
+  "chromatic-orb": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "3d8",
+        "type": "acid|cold|fire|lightning|poison|thunder"
+      }
+    ],
+    "upcast": "1d8",
+    "note": "If two or more d8s match, the orb leaps to another target within 30 feet (new attack and damage roll), up to slot-level leaps."
+  },
+  "color-spray": {
+    "save": "con",
+    "area": "15-foot Cone",
+    "conditions": [
+      {
+        "name": "blinded",
+        "rounds": 1
+      }
+    ],
+    "note": "Blinded until the end of your next turn."
+  },
+  "command": {
+    "save": "wis",
+    "note": "On a failed save the target obeys a one-word command (Approach, Drop, Flee, Grovel = Prone, Halt) on its next turn; one more target per slot level above 1."
+  },
+  "cure-wounds": {
+    "heal": "2d8+mod",
+    "upcast": "2d8"
+  },
+  "dissonant-whispers": {
+    "save": "wis",
+    "half": true,
+    "damage": [
+      {
+        "dice": "3d6",
+        "type": "psychic"
+      }
+    ],
+    "upcast": "1d6",
+    "note": "On a failed save the target uses its Reaction to move as far away from you as it can."
+  },
+  "divine-favor": {
+    "rider": true,
+    "damage": [
+      {
+        "dice": "1d4",
+        "type": "radiant"
+      }
+    ],
+    "note": "Applies to your weapon attack hits for 1 minute."
+  },
+  "divine-smite": {
+    "rider": true,
+    "damage": [
+      {
+        "dice": "2d8",
+        "type": "radiant"
+      }
+    ],
+    "upcast": "1d8",
+    "note": "1d8 more if the target is a Fiend or an Undead."
+  },
+  "eldritch-blast": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "1d10",
+        "type": "force"
+      }
+    ],
+    "scales": "count",
+    "count": 1
+  },
+  "ensnaring-strike": {
+    "save": "str",
+    "conditions": [
+      {
+        "name": "restrained"
+      }
+    ],
+    "note": "Cast on a weapon hit; Large or larger has Advantage. While Restrained it takes 1d6 piercing at the start of each of its turns (+1d6 per slot level above 1); a Strength (Athletics) check vs your DC ends it."
+  },
+  "entangle": {
+    "save": "str",
+    "area": "20-foot square",
+    "conditions": [
+      {
+        "name": "restrained"
+      }
+    ],
+    "note": "Area is Difficult Terrain; a Restrained creature can use an action for a Strength (Athletics) check vs your DC to break free."
+  },
+  "faerie-fire": {
+    "save": "dex",
+    "area": "20-foot Cube",
+    "note": "Affected creatures shed Dim Light, can't benefit from Invisible, and attack rolls against them have Advantage."
+  },
+  "false-life": {
+    "tempHp": "2d4+4",
+    "upcast": "5"
+  },
+  "fire-bolt": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "1d10",
+        "type": "fire"
+      }
+    ],
+    "scales": "dice",
+    "note": "An unattended flammable object hit starts burning."
+  },
+  "goodberry": {
+    "note": "Ten berries for 24 hours; a creature eats one as a Bonus Action to regain 1 Hit Point."
+  },
+  "grease": {
+    "save": "dex",
+    "area": "10-foot square",
+    "conditions": [
+      {
+        "name": "prone"
+      }
+    ],
+    "note": "Difficult Terrain for 1 minute; a creature entering or ending its turn there saves again or falls Prone."
+  },
+  "guidance": {
+    "conditions": [
+      {
+        "name": "guided",
+        "rounds": 10
+      }
+    ],
+    "note": "The 1d4 applies only to ability checks with the chosen skill."
+  },
+  "guiding-bolt": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "4d6",
+        "type": "radiant"
+      }
+    ],
+    "upcast": "1d6",
+    "note": "The next attack roll against the target before the end of your next turn has Advantage."
+  },
+  "healing-word": {
+    "heal": "2d4+mod",
+    "upcast": "2d4"
+  },
+  "hellish-rebuke": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "2d10",
+        "type": "fire"
+      }
+    ],
+    "upcast": "1d10",
+    "note": "Reaction against the creature that damaged you."
+  },
+  "heroism": {
+    "note": "Target is immune to Frightened and gains Temporary Hit Points equal to your spellcasting modifier at the start of each of its turns; one more target per slot level above 1."
+  },
+  "hex": {
+    "rider": true,
+    "damage": [
+      {
+        "dice": "1d6",
+        "type": "necrotic"
+      }
+    ],
+    "note": "Target has Disadvantage on checks with one chosen ability; the curse can move to a new creature if the target drops to 0 Hit Points."
+  },
+  "hideous-laughter": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "prone"
+      },
+      {
+        "name": "incapacitated"
+      }
+    ],
+    "note": "Repeats the save at the end of each of its turns and when it takes damage (with Advantage); one more target per slot level above 1."
+  },
+  "hunters-mark": {
+    "rider": true,
+    "damage": [
+      {
+        "dice": "1d6",
+        "type": "force"
+      }
+    ],
+    "note": "Advantage on Perception or Survival checks to find the target; the mark can move if the target drops to 0 Hit Points."
+  },
+  "ice-knife": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "1d10",
+        "type": "piercing"
+      }
+    ],
+    "note": "Hit or miss, the target and each creature within 5 feet make a Dex save or take 2d6 cold (+1d6 per slot level above 1)."
+  },
+  "inflict-wounds": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "2d10",
+        "type": "necrotic"
+      }
+    ],
+    "upcast": "1d10"
+  },
+  "magic-missile": {
+    "autoHit": true,
+    "damage": [
+      {
+        "dice": "1d4+1",
+        "type": "force"
+      }
+    ],
+    "count": 3,
+    "countUpcast": 1
+  },
+  "poison-spray": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "1d12",
+        "type": "poison"
+      }
+    ],
+    "scales": "dice"
+  },
+  "produce-flame": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "1d8",
+        "type": "fire"
+      }
+    ],
+    "scales": "dice",
+    "note": "The flame lasts 10 minutes; each hurl is a Magic action."
+  },
+  "ray-of-frost": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "1d8",
+        "type": "cold"
+      }
+    ],
+    "scales": "dice",
+    "note": "On a hit the target's Speed drops by 10 feet until the start of your next turn."
+  },
+  "ray-of-sickness": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "2d8",
+        "type": "poison"
+      }
+    ],
+    "upcast": "1d8",
+    "conditions": [
+      {
+        "name": "poisoned",
+        "rounds": 1
+      }
+    ],
+    "note": "Poisoned until the end of your next turn."
+  },
+  "resistance": {
+    "note": "Once per turn, damage of the chosen type to the target is reduced by 1d4."
+  },
+  "sacred-flame": {
+    "save": "dex",
+    "damage": [
+      {
+        "dice": "1d8",
+        "type": "radiant"
+      }
+    ],
+    "scales": "dice",
+    "note": "The target gains no benefit from Half or Three-Quarters Cover for this save."
+  },
+  "sanctuary": {
+    "note": "A creature targeting the warded creature with an attack or damaging spell makes a Wisdom save or must pick a new target or lose it; ends if the warded creature attacks, casts or deals damage."
+  },
+  "searing-smite": {
+    "rider": true,
+    "damage": [
+      {
+        "dice": "1d6",
+        "type": "fire"
+      }
+    ],
+    "upcast": "1d6",
+    "note": "At the start of each of its turns the target takes the fire damage again, then makes a Con save; a success ends the spell."
+  },
+  "shillelagh": {
+    "note": "Club or Quarterstaff uses your spellcasting ability and a d8 die (Force or normal type); the die becomes d10, d12, 2d6 at levels 5, 11, 17."
+  },
+  "shocking-grasp": {
+    "attack": "melee",
+    "damage": [
+      {
+        "dice": "1d8",
+        "type": "lightning"
+      }
+    ],
+    "scales": "dice",
+    "note": "On a hit the target can't make Opportunity Attacks until the start of its next turn."
+  },
+  "sleep": {
+    "save": "wis",
+    "area": "5-foot-radius Sphere",
+    "conditions": [
+      {
+        "name": "incapacitated",
+        "rounds": 1
+      }
+    ],
+    "note": "A target that fails repeats the save at the end of its next turn and falls Unconscious on a second failure; damage or a shake ends it."
+  },
+  "sorcerous-burst": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "1d8",
+        "type": "acid|cold|fire|lightning|poison|psychic|thunder"
+      }
+    ],
+    "scales": "dice",
+    "note": "Each 8 rolled adds another d8, up to your spellcasting modifier in extra dice."
+  },
+  "starry-wisp": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "1d8",
+        "type": "radiant"
+      }
+    ],
+    "scales": "dice",
+    "note": "Until the end of your next turn the target sheds Dim Light and can't benefit from Invisible."
+  },
+  "thunderwave": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "2d8",
+        "type": "thunder"
+      }
+    ],
+    "upcast": "1d8",
+    "area": "15-foot Cube",
+    "note": "On a failed save a creature is pushed 10 feet away."
+  },
+  "true-strike": {
+    "note": "One weapon attack using your spellcasting ability, Radiant or normal type; extra 1d6/2d6/3d6 radiant at levels 5/11/17."
+  },
+  "vicious-mockery": {
+    "save": "wis",
+    "damage": [
+      {
+        "dice": "1d6",
+        "type": "psychic"
+      }
+    ],
+    "scales": "dice",
+    "note": "On a failed save the target has Disadvantage on its next attack roll before the end of its next turn."
+  }
+}

@@ -1,8 +1,9 @@
-import type { GameCharacter, GameState, Ruleset } from '@dungeonmind/shared';
-import { rules } from '../rules/index.js';
+import type { GameCharacter, GameState, Ruleset, RulesData } from '@dungeonmind/shared';
+import { findIn, rules } from '../rules/index.js';
 import { derive, itemByName } from './character.js';
 import { currentCampaign, withParty } from './campaign.js';
 import { readLog } from './log.js';
+import { spellSummary } from './spells.js';
 import type { GameRow } from './store.js';
 import { clip, titleCase } from './text.js';
 
@@ -24,6 +25,11 @@ export function recentTurns(gameId: string, budget = 12_000, maxTurns = 12): str
   }
   return out.join('\n\n') || '(no turns yet)';
 }
+
+const spellLine = (r: RulesData, id: string, level: number) => {
+  const s = findIn(r.spells, id);
+  return s ? spellSummary(s, level) : titleCase(id);
+};
 
 /** The party as the AI sees it: authoritative numbers, compact. */
 export function partyJson(ruleset: Ruleset, chars: GameCharacter[], state: GameState, players: Record<string, string> = {}): string {
@@ -48,8 +54,9 @@ export function partyJson(ruleset: Ruleset, chars: GameCharacter[], state: GameS
         counters: c.counters.map((k) => `${k.name} ${k.current}/${k.max}`),
         conditions: c.conditions.map((x) => (x.rounds !== undefined ? `${x.name} (${x.rounds} rounds)` : x.name)),
         concentration: c.concentration,
-        cantrips: c.cantrips?.map(titleCase),
-        spells: c.spells?.map(titleCase),
+        // With what the server will roll for them, so the AI asks for the right rolls.
+        cantrips: c.cantrips?.map((id) => spellLine(r, id, c.level)),
+        spells: c.spells?.map((id) => spellLine(r, id, c.level)),
         weapons: c.inventory.filter((i) => i.equipped && itemByName(r, i.name)?.damage).map((i) => i.name),
         inventory: c.inventory.map((i) => (i.qty > 1 ? `${i.qty}× ${i.name}` : i.name)),
         gold: c.gold,

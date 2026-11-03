@@ -1,6 +1,9 @@
-import { SKILLS, type Ability, type BonusDie, type GameCharacter, type Npc, type PendingRoll, type RollOutcome, type RulesData } from '@dungeonmind/shared';
+import { SKILLS, type Ability, type BonusDie, type GameCharacter, type Npc, type PendingRoll, type RollOutcome, type RulesData, type RulesSpell } from '@dungeonmind/shared';
+import { findIn } from '../rules/index.js';
 import { checkManual, combineAdv, DiceError, diceNeeded, parseDice, roll, rollD20, type Adv } from './dice.js';
 import { derive, itemByName } from './character.js';
+import { normalizeCounterName } from './bookkeeper.js';
+import { cantripTier, knownSpell, spellCount, spellDice, spellMod } from './spells.js';
 import { clip, sameName } from './text.js';
 
 /** What dnd-adjudicate returns. */
@@ -97,9 +100,68 @@ function safeDice(expr: string | undefined, fallback: string): string {
   return fallback;
 }
 
+interface Cast {
+  spell: RulesSpell;
+  caster: GameCharacter;
+  slot: number;
+}
+
+/**
+ * The PC spell behind each roll: the spell it names (a damage roll also its attack's or save's), who casts it,
+ * and the slot it's cast with (from the slots the adjudicator spends for that caster, lowest that fits first).
+ */
+function spellCasts(rules: RulesData, chars: GameCharacter[], npcs: Npc[], list: RawRoll[], resources: Adjudication['resources']): (Cast | undefined)[] {
+  const index = new Map(list.map((r, i) => [String(r?.id ?? `r${i + 1}`), i]));
+  const slots = new Map<string, number[]>();
+  for (const w of Array.isArray(resources) ? resources : []) {
+    const c = chars.find((x) => sameName(x.name, w?.pc));
+    const m = c && /^Spell slot L(\d)$/.exec(normalizeCounterName(String(w?.name ?? '')));
+    if (!c || !m) continue;
+    const free = slots.get(c.id) ?? [];
+    for (let k = 0; k < Math.min(9, Math.max(1, Math.round(Number(w.amount) || 1))); k++) free.push(Number(m[1]));
+    slots.set(c.id, free.sort((a, b) => a - b));
+  }
+  const byKey = new Map<string, Cast>();
+  const out: (Cast | undefined)[] = [];
+  list.forEach((r, i) => {
+    if (!r || typeof r !== 'object') return;
+    const p = index.get(String(r.onHit ?? r.onFail ?? ''));
+    // A damage roll without a spell of its own belongs to its attack's or save's spell.
+    if (!r.spell) {
+      if (p !== undefined && p < i) out[i] = out[p];
+      return;
+    }
+    const actorName = String(r.actor ?? r.pc ?? '');
+    const actor = chars.find((c) => sameName(c.name, actorName));
+    // A save names the target as its actor: the caster is whoever else at the table has the spell. A monster's own spell isn't a PC's.
+    let caster = r.kind !== 'save' && knownSpell(rules, actor, r.spell) ? actor : undefined;
+    if (!caster && (r.kind === 'save' || actor || !npcs.some((n) => sameName(n.name, actorName)))) caster = chars.find((c) => c !== actor && knownSpell(rules, c, r.spell));
+    const spell = caster && findIn(rules.spells, r.spell);
+    if (!caster || !spell) return;
+    // Every roll of one spell by one caster is one cast, with one slot.
+    const key = `${caster.id}|${spell.id}`;
+    let cast = byKey.get(key);
+    if (!cast) {
+      const free = slots.get(caster.id) ?? [];
+      const k = free.findIndex((l) => l >= spell.level);
+      cast = { spell, caster, slot: spell.level === 0 ? 0 : k >= 0 ? free.splice(k, 1)[0] : spell.level };
+      byKey.set(key, cast);
+    }
+    out[i] = cast;
+  });
+  return out;
+}
+
+/** A damage type the caster picks from a list ("acid|cold|fire") is the AI's pick when it's one of them; "weapon" is the weapon's. */
+function pickType(options: string, ai: string | undefined): string | undefined {
+  if (options === 'weapon') return ai;
+  const list = options.split('|');
+  return list.find((t) => t === ai?.toLowerCase()) ?? list[0];
+}
+
 /**
  * Turns the adjudicator's roll list into rolls the server can run. For player characters every modifier
- * comes from the sheet; the AI's numbers are only used for NPCs.
+ * comes from the sheet, and a PC's spell rolls its own dice; the AI's numbers are only used for NPCs.
  */
 export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[], adj: Adjudication): PendingRoll[] {
   const out: PendingRoll[] = [];
@@ -107,6 +169,16 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
   const list = (Array.isArray(adj.rolls) ? adj.rolls : []).slice(0, 30);
   const used = new Set<string>();
   list.forEach((r, i) => ids.set(String(r?.id ?? `r${i + 1}`), `r${i + 1}`));
+  const casts = spellCasts(rules, chars, npcs, list, adj.resources);
+  // Darts that always hit (Magic Missile): how many each cast has left, and over how many damage rolls the AI spread them.
+  const darts = new Map<Cast, { left: number; rolls: number }>();
+  list.forEach((r, i) => {
+    const c = casts[i];
+    if (r?.kind !== 'damage' || !c?.spell.effect?.autoHit) return;
+    const e = darts.get(c) ?? { left: spellCount(c.spell.effect, c.spell.level, c.slot, c.caster.level), rolls: 0 };
+    e.rolls++;
+    darts.set(c, e);
+  });
   for (const [i, r] of list.entries()) {
     if (!r || typeof r !== 'object') continue;
     const kind = (['attack', 'save', 'check', 'damage', 'heal'].includes(String(r.kind)) ? r.kind : 'check') as PendingRoll['kind'];
@@ -118,6 +190,8 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
     const ability = abilityOf(r.ability);
     const skill = skillOf(r.skill);
     const exh2024 = rules.ruleset === 'srd52' && pc ? 2 * pc.exhaustion : 0;
+    const cast = casts[i];
+    const effect = cast?.spell.effect;
     const base: PendingRoll = {
       id: `r${i + 1}`,
       actor: pc?.name ?? actorName,
@@ -159,9 +233,9 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
         adv: combineAdv(aiAdv, conditionAdv(pc, 'attack', undefined, rules.ruleset), targetGivesAdv(targetPc) ? 'adv' : 'none'),
       });
     } else if (kind === 'save') {
-      const ab = ability ?? 'dex';
-      // A PC's spell sets the DC: use the caster's real spell save DC when the AI names a caster in "reason"/"spell".
-      const caster = chars.find((c) => c !== pc && r.spell && (c.spells ?? []).concat(c.cantrips ?? []).some((s) => sameName(s.replace(/-/g, ' '), String(r.spell).replace(/-/g, ' '))));
+      // A PC's spell sets the ability and the DC: the caster's real spell save DC.
+      const ab = effect?.save ?? ability ?? 'dex';
+      const caster = cast && cast.caster !== pc ? cast.caster : undefined;
       const dc = caster ? (derive(rules, caster).spellDc ?? Number(r.dc)) : Number(r.dc) || 10;
       Object.assign(base, {
         label: `${base.actor} ${ab.toUpperCase()} save`,
@@ -189,6 +263,27 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
           const m = finesse ? Math.max(d.mods.str, d.mods.dex) : ranged ? d.mods.dex : d.mods.str;
           dice = `${w.damage}${m >= 0 ? '+' : ''}${m}`;
           base.damageType = w.damageType ?? base.damageType;
+        }
+      }
+      if (cast && effect && (kind === 'damage' ? effect.damage?.length : effect.heal)) {
+        const s = cast.spell;
+        const o = { mod: spellMod(rules, cast.caster), above: s.level ? Math.max(0, cast.slot - s.level) : 0 };
+        if (kind === 'heal') dice = spellDice(effect.heal!, { ...o, upcast: effect.upcast });
+        else {
+          const tier = s.level === 0 && effect.scales === 'dice' ? cantripTier(cast.caster.level) : 1;
+          // One roll takes all the darts; several split them as the AI's dice say, up to the darts there are.
+          let times = 1;
+          const left = darts.get(cast);
+          if (left) {
+            const per = parseDice(effect.damage![0].dice.replace(/[+-]?mod/, '')).terms[0];
+            const said = safeDice(r.dice, '') ? (parseDice(r.dice!).terms.find((t) => t.sides === per?.sides)?.count ?? 0) / (per?.count ?? 1) : 1;
+            times = left.rolls === 1 ? left.left : Math.max(1, Math.min(Math.round(said) || 1, left.left));
+            left.left = Math.max(0, left.left - times);
+          }
+          dice = effect.damage!.map((p, j) => spellDice(p.dice, { ...o, tier, times, upcast: j ? undefined : effect.upcast })).join('+');
+          const types = effect.damage!.map((p) => pickType(p.type, r.damageType)).filter(Boolean);
+          base.damageType = types.length ? [...new Set(types)].join(', ') : base.damageType;
+          if (base.onFail) base.half = effect.half || undefined;
         }
       }
       Object.assign(base, {

@@ -1,0 +1,322 @@
+{
+  "acid-splash": {
+    "save": "dex",
+    "damage": [
+      {
+        "dice": "1d6",
+        "type": "acid"
+      }
+    ],
+    "scales": "dice",
+    "note": "Can target two creatures within 5 feet of each other."
+  },
+  "animal-friendship": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "charmed"
+      }
+    ],
+    "note": "Only a beast with Intelligence 3 or lower; ends if you or your companions harm it."
+  },
+  "bane": {
+    "save": "cha",
+    "note": "Up to three targets subtract a d4 from attack rolls and saving throws; one more target per slot level above 1st."
+  },
+  "bless": {
+    "conditions": [
+      {
+        "name": "blessed",
+        "rounds": 10
+      }
+    ],
+    "note": "Up to three targets; one more per slot level above 1st."
+  },
+  "burning-hands": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "3d6",
+        "type": "fire"
+      }
+    ],
+    "upcast": "1d6",
+    "area": "15-foot cone"
+  },
+  "charm-person": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "charmed"
+      }
+    ],
+    "note": "Advantage on the save if you or your companions are fighting it; ends if you harm it; one more target per slot level above 1st."
+  },
+  "chill-touch": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "1d8",
+        "type": "necrotic"
+      }
+    ],
+    "scales": "dice",
+    "note": "Can't regain hit points until the start of your next turn; an undead target also has disadvantage on attacks against you."
+  },
+  "color-spray": {
+    "conditions": [
+      {
+        "name": "blinded",
+        "rounds": 1
+      }
+    ],
+    "area": "15-foot cone",
+    "note": "Roll 6d10 (plus 2d10 per slot level above 1st) for the hit points of creatures blinded, lowest current hit points first."
+  },
+  "command": {
+    "save": "wis",
+    "note": "The target follows a one-word command on its next turn (Grovel: it falls prone); one more target per slot level above 1st."
+  },
+  "cure-wounds": {
+    "heal": "1d8+mod",
+    "upcast": "1d8"
+  },
+  "divine-favor": {
+    "rider": true,
+    "damage": [
+      {
+        "dice": "1d4",
+        "type": "radiant"
+      }
+    ],
+    "note": "On every weapon hit until the spell ends."
+  },
+  "eldritch-blast": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "1d10",
+        "type": "force"
+      }
+    ],
+    "scales": "count",
+    "count": 1
+  },
+  "entangle": {
+    "save": "str",
+    "conditions": [
+      {
+        "name": "restrained",
+        "rounds": 10
+      }
+    ],
+    "area": "20-foot square",
+    "note": "A restrained creature can use its action for a Strength check against your spell save DC to free itself."
+  },
+  "faerie-fire": {
+    "save": "dex",
+    "area": "20-foot cube",
+    "note": "Attack rolls against an outlined creature have advantage, and it can't benefit from being invisible."
+  },
+  "false-life": {
+    "tempHp": "1d4+4",
+    "upcast": "5"
+  },
+  "fire-bolt": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "1d10",
+        "type": "fire"
+      }
+    ],
+    "scales": "dice"
+  },
+  "goodberry": {
+    "heal": "1",
+    "note": "Makes up to ten berries; a creature that eats one as an action regains 1 hit point."
+  },
+  "grease": {
+    "save": "dex",
+    "conditions": [
+      {
+        "name": "prone"
+      }
+    ],
+    "area": "10-foot square",
+    "note": "A creature that enters the area or ends its turn there saves again or falls prone."
+  },
+  "guidance": {
+    "conditions": [
+      {
+        "name": "guided",
+        "rounds": 10
+      }
+    ]
+  },
+  "guiding-bolt": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "4d6",
+        "type": "radiant"
+      }
+    ],
+    "upcast": "1d6",
+    "note": "The next attack roll against the target before the end of your next turn has advantage."
+  },
+  "healing-word": {
+    "heal": "1d4+mod",
+    "upcast": "1d4"
+  },
+  "hellish-rebuke": {
+    "save": "dex",
+    "half": true,
+    "damage": [
+      {
+        "dice": "2d10",
+        "type": "fire"
+      }
+    ],
+    "upcast": "1d10"
+  },
+  "heroism": {
+    "tempHp": "mod",
+    "note": "Gains these temporary hit points again at the start of each of its turns and is immune to being frightened."
+  },
+  "hideous-laughter": {
+    "save": "wis",
+    "conditions": [
+      {
+        "name": "prone"
+      },
+      {
+        "name": "incapacitated",
+        "rounds": 10
+      }
+    ],
+    "note": "Saves again at the end of each of its turns and when it takes damage (with advantage); no effect on Intelligence 4 or less."
+  },
+  "hunters-mark": {
+    "rider": true,
+    "damage": [
+      {
+        "dice": "1d6",
+        "type": "weapon"
+      }
+    ],
+    "note": "Only on your weapon hits against the marked target; the mark can move to a new target when it drops to 0 hit points."
+  },
+  "inflict-wounds": {
+    "attack": "melee",
+    "damage": [
+      {
+        "dice": "3d10",
+        "type": "necrotic"
+      }
+    ],
+    "upcast": "1d10"
+  },
+  "magic-missile": {
+    "autoHit": true,
+    "damage": [
+      {
+        "dice": "1d4+1",
+        "type": "force"
+      }
+    ],
+    "count": 3,
+    "countUpcast": 1
+  },
+  "poison-spray": {
+    "save": "con",
+    "damage": [
+      {
+        "dice": "1d12",
+        "type": "poison"
+      }
+    ],
+    "scales": "dice"
+  },
+  "produce-flame": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "1d8",
+        "type": "fire"
+      }
+    ],
+    "scales": "dice"
+  },
+  "ray-of-frost": {
+    "attack": "ranged",
+    "damage": [
+      {
+        "dice": "1d8",
+        "type": "cold"
+      }
+    ],
+    "scales": "dice",
+    "note": "Its speed drops by 10 feet until the start of your next turn."
+  },
+  "resistance": {
+    "note": "Once before the spell ends, the target adds a d4 to one saving throw."
+  },
+  "sacred-flame": {
+    "save": "dex",
+    "damage": [
+      {
+        "dice": "1d8",
+        "type": "radiant"
+      }
+    ],
+    "scales": "dice",
+    "note": "The target gets no benefit from cover for this save."
+  },
+  "shocking-grasp": {
+    "attack": "melee",
+    "damage": [
+      {
+        "dice": "1d8",
+        "type": "lightning"
+      }
+    ],
+    "scales": "dice",
+    "note": "Advantage against a target in metal armor; on a hit it can't take reactions until the start of its next turn."
+  },
+  "sleep": {
+    "conditions": [
+      {
+        "name": "unconscious",
+        "rounds": 10
+      }
+    ],
+    "area": "20-foot radius",
+    "note": "Roll 5d8 (plus 2d8 per slot level above 1st) for the hit points of creatures put to sleep, lowest first; undead and charm-immune creatures are unaffected; damage or a shake wakes a sleeper."
+  },
+  "thunderwave": {
+    "save": "con",
+    "half": true,
+    "damage": [
+      {
+        "dice": "2d8",
+        "type": "thunder"
+      }
+    ],
+    "upcast": "1d8",
+    "area": "15-foot cube",
+    "note": "On a failed save the creature is also pushed 10 feet away."
+  },
+  "vicious-mockery": {
+    "save": "wis",
+    "damage": [
+      {
+        "dice": "1d4",
+        "type": "psychic"
+      }
+    ],
+    "scales": "dice",
+    "note": "On a failed save it also has disadvantage on its next attack roll before the end of its next turn."
+  }
+}
