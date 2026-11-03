@@ -1,4 +1,4 @@
-import type { GameCharacter, GameState, Npc } from '@dungeonmind/shared';
+import type { GameCharacter, GameState, Npc, RulesData } from '@dungeonmind/shared';
 import { toMetric } from '@dungeonmind/shared';
 import { db, json, tx } from '../db.js';
 import { logProblem } from '../problems.js';
@@ -6,8 +6,10 @@ import { simContext } from '../trainer/context.js';
 import { labelTurn, recordCall } from '../trainer/records.js';
 import { health, HiveMindError, outputJson, outputText, runCanvas, withRetry, type RunResult } from '../hivemind.js';
 import { emitToGame } from '../realtime.js';
+import { rules } from '../rules/index.js';
 import { applyPatches, currentCampaign, initialCampaign, saveCampaign, withParty, type Patch } from './campaign.js';
 import { addLog, lastLogId } from './log.js';
+import { applyStatBlock } from './monsters.js';
 import { campaignFor, partyJson, recentTurns } from './prompt.js';
 import { think } from './queue.js';
 import { broadcast, gameCharacters, loadGame, members, saveGame, saveGameCharacter, type GameRow } from './store.js';
@@ -317,7 +319,7 @@ export async function finishNarration(gameId: string, r: RunResult, results: str
     const chars = gameCharacters(g.id);
     snapshot(g, chars);
     logId = addLog(g.id, g.state.turn, 'narration', narration, 'DM', { speakers: state.speakers ?? [], results: json(results, []) }).id;
-    if (Array.isArray(state.npcs)) g.state.npcs = mergeNpcs(g.state.npcs, state.npcs, new Set(g.state.rolls.filter((r) => (r.kind === 'damage' || r.kind === 'heal') && r.result && !r.result.skipped && r.target).map((r) => r.target!)));
+    if (Array.isArray(state.npcs)) g.state.npcs = mergeNpcs(g.state.npcs, state.npcs, new Set(g.state.rolls.filter((r) => (r.kind === 'damage' || r.kind === 'heal') && r.result && !r.result.skipped && r.target).map((r) => r.target!)), rules(g.ruleset));
     for (const h of hooks) h.applyState?.(g, chars, state, results);
     // Choices: 4 per character, keyed by id.
     g.state.choices = {};
@@ -349,8 +351,11 @@ export async function finishNarration(gameId: string, r: RunResult, results: str
   await chronicle(g, narration, state);
 }
 
-/** Merges the DM's NPC list. NPCs the dice hit this turn keep the server's HP (the Bookkeeper applies the damage). */
-export function mergeNpcs(old: Npc[], incoming: unknown[], protect: Set<string> = new Set()): Npc[] {
+/**
+ * Merges the DM's NPC list. NPCs the dice hit this turn keep the server's HP (the Bookkeeper applies the damage).
+ * Known monsters get their SRD stat block instead of the DM's numbers.
+ */
+export function mergeNpcs(old: Npc[], incoming: unknown[], protect: Set<string> = new Set(), bestiary?: RulesData): Npc[] {
   const out = old.map((n) => ({ ...n }));
   for (const raw of incoming.slice(0, 40)) {
     if (!raw || typeof raw !== 'object' || typeof (raw as Npc).name !== 'string') continue;
@@ -366,6 +371,7 @@ export function mergeNpcs(old: Npc[], incoming: unknown[], protect: Set<string> 
       voice: typeof n.voice === 'string' ? clip(n.voice, 40) : undefined,
     };
     const prev = out.find((o) => sameName(o.name, clean.name));
+    if (bestiary) applyStatBlock(bestiary, clean, prev, typeof n.monster === 'string' ? clip(n.monster, 60) : undefined);
     const guarded = [...protect].some((p) => sameName(p, clean.name));
     if (guarded) {
       clean.hp = prev?.hp ?? clean.maxHp ?? clean.hp;

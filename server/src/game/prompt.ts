@@ -3,6 +3,7 @@ import { findIn, rules } from '../rules/index.js';
 import { derive, itemByName } from './character.js';
 import { currentCampaign, withParty } from './campaign.js';
 import { readLog } from './log.js';
+import { npcView } from './monsters.js';
 import { spellSummary } from './spells.js';
 import type { GameRow } from './store.js';
 import { clip, titleCase } from './text.js';
@@ -64,7 +65,7 @@ export function partyJson(ruleset: Ruleset, chars: GameCharacter[], state: GameS
         status: c.absent ? 'away (stays quietly with the group, takes no actions)' : c.seated ? 'playing' : 'sitting out',
       };
     }),
-    npcs: state.npcs.filter((n) => n.status !== 'dead' && n.status !== 'fled'),
+    npcs: state.npcs.filter((n) => n.status !== 'dead' && n.status !== 'fled').map((n) => npcView(r, n)),
     zones: state.zones,
     positions: state.positions,
   });

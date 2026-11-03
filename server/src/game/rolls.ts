@@ -3,6 +3,7 @@ import { findIn } from '../rules/index.js';
 import { checkManual, combineAdv, DiceError, diceNeeded, parseDice, roll, rollD20, type Adv } from './dice.js';
 import { derive, itemByName } from './character.js';
 import { normalizeCounterName } from './bookkeeper.js';
+import { actionNamed, monsterAttack, monsterCheck, monsterOf, monsterSave, type MonsterAction } from './monsters.js';
 import { cantripTier, knownSpell, spellCount, spellDice, spellMod } from './spells.js';
 import { clip, sameName } from './text.js';
 
@@ -161,13 +162,16 @@ function pickType(options: string, ai: string | undefined): string | undefined {
 
 /**
  * Turns the adjudicator's roll list into rolls the server can run. For player characters every modifier
- * comes from the sheet, and a PC's spell rolls its own dice; the AI's numbers are only used for NPCs.
+ * comes from the sheet, for SRD monsters from the stat block, and a PC's spell rolls its own dice; the AI's numbers are only used for other NPCs.
  */
 export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[], adj: Adjudication): PendingRoll[] {
   const out: PendingRoll[] = [];
   const ids = new Map<string, string>();
   const list = (Array.isArray(adj.rolls) ? adj.rolls : []).slice(0, 30);
   const used = new Set<string>();
+  // The stat-block attack each monster attack roll uses, so its damage roll uses the same line.
+  const attackOf = new Map<string, MonsterAction>();
+  const present = npcs.filter((n) => n.status !== 'dead' && n.status !== 'fled');
   list.forEach((r, i) => ids.set(String(r?.id ?? `r${i + 1}`), `r${i + 1}`));
   const casts = spellCasts(rules, chars, npcs, list, adj.resources);
   // Darts that always hit (Magic Missile): how many each cast has left, and over how many damage rolls the AI spread them.
@@ -187,6 +191,7 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
     const targetPc = chars.find((c) => sameName(c.name, r.target));
     const targetNpc = npcs.find((n) => sameName(n.name, r.target));
     const d = pc ? derive(rules, pc) : undefined;
+    const mon = pc ? undefined : monsterOf(rules, npcs.find((n) => n.name.toLowerCase() === actorName.toLowerCase()) ?? npcs.find((n) => sameName(n.name, actorName)));
     const ability = abilityOf(r.ability);
     const skill = skillOf(r.skill);
     const exh2024 = rules.ruleset === 'srd52' && pc ? 2 * pc.exhaustion : 0;
@@ -224,6 +229,13 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
           bonus = m + d.profBonus - exh2024;
           what = item?.name ?? 'unarmed strike';
         }
+      } else if (mon) {
+        const a = monsterAttack(mon, r.weapon || r.spell);
+        if (a) {
+          bonus = a.attack!;
+          what = a.name.replace(/^Legendary: /, '');
+          attackOf.set(base.id, a);
+        }
       }
       const ac = targetPc ? derive(rules, targetPc).ac : (targetNpc?.ac ?? (Number(r.targetAc) || 12));
       Object.assign(base, {
@@ -236,10 +248,12 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
       // A PC's spell sets the ability and the DC: the caster's real spell save DC.
       const ab = effect?.save ?? ability ?? 'dex';
       const caster = cast && cast.caster !== pc ? cast.caster : undefined;
-      const dc = caster ? (derive(rules, caster).spellDc ?? Number(r.dc)) : Number(r.dc) || 10;
+      // A monster's breath, bite or gaze: its stat block sets the DC.
+      const source = caster ? undefined : statBlockDc(rules, present, r.spell || r.weapon, actorName);
+      const dc = caster ? (derive(rules, caster).spellDc ?? Number(r.dc)) : (source ?? (Number(r.dc) || 10));
       Object.assign(base, {
         label: `${base.actor} ${ab.toUpperCase()} save`,
-        bonus: pc && d ? d.saveBonus[ab] : Number(r.bonus) || 0,
+        bonus: pc && d ? d.saveBonus[ab] : mon ? monsterSave(mon, ab) : Number(r.bonus) || 0,
         dc,
         adv: combineAdv(aiAdv, conditionAdv(pc, 'save', ab, rules.ruleset)),
       });
@@ -247,7 +261,7 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
       const ab = ability ?? (skill ? SKILLS[skill] : 'wis');
       Object.assign(base, {
         label: `${base.actor} ${skill ? skill.replace(/-/g, ' ') : ab.toUpperCase()} check`,
-        bonus: pc && d ? (skill ? d.skillBonus[skill] : d.mods[ab] - exh2024) : Number(r.bonus) || 0,
+        bonus: pc && d ? (skill ? d.skillBonus[skill] : d.mods[ab] - exh2024) : mon ? monsterCheck(mon, ab, skill) : Number(r.bonus) || 0,
         dc: Number(r.dc) || undefined,
         adv: combineAdv(aiAdv, conditionAdv(pc, 'check', ab, rules.ruleset)),
       });
@@ -263,6 +277,14 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
           const m = finesse ? Math.max(d.mods.str, d.mods.dex) : ranged ? d.mods.dex : d.mods.str;
           dice = `${w.damage}${m >= 0 ? '+' : ''}${m}`;
           base.damageType = w.damageType ?? base.damageType;
+        }
+      } else if (kind === 'damage' && mon) {
+        // After an attack: that attack's damage. Otherwise the action the AI names (a breath weapon), if it deals damage.
+        const parent = base.onHit ?? base.onFail;
+        const a = (parent && attackOf.get(parent)) || actionNamed(mon, r.weapon || r.spell);
+        if (a?.damage) {
+          dice = a.damage;
+          base.damageType = a.damageType ?? base.damageType;
         }
       }
       if (cast && effect && (kind === 'damage' ? effect.damage?.length : effect.heal)) {
@@ -306,6 +328,17 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
     if (r.onFail && !out.some((x) => x.id === r.onFail)) delete r.onFail;
   }
   return out;
+}
+
+/** The DC of a present monster's action by this name ("Bite", "Fire Breath"); never the saver's own. */
+function statBlockDc(rules: RulesData, npcs: Npc[], action: string | undefined, saver: string): number | undefined {
+  if (!action) return;
+  for (const n of npcs) {
+    if (sameName(n.name, saver)) continue;
+    const m = monsterOf(rules, n);
+    const dc = m && actionNamed(m, action)?.dc;
+    if (dc) return dc;
+  }
 }
 
 /** Can this roll be made now (its parent is resolved)? */

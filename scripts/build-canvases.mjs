@@ -72,9 +72,9 @@ Rules:
 - One entry per roll. "actor" is the exact name of who rolls (a player character or an NPC/monster).
 - Attacks: kind "attack" with "target" and "targetAc" (the NPC's AC from the party state/campaign; guess sensibly if unknown). Follow with a "damage" roll whose "onHit" is the attack's id.
 - Saving throws forced by a PC's spell: kind "save", actor = the target, "ability", "spell", "dc" = the caster's spell save DC from the party state. Damage on a failed save: "onFail" = the save's id, with "half": true when a made save still takes half (e.g. Fireball).
-- A creature at 0 HP makes no attacks. Monsters attack too: give their rolls with the stat block's bonus.
+- A creature at 0 HP makes no attacks. Monsters attack too. For an NPC with "attacks" in the party state, put the attack's name in "weapon" (or the action's name, e.g. "Fire Breath"): the server takes the bonus, damage dice and DC from its stat block.
 - Skill checks: kind "check" with "skill" (e.g. "stealth") or "ability", and a "dc".
-- For player characters NEVER give "bonus": the server computes modifiers from the sheet. For NPCs give "bonus".
+- For player characters NEVER give "bonus": the server computes modifiers from the sheet. For NPCs without "attacks" give "bonus".
 - "dice" for damage/heal like "2d6+3" or "8d6". Use the weapon or spell's real dice.
 - "resources": every limited thing the action spends: "Spell slot L1".."Spell slot L9", class features ("Channel Divinity", "Rage", "Bardic Inspiration", "Ki", "Action Surge", "Second Wind", "Lay on Hands", "Sorcery Points", "Wild Shape"), racial traits, item charges, ammunition ("Arrows"). Cantrips spend nothing. Use the counter names from the party state when they exist.
 - If an action is impossible by the rules (e.g. a spell the character doesn't have, a feature at 0 uses, an action already used), put it in "refused" with a short reason the player sees.
@@ -132,7 +132,7 @@ ${PARTY_CONTEXT}
         temperature: 0.2,
         jsonSchema: `{"deltas":[{"pc":string,"hp"?:number,"tempHp"?:number,"gold"?:number,"counters"?:{[name:string]:number},"addItems"?:[string],"removeItems"?:[string],"addConditions"?:[{"name":string,"rounds"?:number,"source"?:string}],"removeConditions"?:[string],"concentration"?:string|null}],
 "xp":[{"pc":string,"amount":number,"reason":string}],
-"npcs":[{"name":string,"hp"?:number,"maxHp"?:number,"ac"?:number,"dex"?:number,"status"?:"hostile"|"neutral"|"friendly"|"dead"|"fled","voice"?:string}],
+"npcs":[{"name":string,"monster"?:string,"hp"?:number,"maxHp"?:number,"ac"?:number,"dex"?:number,"status"?:"hostile"|"neutral"|"friendly"|"dead"|"fled","voice"?:string}],
 "combat":{"start"?:boolean,"end"?:boolean,"enemies"?:[string]}|null,
 "zones":[{"name":string,"distances":{[otherZone:string]:number}}],
 "positions":{[zone:string]:[string]},
@@ -144,7 +144,7 @@ ${PARTY_CONTEXT}
         system: `You turn the Dungeon Master's narration into the game state change, as JSON. ${NUMBERS}
 - "deltas": only changes the narration and the dice results caused. "hp" must equal the damage (negative) or healing (positive) in the dice results; HP changes without a roll are held for the host. Spent items/ammo/gold. Conditions applied or ended ("rounds" = how long, omit for until removed). Bless gives "blessed" (rounds 10), Guidance "guided", Bardic Inspiration "inspired" with "source" naming the die ("Bardic Inspiration d8"): the server adds those dice to the rolls and removes "guided" and "inspired" once used. Do NOT include spell slots or features spent by the declared actions: the server already spent those.
 - "xp": award XP for defeated foes, solved problems and milestones, only when earned in this turn.
-- "npcs": every NPC/monster that matters now, with its current hp/maxHp/ac when known (use the SRD stat block values for monsters), status changes included.
+- "npcs": every NPC/monster that matters now, status changes included. A creature from the SRD bestiary gets "monster": its stat block's name (e.g. {"name":"Grishnak","monster":"Goblin Boss"}, {"name":"Wolf 2","monster":"Wolf"}): the server sets its HP, AC and attacks from the stat block, so leave hp/maxHp/ac out. Give hp/maxHp/ac only for creatures with no stat block.
 - "combat": {"start":true,"enemies":[names]} when a fight begins, {"end":true} when it ends, else null.
 - "zones" + "positions": the named areas of the current scene with distances in feet between them, and who stands where (every PC and NPC present).
 - "choices": for EVERY player character exactly 4 short, distinct, actionable options that fit their class and situation (the player can always write their own).

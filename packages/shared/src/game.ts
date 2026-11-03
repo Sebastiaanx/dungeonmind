@@ -89,7 +89,10 @@ export interface Npc {
   hp?: number;
   maxHp?: number;
   ac?: number;
+  /** Initiative bonus (DEX modifier). */
   dex?: number;
+  /** The SRD stat block it uses (monster id): the server sets its HP, AC, attacks and saves from it. */
+  monster?: string;
   status?: 'hostile' | 'neutral' | 'friendly' | 'dead' | 'fled';
   voice?: string;
 }

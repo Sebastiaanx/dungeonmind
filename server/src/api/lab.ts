@@ -4,6 +4,7 @@ import { requireUser } from '../auth/index.js';
 import { db, json } from '../db.js';
 import { applyDamage, applyDeltas, applyHeal, applySpend, applyXp, checkResources, damageNpc, healNpc, levelCheck, rest, type BookResult } from '../game/bookkeeper.js';
 import { buildCharacter, derive, validateBuild } from '../game/character.js';
+import { isDice } from '../game/dice.js';
 import { readLog } from '../game/log.js';
 import { buildRolls, ready, resolveRoll, rollEffects, type Adjudication } from '../game/rolls.js';
 import { DEFAULT_SETTINGS, loadGame, roleIn } from '../game/store.js';
@@ -102,7 +103,7 @@ export function bookkeeperCheck(input: CheckInput) {
       const built = rolls[i];
       if (built?.characterId && typeof raw?.bonus === 'number' && raw.bonus !== built.bonus && built.kind !== 'damage' && built.kind !== 'heal')
         errors.push({ type: 'invented-bonus', message: `${built.label}: the DM gave +${raw.bonus}, the sheet says ${built.bonus >= 0 ? '+' : ''}${built.bonus}`, pc: built.actor });
-      if ((raw?.kind === 'damage' || raw?.kind === 'heal') && raw.dice && built?.dice !== raw.dice && !built?.characterId) errors.push({ type: 'bad-dice', message: `${built?.label ?? 'roll'}: "${raw.dice}" is not valid dice` });
+      if ((raw?.kind === 'damage' || raw?.kind === 'heal') && raw.dice && !built?.characterId && !isDice(raw.dice)) errors.push({ type: 'bad-dice', message: `${built?.label ?? 'roll'}: "${raw.dice}" is not valid dice` });
     }
     changes.push(...applySpend(party, check.spend));
     for (let i = 0; i < 60; i++) {
@@ -113,7 +114,7 @@ export function bookkeeperCheck(input: CheckInput) {
   }
   if (input.state) {
     const s = input.state;
-    if (Array.isArray(s.npcs)) npcs = mergeNpcs(npcs, s.npcs, new Set(rolls.filter((x) => (x.kind === 'damage' || x.kind === 'heal') && x.result && !x.result.skipped && x.target).map((x) => x.target!)));
+    if (Array.isArray(s.npcs)) npcs = mergeNpcs(npcs, s.npcs, new Set(rolls.filter((x) => (x.kind === 'damage' || x.kind === 'heal') && x.result && !x.result.skipped && x.target).map((x) => x.target!)), r);
   }
   const fx = rollEffects(rolls, party, npcs);
   const backed = new Map<string, number>();

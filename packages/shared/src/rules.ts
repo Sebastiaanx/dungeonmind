@@ -143,6 +143,10 @@ export interface RulesMonster {
   hitDice: string;
   speed: string;
   abilities: Abilities;
+  /** Saving throw bonuses the stat block lists (proficient saves); the others are the ability modifier. */
+  saves?: Partial<Abilities>;
+  /** Skill bonuses by skill id ("perception": 9). */
+  skills?: Record<string, number>;
   cr: number;
   xp: number;
   senses?: string;

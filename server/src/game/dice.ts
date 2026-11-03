@@ -48,6 +48,15 @@ export function parseDice(expr: string): ParsedDice {
   return { terms, flat };
 }
 
+export function isDice(expr: string): boolean {
+  try {
+    parseDice(expr);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** How many physical dice of which sizes a roll needs (what "I roll myself" must supply). */
 export function diceNeeded(p: ParsedDice): number[] {
   return p.terms.flatMap((t) => Array<number>(t.count).fill(t.sides));

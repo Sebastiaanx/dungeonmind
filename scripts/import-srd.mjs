@@ -172,6 +172,11 @@ function items(ver) {
 function monsters(ver) {
   const ac = (a) => (Array.isArray(a) ? (a[0]?.value ?? 10) : (a ?? 10));
   const speed = (s) => Object.entries(s ?? {}).map(([k, v]) => (k === 'walk' ? v : `${k} ${v}`)).join(', ');
+  // "Saving Throw: CON" +10, "Skill: Perception" +9: the stat block's own bonuses.
+  const bonuses = (m, prefix, key) => {
+    const out = Object.fromEntries((m.proficiencies ?? []).filter((p) => p.proficiency?.index?.startsWith(prefix)).map((p) => [key(p.proficiency.index.slice(prefix.length)), p.value]));
+    return Object.keys(out).length ? out : undefined;
+  };
   return load(ver, 'Monsters').map((m) => ({
     id: m.index,
     name: m.name,
@@ -182,6 +187,8 @@ function monsters(ver) {
     hitDice: m.hit_points_roll ?? m.hit_dice,
     speed: speed(m.speed),
     abilities: { str: m.strength, dex: m.dexterity, con: m.constitution, int: m.intelligence, wis: m.wisdom, cha: m.charisma },
+    saves: bonuses(m, 'saving-throw-', ab),
+    skills: bonuses(m, 'skill-', (s) => s),
     cr: m.challenge_rating,
     xp: m.xp,
     senses: Object.entries(m.senses ?? {}).map(([k, v]) => `${k.replace(/_/g, ' ')} ${v}`).join(', ') || undefined,
