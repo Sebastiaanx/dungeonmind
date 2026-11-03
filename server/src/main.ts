@@ -4,7 +4,7 @@ import { config } from './config.js';
 import { cancelActiveRuns } from './hivemind.js';
 import { moveImagesToHiveMind } from './images.js';
 import { startRollTimers } from './game/engine.js';
-import { recoverInterrupted } from './game/turn.js';
+import { recoverInterrupted, resumeInterrupted } from './game/turn.js';
 import { startScheduler } from './jobs.js';
 import { logProblem } from './problems.js';
 import { recoverSims } from './trainer/sim.js';
@@ -15,7 +15,7 @@ process.on('unhandledRejection', (err) => {
 });
 
 await ensureAdmin();
-recoverInterrupted();
+const interrupted = recoverInterrupted();
 recoverSims();
 const app = await buildApp();
 startScheduler();
@@ -32,3 +32,5 @@ process.once('SIGTERM', stop);
 process.once('SIGINT', stop);
 
 await app.listen({ port: config.port, host: config.host });
+// Give HiveMind a moment, then carry on with the turns the restart cut off.
+setTimeout(() => resumeInterrupted(interrupted), 5000).unref();

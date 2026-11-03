@@ -218,11 +218,11 @@ describe('the game loop', () => {
     expect((await game()).status).toBe('playing');
   });
 
-  it('a turn interrupted by a restart waits for Retry', async () => {
+  it('a turn interrupted by a restart is marked and listed to pick up again', async () => {
     const { db } = await import('../src/db.js');
     const row = db.prepare('SELECT state FROM games WHERE id = ?').get(t.id) as { state: string };
     db.prepare('UPDATE games SET state = ? WHERE id = ?').run(JSON.stringify({ ...JSON.parse(row.state), phase: 'narrating' }), t.id);
-    turn.recoverInterrupted();
+    expect(turn.recoverInterrupted()).toContain(t.id);
     expect((await game()).state).toMatchObject({ phase: 'error', error: expect.stringMatching(/restarted/) });
   });
 

@@ -106,7 +106,7 @@ export function AskBox({ g }: { g: GameDetail }) {
   if (g.myRole !== 'host' && g.myRole !== 'player') return null;
   if (!open)
     return (
-      <button className="text-xs text-indigo-300 hover:underline" onClick={() => setOpen(true)}>
+      <button className="block text-xs text-indigo-300 hover:underline" onClick={() => setOpen(true)}>
         ☾ Ask the DM (rules, what you know) — never blocks the turn
       </button>
     );

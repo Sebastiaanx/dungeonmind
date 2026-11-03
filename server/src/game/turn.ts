@@ -423,14 +423,29 @@ export function retry(g: GameRow) {
 }
 
 /** After a restart, turns that were mid-flight wait for a Retry (their actions and rolls are kept). */
-export function recoverInterrupted() {
-  for (const r of db.prepare("SELECT id FROM games WHERE status = 'playing'").all() as { id: string }[]) {
+export function recoverInterrupted(): string[] {
+  const interrupted: string[] = [];
+  for (const r of db.prepare("SELECT id, sim FROM games WHERE status = 'playing'").all() as { id: string; sim: number }[]) {
     const g = loadGame(r.id)!;
     if (['opening', 'adjudicating', 'narrating'].includes(g.state.phase)) {
       g.state.phase = 'error';
-      g.state.error = 'The server restarted while the DM was thinking. Press Retry to continue.';
+      g.state.error = 'The server restarted while the DM was thinking. It picks up again by itself in a moment; if not, press Retry.';
       g.state.queue = undefined;
       saveGame(g);
+      if (!r.sim) interrupted.push(g.id);
     }
   }
+  return interrupted;
 }
+
+/** After a restart: the DM carries on with the turns it was thinking about, with the same actions and dice. */
+export function resumeInterrupted(ids: string[]) {
+  for (const id of ids) {
+    const g = loadGame(id);
+    if (g?.status === 'playing') retry(g);
+  }
+}
+
+/** Games where the DM is thinking right now (an update waits for these). */
+export const thinkingGames = () =>
+  (db.prepare("SELECT id FROM games WHERE status = 'playing' AND sim = 0").all() as { id: string }[]).filter((r) => ['opening', 'adjudicating', 'narrating'].includes(loadGame(r.id)?.state.phase ?? '')).length;

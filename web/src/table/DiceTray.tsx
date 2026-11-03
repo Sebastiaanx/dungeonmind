@@ -218,7 +218,7 @@ export function FreeRoll({ g }: { g: GameDetail }) {
   };
   if (!open)
     return (
-      <button className="text-xs text-indigo-300 hover:underline" onClick={() => setOpen(true)}>
+      <button className="block text-xs text-indigo-300 hover:underline" onClick={() => setOpen(true)}>
         🎲 Free roll or ask for a check (never changes the game)
       </button>
     );

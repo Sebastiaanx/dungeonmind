@@ -23,6 +23,7 @@ import { ttsRoutes } from './api/tts.js';
 import { authRoutes } from './auth/index.js';
 import { registerEngine } from './game/engine.js';
 import { config } from './config.js';
+import { thinkingGames } from './game/turn.js';
 import { attachRealtime, presenceList } from './realtime.js';
 import { requireUser } from './auth/index.js';
 
@@ -52,7 +53,8 @@ export async function buildApp(opts: { logger?: boolean; web?: boolean; realtime
     }
   });
 
-  app.get('/api/health', async () => ({ ok: true, app: 'dungeonmind', version: VERSION, release: APP_VERSION, authMode: config.authMode }));
+  // thinking: games where the DM is busy right now; an update waits until it's 0.
+  app.get('/api/health', async () => ({ ok: true, app: 'dungeonmind', version: VERSION, release: APP_VERSION, authMode: config.authMode, thinking: thinkingGames() }));
   app.get('/api/presence', { preHandler: requireUser }, async () => presenceList());
 
   registerEngine();
