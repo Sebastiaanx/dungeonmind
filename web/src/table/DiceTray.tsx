@@ -3,12 +3,15 @@ import type { GameDetail, PendingRoll } from '@dungeonmind/shared';
 import { api } from '../api';
 import { useMe } from '../me';
 
-/** How many physical dice a roll needs: "2d6+1d4" → [6,6,4]; d20 tests with advantage need two d20s. */
+const faces = (expr: string, times = 1) => [...expr.matchAll(/(\d*)d(\d+)/g)].flatMap((m) => Array<number>((Number(m[1]) || 1) * times).fill(Number(m[2])));
+
+/**
+ * How many physical dice a roll needs: "2d6+1d4" → [6,6,4]; d20 tests with advantage need two d20s,
+ * then the bonus dice (Bless 1d4…).
+ */
 export function diceNeeded(r: PendingRoll): number[] {
-  if (r.kind !== 'damage' && r.kind !== 'heal' && r.kind !== 'hitdie') return r.adv && r.adv !== 'none' ? [20, 20] : [20];
-  const out: number[] = [];
-  for (const m of r.dice.matchAll(/(\d*)d(\d+)/g)) for (let i = 0; i < (Number(m[1]) || 1) * (r.crit ? 2 : 1); i++) out.push(Number(m[2]));
-  return out;
+  if (r.kind !== 'damage' && r.kind !== 'heal' && r.kind !== 'hitdie') return [...(r.adv && r.adv !== 'none' ? [20, 20] : [20]), ...(r.bonusDice ?? []).flatMap((b) => faces(b.dice))];
+  return faces(r.dice, r.crit ? 2 : 1);
 }
 
 const parentOf = (r: PendingRoll, all: PendingRoll[]) => all.find((x) => x.id === (r.onHit ?? r.onFail));
@@ -60,6 +63,12 @@ function RollRow({ g, r }: { g: GameDetail; r: PendingRoll }) {
               d20 {r.bonus >= 0 ? '+' : '−'}
               {Math.abs(r.bonus)}
               {r.adv && r.adv !== 'none' && ` · ${r.adv === 'adv' ? 'advantage' : 'disadvantage'}`}
+              {r.bonusDice?.map((b) => (
+                <span key={b.condition} className="text-emerald-300" title={b.once ? `${b.from}: used up by this roll` : b.from}>
+                  {` + ${b.dice} ${b.from}`}
+                </span>
+              ))}
+              {r.luck && <span title="Halfling Luck: a natural 1 on the d20 is rolled again"> 🍀</span>}
               {r.targetAc !== undefined && target('AC', r.targetAc)}
               {r.dc !== undefined && target('DC', r.dc)}
               {g.settings.hideTargets && !hidden && (r.targetAc !== undefined || r.dc !== undefined) && <span title="Hidden from the players"> 🔒</span>}
@@ -122,7 +131,10 @@ function RollRow({ g, r }: { g: GameDetail; r: PendingRoll }) {
           <button className="btn py-1" disabled={busy || vals.filter(Boolean).length !== need.length}>
             Use these
           </button>
-          <span className="text-xs text-slate-500">The server checks each value and marks the roll as yours.</span>
+          <span className="text-xs text-slate-500">
+            The server checks each value and marks the roll as yours.
+            {r.luck && ' Halfling Luck: if a d20 shows 1, roll it again and enter the new number.'}
+          </span>
         </form>
       )}
     </li>

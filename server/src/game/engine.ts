@@ -64,7 +64,14 @@ export function startRollTimers() {
   return timer;
 }
 
+/** Logs a resolved roll, and uses up the one-shot bonus dice it rolled (Guidance, Bardic Inspiration). */
 export function logRoll(g: GameRow, r: PendingRoll) {
+  const used = r.result!.usedConditions;
+  const c = used?.length && gameCharacters(g.id).find((x) => x.id === r.characterId);
+  if (c) {
+    c.conditions = c.conditions.filter((x) => !used!.includes(x.name));
+    saveGameCharacter(g.id, c);
+  }
   addLog(g.id, g.state.turn, 'roll', r.result!.text, r.actor, { rollId: r.id, kind: r.kind, adv: r.adv, dice: r.result!.dice, faces: r.result!.faces, total: r.result!.total, manual: r.result!.manual, success: r.result!.success, crit: r.result!.crit, fumble: r.result!.fumble });
 }
 

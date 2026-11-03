@@ -119,6 +119,8 @@ export type Adv = 'adv' | 'dis' | 'none';
 export interface D20Result {
   natural: number;
   rolls: number[];
+  /** Halfling Luck: how many natural 1s were rolled again (rolls holds the new values). */
+  rerolled: number;
   bonus: number;
   total: number;
   adv: Adv;
@@ -127,16 +129,20 @@ export interface D20Result {
   manual: boolean;
 }
 
-/** A D20 Test: advantage rolls two and keeps the higher; disadvantage the lower. */
-export function rollD20(bonus: number, adv: Adv = 'none', manual?: number[]): D20Result {
+/**
+ * A D20 Test: advantage rolls two and keeps the higher; disadvantage the lower.
+ * rerollOnes (Halfling Luck): every 1 is rolled again once, and the new roll counts.
+ */
+export function rollD20(bonus: number, adv: Adv = 'none', manual?: number[], opts: { rerollOnes?: boolean } = {}): D20Result {
   const n = adv === 'none' ? 1 : 2;
   if (manual) {
     const err = checkManual(Array(n).fill(20), manual);
     if (err) throw new DiceError(err);
   }
-  const rolls = manual ?? Array.from({ length: n }, () => rollDie(20));
+  let rerolled = 0;
+  const rolls = (manual ?? Array.from({ length: n }, () => rollDie(20))).map((v) => (opts.rerollOnes && v === 1 ? (rerolled++, rollDie(20)) : v));
   const natural = adv === 'adv' ? Math.max(...rolls) : adv === 'dis' ? Math.min(...rolls) : rolls[0];
-  return { natural, rolls, bonus, total: natural + bonus, adv, crit: natural === 20, fumble: natural === 1, manual: !!manual };
+  return { natural, rolls, rerolled, bonus, total: natural + bonus, adv, crit: natural === 20, fumble: natural === 1, manual: !!manual };
 }
 
 /** Advantage and disadvantage cancel out; several of one kind don't stack. */

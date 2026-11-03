@@ -162,6 +162,10 @@ export interface PendingRoll {
   reason?: string;
   /** The host's roll timer: when the server rolls this one if the player hasn't (ISO time). */
   deadline?: string;
+  /** Dice added to a d20 test from the roller's conditions (Bless, Guidance, Bardic Inspiration). */
+  bonusDice?: BonusDie[];
+  /** Halfling Luck: a natural 1 on the d20 is rolled again. */
+  luck?: boolean;
   result?: RollOutcome;
 }
 
@@ -170,6 +174,17 @@ export interface DieFace {
   sides: number;
   value: number;
   dropped?: boolean;
+}
+
+export interface BonusDie {
+  /** "1d4" */
+  dice: string;
+  /** What gives it, for the tray and the log: "Bless". */
+  from: string;
+  /** The condition that gives it ("blessed"). */
+  condition: string;
+  /** Used up by this roll (Guidance, Bardic Inspiration); Bless stays. */
+  once?: boolean;
 }
 
 export interface RollOutcome {
@@ -182,6 +197,8 @@ export interface RollOutcome {
   manual: boolean;
   /** The player ran out of time and the server rolled for them. */
   timedOut?: boolean;
+  /** One-shot conditions this roll used up (removed from the character afterwards). */
+  usedConditions?: string[];
   success?: boolean;
   crit?: boolean;
   fumble?: boolean;

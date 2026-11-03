@@ -8,6 +8,7 @@ let R: typeof import('../src/game/rolls.js');
 let I: typeof import('../src/game/initiative.js');
 let Z: typeof import('../src/game/zones.js');
 let V: typeof import('../src/game/rerolls.js');
+let simStore: typeof import('../src/trainer/context.js').simStore;
 let rules: RulesData;
 let turks: GameCharacter;
 let esva: GameCharacter;
@@ -19,6 +20,7 @@ beforeAll(async () => {
   I = await import('../src/game/initiative.js');
   Z = await import('../src/game/zones.js');
   V = await import('../src/game/rerolls.js');
+  simStore = (await import('../src/trainer/context.js')).simStore;
   rules = (await import('../src/rules/index.js')).rules('srd51');
   const { buildCharacter } = await import('../src/game/character.js');
   const base = { ruleset: 'srd51' as const, background: 'acolyte', level: 1, abilityMethod: 'standard' as const };
@@ -130,6 +132,42 @@ describe('resolving rolls', () => {
     expect(c[0].result!.timedOut).toBe(true);
     expect(c[0].result!.text).toMatch(/ — (hit|miss|critical hit!|natural 1, miss) \(time ran out, the server rolled\)$/);
     expect(c[0].result!.text).not.toMatch(/AC/);
+  });
+
+  it('adds Bless, Guidance and Bardic Inspiration dice from conditions; one-shot dice go to one roll', () => {
+    const helped = { ...esva, conditions: [{ name: 'blessed' }, { name: 'guided' }, { name: 'inspired', source: 'Bardic Inspiration d8' }] };
+    const rolls = R.buildRolls(rules, [helped], [hag()], {
+      rolls: [
+        { id: 'a', actor: 'Esva', kind: 'attack', target: 'The Bell-Hag' },
+        { id: 'c', actor: 'Esva', kind: 'check', skill: 'perception', dc: 12 },
+        { id: 'c2', actor: 'Esva', kind: 'check', skill: 'insight', dc: 12 },
+      ],
+    });
+    expect(rolls[0].bonusDice).toEqual([
+      { dice: '1d4', from: 'Bless', condition: 'blessed' },
+      { dice: '1d8', from: 'Bardic Inspiration', condition: 'inspired', once: true },
+    ]);
+    expect(rolls[1].bonusDice).toEqual([{ dice: '1d4', from: 'Guidance', condition: 'guided', once: true }]);
+    expect(rolls[2].bonusDice).toBeUndefined(); // Bless is for attacks and saves; Guidance went to the first check
+    R.resolveRoll(rolls[0], rolls, [10, 3, 6]);
+    const res = rolls[0].result!;
+    expect(res.total).toBe(10 + rolls[0].bonus + 3 + 6);
+    expect(res.faces).toEqual([{ sides: 20, value: 10 }, { sides: 4, value: 3 }, { sides: 8, value: 6 }]);
+    expect(res.text).toContain('d20 10 + Bless 1d4 (3) + Bardic Inspiration 1d8 (6)');
+    expect(res.usedConditions).toEqual(['inspired']);
+    expect(() => R.resolveRoll(rolls[1], rolls, [10])).toThrow(/Enter 2 values \(d20, d4\)/);
+  });
+
+  it('Halfling Luck rolls a natural 1 again; the 1 shows as dropped', () => {
+    const pip = { ...turks, species: 'halfling' };
+    const rolls = R.buildRolls(rules, [pip], [hag()], { rolls: [{ id: 'a', actor: 'Turks', kind: 'attack', target: 'The Bell-Hag' }] });
+    expect(rolls[0].luck).toBe(true);
+    const d20s = (...v: number[]) => () => (v.shift()! - 1) / 20 + 0.01;
+    simStore.run({ rng: d20s(1, 17) } as any, () => R.resolveRoll(rolls[0], rolls));
+    expect(rolls[0].result!.natural).toBe(17);
+    expect(rolls[0].result!.faces).toEqual([{ sides: 20, value: 1, dropped: true }, { sides: 20, value: 17 }]);
+    expect(rolls[0].result!.text).toMatch(/d20 17 \(Halfling Luck: rolled the 1 again\) \+ \d+ = \d+/);
+    expect(R.buildRolls(rules, [turks], [hag()], { rolls: [{ id: 'a', actor: 'Turks', kind: 'attack' }] })[0].luck).toBeUndefined();
   });
 
   it('refuses impossible "I roll myself" values', () => {

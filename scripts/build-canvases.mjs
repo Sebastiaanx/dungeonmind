@@ -142,7 +142,7 @@ ${PARTY_CONTEXT}
 "sceneEnd":boolean,
 "summary":string}`,
         system: `You turn the Dungeon Master's narration into the game state change, as JSON. ${NUMBERS}
-- "deltas": only changes the narration and the dice results caused. "hp" must equal the damage (negative) or healing (positive) in the dice results; HP changes without a roll are held for the host. Spent items/ammo/gold. Conditions applied or ended ("rounds" = how long, omit for until removed). Do NOT include spell slots or features spent by the declared actions: the server already spent those.
+- "deltas": only changes the narration and the dice results caused. "hp" must equal the damage (negative) or healing (positive) in the dice results; HP changes without a roll are held for the host. Spent items/ammo/gold. Conditions applied or ended ("rounds" = how long, omit for until removed). Bless gives "blessed" (rounds 10), Guidance "guided", Bardic Inspiration "inspired" with "source" naming the die ("Bardic Inspiration d8"): the server adds those dice to the rolls and removes "guided" and "inspired" once used. Do NOT include spell slots or features spent by the declared actions: the server already spent those.
 - "xp": award XP for defeated foes, solved problems and milestones, only when earned in this turn.
 - "npcs": every NPC/monster that matters now, with its current hp/maxHp/ac when known (use the SRD stat block values for monsters), status changes included.
 - "combat": {"start":true,"enemies":[names]} when a fight begins, {"end":true} when it ends, else null.

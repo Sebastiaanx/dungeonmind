@@ -123,4 +123,17 @@ describe('table flow', () => {
     expect(g.state.phase).toBe('rolling');
     expect(g.state.rolls.every((r: any) => r.deadline === undefined)).toBe(true);
   });
+
+  it('a one-shot bonus die is used up by the roll; Bless stays', async () => {
+    for (const r of (await game()).state.rolls.filter((x: any) => !x.result && x.id !== 'r2')) await t.as(t.host, 'POST', `/api/games/${t.id}/rolls/${r.id}`, { mode: 'server', withDamage: true });
+    await turn.settled(t.id);
+    await t.as(t.host, 'PATCH', `/api/games/${t.id}/characters/${t.plChar}/override`, { conditions: [{ name: 'blessed' }, { name: 'inspired', source: 'Bardic Inspiration d6' }] });
+    const g = await nextTurn();
+    const save = g.state.rolls.find((r: any) => r.id === 'r3');
+    expect(save.bonusDice.map((b: any) => b.from)).toEqual(['Bless', 'Bardic Inspiration']);
+    await t.as(t.pl, 'POST', `/api/games/${t.id}/rolls/r3`, { mode: 'manual', values: [11, 2, 5] });
+    const esva = (await game()).characters.find((c: any) => c.id === t.plChar);
+    expect(esva.conditions.map((c: any) => c.name)).toEqual(['blessed']);
+    expect((await log()).at(-1).text).toContain('d20 11 + Bless 1d4 (2) + Bardic Inspiration 1d6 (5)');
+  });
 });

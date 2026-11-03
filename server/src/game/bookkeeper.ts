@@ -290,6 +290,8 @@ export const CONDITIONS = [
   // Not SRD conditions, but things the table tracks the same way.
   'hidden',
   'blessed',
+  'guided',
+  'inspired',
   'raging',
   'hasted',
   'dodging',

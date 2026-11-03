@@ -1,5 +1,5 @@
-import { SKILLS, type Ability, type GameCharacter, type Npc, type PendingRoll, type RollOutcome, type RulesData } from '@dungeonmind/shared';
-import { combineAdv, DiceError, parseDice, roll, rollD20, type Adv } from './dice.js';
+import { SKILLS, type Ability, type BonusDie, type GameCharacter, type Npc, type PendingRoll, type RollOutcome, type RulesData } from '@dungeonmind/shared';
+import { checkManual, combineAdv, DiceError, diceNeeded, parseDice, roll, rollD20, type Adv } from './dice.js';
 import { derive, itemByName } from './character.js';
 import { clip, sameName } from './text.js';
 
@@ -64,6 +64,26 @@ export function conditionAdv(c: GameCharacter | undefined, kind: string, ability
   return combineAdv(...src);
 }
 
+/**
+ * Dice the roller's conditions add to a d20 test: Bless (attacks and saves), Guidance (one ability check),
+ * Bardic Inspiration (one attack, save or check; the die is in the condition's source, "Bardic Inspiration d8").
+ * One-shot dice go to the first roll of the turn that can use them (`used` remembers which went out).
+ */
+export function bonusDiceFor(c: GameCharacter, kind: PendingRoll['kind'], used: Set<string>): BonusDie[] {
+  const has = (name: string) => c.conditions.find((x) => x.name === name);
+  const out: BonusDie[] = [];
+  const once = (condition: string, dice: string, from: string) => {
+    if (used.has(`${c.id}:${condition}`)) return;
+    used.add(`${c.id}:${condition}`);
+    out.push({ dice, from, condition, once: true });
+  };
+  if (has('blessed') && (kind === 'attack' || kind === 'save')) out.push({ dice: '1d4', from: 'Bless', condition: 'blessed' });
+  if (has('guided') && kind === 'check') once('guided', '1d4', 'Guidance');
+  const inspired = has('inspired');
+  if (inspired && (kind === 'attack' || kind === 'save' || kind === 'check')) once('inspired', `1d${/d(6|8|10|12)\b/.exec(inspired.source ?? '')?.[1] ?? 6}`, 'Bardic Inspiration');
+  return out;
+}
+
 /** Attacks against a target with these conditions have advantage. */
 const targetGivesAdv = (c: GameCharacter | undefined) => !!c && c.conditions.some((x) => ['blinded', 'paralyzed', 'restrained', 'stunned', 'unconscious', 'petrified'].includes(x.name));
 
@@ -85,6 +105,7 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
   const out: PendingRoll[] = [];
   const ids = new Map<string, string>();
   const list = (Array.isArray(adj.rolls) ? adj.rolls : []).slice(0, 30);
+  const used = new Set<string>();
   list.forEach((r, i) => ids.set(String(r?.id ?? `r${i + 1}`), `r${i + 1}`));
   for (const [i, r] of list.entries()) {
     if (!r || typeof r !== 'object') continue;
@@ -177,6 +198,11 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
         adv: undefined,
       });
     }
+    if (pc && kind !== 'damage' && kind !== 'heal') {
+      const extra = bonusDiceFor(pc, kind, used);
+      if (extra.length) base.bonusDice = extra;
+      if (pc.species === 'halfling') base.luck = true;
+    }
     out.push(base);
   }
   // Dependencies on rolls that don't exist are dropped.
@@ -218,34 +244,52 @@ export function resolveRoll(r: PendingRoll, all: PendingRoll[], manual?: number[
     r.result = res;
     return res;
   }
-  const d = rollD20(r.bonus, (r.adv ?? 'none') as Adv, manual);
+  // "I roll myself" sends the d20s first, then the bonus dice (Bless…). Halfling Luck: players reroll their own 1s.
+  const n = r.adv === 'adv' || r.adv === 'dis' ? 2 : 1;
+  const extra = r.bonusDice ?? [];
+  if (manual) {
+    const err = checkManual([...Array<number>(n).fill(20), ...extra.flatMap((e) => diceNeeded(parseDice(e.dice)))], manual);
+    if (err) throw new DiceError(err);
+  }
+  const d = rollD20(r.bonus, (r.adv ?? 'none') as Adv, manual?.slice(0, n), { rerollOnes: r.luck && !manual });
+  let k = n;
+  const bonusRolls = extra.map((e) => ({ e, out: roll(e.dice, { manual: manual?.slice(k, (k += diceNeeded(parseDice(e.dice)).length)) }) }));
+  const total = d.total + bonusRolls.reduce((sum, b) => sum + b.out.total, 0);
   let success: boolean | undefined;
   let vs = '';
   // Hidden targets: the log (which the players read) says hit or miss, not the number.
   if (r.kind === 'attack') {
-    success = d.crit || (!d.fumble && d.total >= (r.targetAc ?? 10));
+    success = d.crit || (!d.fumble && total >= (r.targetAc ?? 10));
     vs = `${opts.hideTargets ? '' : ` vs AC ${r.targetAc}`} — ${d.crit ? 'critical hit!' : d.fumble ? 'natural 1, miss' : success ? 'hit' : 'miss'}`;
   } else if (r.kind === 'death') {
     success = d.natural >= 10;
     vs = d.natural === 20 ? ' — natural 20!' : d.natural === 1 ? ' — natural 1, two failures' : success ? ' — success' : ' — failure';
   } else if (r.dc !== undefined) {
-    success = d.total >= r.dc;
+    success = total >= r.dc;
     vs = `${opts.hideTargets ? '' : ` vs DC ${r.dc}`} — ${success ? 'success' : 'failure'}`;
   }
   const advText = d.adv === 'none' ? '' : ` (${d.adv === 'adv' ? 'advantage' : 'disadvantage'}: ${d.rolls.join(' / ')})`;
-  // On a tie the first die counts and the second is the dropped one.
+  const luckText = d.rerolled ? ' (Halfling Luck: rolled the 1 again)' : '';
+  const bonusText = bonusRolls.map((b) => ` + ${b.e.from} ${b.e.dice} (${b.out.total})`).join('');
+  // On a tie the first die counts and the second is the dropped one. A 1 Halfling Luck rolled again shows as dropped.
   const kept = d.rolls.indexOf(d.natural);
+  const used = extra.filter((e) => e.once).map((e) => e.condition);
   const res: RollOutcome = {
     dice: d.rolls,
-    faces: d.rolls.map((value, i) => ({ sides: 20, value, ...(i !== kept ? { dropped: true } : {}) })),
+    faces: [
+      ...Array.from({ length: d.rerolled }, () => ({ sides: 20, value: 1, dropped: true })),
+      ...d.rolls.map((value, i) => ({ sides: 20, value, ...(i !== kept ? { dropped: true } : {}) })),
+      ...bonusRolls.flatMap((b) => b.out.dice),
+    ],
     natural: d.natural,
-    total: d.total,
+    total,
     manual: d.manual,
     ...(opts.timedOut ? { timedOut: true } : {}),
+    ...(used.length ? { usedConditions: used } : {}),
     success,
     crit: d.crit,
     fumble: d.fumble,
-    text: `${r.label}: d20 ${d.natural}${advText} ${r.bonus >= 0 ? '+' : '−'} ${Math.abs(r.bonus)} = ${d.total}${vs}${who}`,
+    text: `${r.label}: d20 ${d.natural}${advText}${luckText}${bonusText} ${r.bonus >= 0 ? '+' : '−'} ${Math.abs(r.bonus)} = ${total}${vs}${who}`,
   };
   r.result = res;
   // Children: damage after a hit (doubled dice on a crit), damage after a failed save.
