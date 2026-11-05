@@ -5,11 +5,13 @@ import type { CharacterBuild, RulesData } from '@dungeonmind/shared';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 let rules: (r: 'srd51' | 'srd52') => RulesData;
+let findIn: typeof import('../src/rules/index.js')['findIn'];
 let lib: typeof import('../src/game/character.js');
 let dataDir: string;
 const originalDataDir = process.env.DATA_DIR;
 const baseJson = readFileSync(new URL('../data/srd51/rules.json', import.meta.url), 'utf8');
 const base51 = JSON.parse(baseJson) as RulesData;
+const base52 = JSON.parse(readFileSync(new URL('../data/srd52/rules.json', import.meta.url), 'utf8')) as RulesData;
 type Origins = Pick<RulesData, 'backgrounds' | 'feats' | 'traits'> & {
   subspecies: Record<string, RulesData['species'][number]['subspecies']>;
 };
@@ -18,6 +20,7 @@ beforeAll(async () => {
   dataDir = mkdtempSync(join(tmpdir(), 'dm-origins-'));
   process.env.DATA_DIR = dataDir;
   rules = (await import('../src/rules/index.js')).rules;
+  findIn = (await import('../src/rules/index.js')).findIn;
   lib = await import('../src/game/character.js');
 });
 
@@ -146,10 +149,117 @@ describe('standard origins, SRD 5.1', () => {
   });
 });
 
-describe('SRD 5.2 stays unchanged', () => {
-  it('still has four backgrounds and nine species', () => {
-    expect(rules('srd52').backgrounds).toHaveLength(4);
-    expect(rules('srd52').species).toHaveLength(9);
+const backgrounds52 = [
+  { id: 'artisan', skills: ['investigation', 'persuasion'], abilityOptions: ['str', 'dex', 'int'], feat: 'Crafter', tools: ["One kind of artisan's tools"], gold: 32 },
+  { id: 'charlatan', skills: ['deception', 'sleight-of-hand'], abilityOptions: ['dex', 'con', 'cha'], feat: 'Skilled', tools: ['Forgery kit'], gold: 15 },
+  { id: 'entertainer', skills: ['acrobatics', 'performance'], abilityOptions: ['str', 'dex', 'cha'], feat: 'Musician', tools: ['One kind of musical instrument'], gold: 11 },
+  { id: 'farmer', skills: ['animal-handling', 'nature'], abilityOptions: ['str', 'con', 'wis'], feat: 'Tough', tools: ["Carpenter's tools"], gold: 30 },
+  { id: 'guard', skills: ['athletics', 'perception'], abilityOptions: ['str', 'int', 'wis'], feat: 'Alert', tools: ['One kind of gaming set'], gold: 12 },
+  { id: 'guide', skills: ['stealth', 'survival'], abilityOptions: ['dex', 'con', 'wis'], feat: 'Magic Initiate (Druid)', tools: ["Cartographer's tools"], gold: 3 },
+  { id: 'hermit', skills: ['medicine', 'religion'], abilityOptions: ['con', 'wis', 'cha'], feat: 'Healer', tools: ['Herbalism kit'], gold: 16 },
+  { id: 'merchant', skills: ['animal-handling', 'persuasion'], abilityOptions: ['con', 'int', 'cha'], feat: 'Lucky', tools: ["Navigator's tools"], gold: 22 },
+  { id: 'noble', skills: ['history', 'persuasion'], abilityOptions: ['str', 'int', 'cha'], feat: 'Skilled', tools: ['One kind of gaming set'], gold: 29 },
+  { id: 'sailor', skills: ['acrobatics', 'perception'], abilityOptions: ['str', 'dex', 'wis'], feat: 'Tavern Brawler', tools: ["Navigator's tools"], gold: 20 },
+  { id: 'scribe', skills: ['investigation', 'perception'], abilityOptions: ['dex', 'int', 'wis'], feat: 'Skilled', tools: ["Calligrapher's supplies"], gold: 23 },
+  { id: 'wayfarer', skills: ['insight', 'stealth'], abilityOptions: ['dex', 'wis', 'cha'], feat: 'Lucky', tools: ["Thieves' tools"], gold: 16 },
+];
+
+const feats52 = [
+  { id: 'crafter', name: 'Crafter' },
+  { id: 'healer', name: 'Healer' },
+  { id: 'lucky', name: 'Lucky' },
+  { id: 'musician', name: 'Musician' },
+  { id: 'tavern-brawler', name: 'Tavern Brawler' },
+  { id: 'tough', name: 'Tough' },
+];
+
+describe('standard origins, SRD 5.2', () => {
+  it('loads sixteen backgrounds and keeps the nine species and their lineages', () => {
+    const r = rules('srd52');
+    expect(r.backgrounds).toHaveLength(16);
+    expect(r.backgrounds.map((b) => b.id).sort()).toEqual([...base52.backgrounds, ...backgrounds52].map((b) => b.id).sort());
+    expect(r.species).toHaveLength(9);
+    expect(r.species).toEqual(base52.species);
+  });
+
+  it.each(backgrounds52)('$id has the standard 2024 proficiencies, abilities, feat and equipment choices', ({ gold, ...expected }) => {
+    const r = rules('srd52');
+    const background = r.backgrounds.find((b) => b.id === expected.id)!;
+    expect(background).toMatchObject({ ...expected, source: 'standard option, own words' });
+    expect(background.skills.every((id) => r.skills.some((s) => s.id === id))).toBe(true);
+    expect(background.equipment).toHaveLength(1);
+    expect(background.equipment[0]).toMatch(new RegExp(`^Choose A or B: \\(A\\) .+, ${gold} GP; or \\(B\\) 50 GP$`));
+  });
+
+  it('loads exactly the six additional origin feats', () => {
+    const added = rules('srd52').feats.filter((f) => !base52.feats.some((original) => original.id === f.id));
+    expect(added.map(({ id, name }) => ({ id, name }))).toEqual(feats52);
+    for (const feat of added) {
+      expect(feat.source).toBe('standard option, own words');
+      expect(feat.desc.split(/\.\s+|\.$/).filter(Boolean).length).toBeGreaterThanOrEqual(2);
+      expect(feat.desc.split(/\.\s+|\.$/).filter(Boolean).length).toBeLessThanOrEqual(4);
+    }
+  });
+
+  it('every background names an existing feat, with a spell-list suffix allowed for Magic Initiate', () => {
+    const r = rules('srd52');
+    expect(r.backgrounds.find((b) => b.id === 'acolyte')!.feat).toBe('Magic Initiate (Cleric)');
+    expect(r.backgrounds.find((b) => b.id === 'guide')!.feat).toBe('Magic Initiate (Druid)');
+    for (const background of r.backgrounds) {
+      expect(background.feat, background.id).toBeTruthy();
+      // Like Acolyte, Guide labels its spell list; the rules entry covers all three lists.
+      // The builder displays these labels and does not apply feat mechanics automatically.
+      const name = background.feat!.replace(/^Magic Initiate \((Cleric|Druid|Wizard)\)$/, 'Magic Initiate');
+      expect(findIn(r.feats, name), `${background.id}: ${background.feat}`).toBeDefined();
+    }
+  });
+
+  describe.each(['two-and-one', 'one-each'] as const)('level-1 builds with %s background bonuses', (bonuses) => {
+    it.each(backgrounds52)('$id builds without errors and applies its abilities and skills', ({ id }) => {
+      const r = rules('srd52');
+      const background = r.backgrounds.find((b) => b.id === id)!;
+      const [first, second, third] = background.abilityOptions!;
+      const fighter = r.classes.find((c) => c.id === 'fighter')!;
+      const build = fighter51({
+        ruleset: 'srd52',
+        species: 'dwarf',
+        subspecies: undefined,
+        background: id,
+        bonusChoices: bonuses === 'two-and-one' ? { [first]: 2, [second]: 1 } : { [first]: 1, [second]: 1, [third]: 1 },
+        skills: fighter.skillChoices.from.filter((s) => !background.skills.includes(s)).slice(0, fighter.skillChoices.choose),
+        // Select the background's cash alternative, rather than sending its choice prompt as an item.
+        equipment: ['50 GP'],
+      });
+      expect(lib.validateBuild(r, build)).toEqual([]);
+      const character = lib.buildCharacter(r, build, { id, ownerId: 'u' });
+      expect(character).toMatchObject({ ruleset: 'srd52', background: id, level: 1, gold: 50 });
+      expect(lib.validateBuild(r, lib.buildOf(character))).toEqual([]);
+      expect(character.skills).toEqual(expect.arrayContaining(background.skills));
+      for (const ability of background.abilityOptions!) {
+        expect(character.abilities[ability]).toBe(build.baseAbilities[ability] + (build.bonusChoices?.[ability] ?? 0));
+      }
+    });
+  });
+
+  it('has no id clashes after merging the origins', () => {
+    const r = rules('srd52');
+    for (const kind of ['backgrounds', 'feats', 'traits', 'species'] as const) {
+      expect(new Set(r[kind].map((entry) => entry.id)).size, kind).toBe(r[kind].length);
+    }
+    for (const species of r.species) {
+      expect(new Set(species.subspecies.map((sub) => sub.id)).size, species.id).toBe(species.subspecies.length);
+    }
+  });
+
+  it('keeps all four origins keys, empty species additions, and plain ASCII', () => {
+    const text = readFileSync(new URL('../data/srd52/origins.json', import.meta.url), 'utf8');
+    const origins = JSON.parse(text) as Origins;
+    expect(Object.keys(origins).sort()).toEqual(['backgrounds', 'feats', 'subspecies', 'traits']);
+    expect(origins.backgrounds).toHaveLength(12);
+    expect(origins.feats).toHaveLength(6);
+    expect(origins.subspecies).toEqual({});
+    expect(origins.traits).toEqual([]);
+    expect(text).not.toMatch(/[^\x09\x0a\x0d\x20-\x7e]/);
   });
 });
 
