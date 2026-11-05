@@ -54,7 +54,11 @@ function Pitches({ g, onChanged }: { g: GameDetail; onChanged: () => void }) {
     setBusy('');
     setPicking('');
   };
-  /** Runs one AI request; a cancelled one leaves the page as it was, without a toast. */
+  /**
+   * Runs one AI request; a cancelled one leaves the page as it was, without a toast. After a cancel the game is
+   * reloaded anyway: a result that finished just before the cancel reached the server is saved, and these saves
+   * send no live update.
+   */
   const ask = async (kind: 'pitch' | 'form', path: string, body: unknown) => {
     const stop = new AbortController();
     running.current = stop;
@@ -64,6 +68,7 @@ function Pitches({ g, onChanged }: { g: GameDetail; onChanged: () => void }) {
       onChanged();
     } catch (err) {
       if (!isCancelled(err)) throw err;
+      onChanged();
     } finally {
       if (running.current === stop) {
         running.current = undefined;
