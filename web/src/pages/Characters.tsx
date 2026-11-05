@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { RULESET_NAMES, classLine, type Character, type CharacterBuild, type ClassLevels, type Derived, type Ruleset } from '@dungeonmind/shared';
 import { api } from '../api';
+import { toast } from '../notify';
 import { Busy } from '../components/Busy';
 import { PortraitPicker } from '../components/PortraitPicker';
 import { Sheet } from '../components/Sheet';
@@ -206,6 +207,8 @@ export function CharacterView({ id, edit }: { id: string; edit?: boolean }) {
 
 function StoryFields({ c, onSaved }: { c: Character; onSaved: () => void }) {
   const [f, setF] = useState({ appearance: c.appearance ?? '', personality: c.personality ?? '', backstory: c.backstory ?? '', notes: c.notes ?? '' });
+  const [saving, setSaving] = useState(false);
+  const unchanged = (['appearance', 'personality', 'backstory', 'notes'] as const).every((k) => f[k] === (c[k] ?? ''));
   return (
     <section className="card space-y-2">
       <h2 className="rune-title">Story</h2>
@@ -215,7 +218,14 @@ function StoryFields({ c, onSaved }: { c: Character; onSaved: () => void }) {
           <textarea className="input readable h-20" value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
         </label>
       ))}
-      <button className="btn" onClick={() => api(`/api/characters/${c.id}`, { method: 'PATCH', body: f }).then(onSaved)}>
+      <button className="btn" disabled={saving || unchanged} onClick={async () => {
+        setSaving(true);
+        try {
+          await api(`/api/characters/${c.id}`, { method: 'PATCH', body: f });
+          toast('Story saved.', 'info');
+          onSaved();
+        } catch { /* api displays the error */ } finally { setSaving(false); }
+      }}>
         Save story
       </button>
     </section>
