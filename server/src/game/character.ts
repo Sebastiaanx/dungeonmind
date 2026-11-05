@@ -240,7 +240,7 @@ export function derive(rules: RulesData, c: Character): Derived {
     mods,
     ac,
     initiative: mods.dex - exhaustionPenalty,
-    speed: Math.max(0, (sp?.speed ?? 30) - (rules.ruleset === 'srd52' ? 5 * c.exhaustion : 0)),
+    speed: Math.max(0, (findSub(sp?.subspecies ?? [], c.subspecies)?.speed ?? sp?.speed ?? 30) - (rules.ruleset === 'srd52' ? 5 * c.exhaustion : 0)),
     passivePerception: 10 + skillBonus.perception,
     saveBonus,
     skillBonus,
