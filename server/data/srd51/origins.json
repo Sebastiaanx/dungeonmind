@@ -1,5 +1,119 @@
 {
-  "backgrounds": [],
+  "backgrounds": [
+    {
+      "id": "charlatan",
+      "name": "Charlatan",
+      "skills": ["deception", "sleight-of-hand"],
+      "tools": ["Disguise kit", "Forgery kit"],
+      "feature": "False Identity: You have an alternate persona backed by papers, contacts, and disguises. You can counterfeit documents or handwriting after studying a suitable example.",
+      "equipment": ["Clothes, fine", "Disguise Kit", "Con props of your choice", "Pouch", "15 gp"],
+      "source": "standard option, own words"
+    },
+    {
+      "id": "criminal",
+      "name": "Criminal",
+      "skills": ["deception", "stealth"],
+      "tools": ["One type of gaming set", "Thieves' tools"],
+      "feature": "Criminal Contact: A dependable underworld contact connects you with other criminals. You know intermediaries who can carry messages between you and that contact over long distances.",
+      "equipment": ["Crowbar", "Clothes, common", "Dark hood", "Pouch", "15 gp"],
+      "source": "standard option, own words"
+    },
+    {
+      "id": "entertainer",
+      "name": "Entertainer",
+      "skills": ["acrobatics", "performance"],
+      "tools": ["Disguise kit", "One type of musical instrument"],
+      "feature": "By Popular Demand: You can find a venue that provides meals and lodging at a modest or comfortable standard in exchange for nightly performances. People who recognize your act in a settlement generally respond favorably to you.",
+      "equipment": ["One musical instrument of your choice", "Gift from an admirer", "Clothes, costume", "Pouch", "15 gp"],
+      "source": "standard option, own words"
+    },
+    {
+      "id": "folk-hero",
+      "name": "Folk Hero",
+      "skills": ["animal-handling", "survival"],
+      "tools": ["One type of artisan's tools", "Vehicles (land)"],
+      "feature": "Rustic Hospitality: Commoners will offer shelter, a place to recover, and help evading pursuers unless you have endangered them. Their help stops short of putting their own lives at risk.",
+      "equipment": ["One set of artisan's tools of your choice", "Shovel", "Pot, iron", "Clothes, common", "Pouch", "10 gp"],
+      "source": "standard option, own words"
+    },
+    {
+      "id": "guild-artisan",
+      "name": "Guild Artisan",
+      "skills": ["insight", "persuasion"],
+      "tools": ["One type of artisan's tools"],
+      "languages": 1,
+      "feature": "Guild Membership: Your guild can supply food, lodging, funeral costs, professional contacts, and support against defensible criminal accusations; political introductions may require a contribution. Membership costs 5 gp each month, and overdue dues must be paid before benefits resume.",
+      "equipment": ["One set of artisan's tools of your choice", "Guild introduction letter", "Clothes, traveler's", "Pouch", "15 gp"],
+      "source": "standard option, own words"
+    },
+    {
+      "id": "hermit",
+      "name": "Hermit",
+      "skills": ["medicine", "religion"],
+      "tools": ["Herbalism kit"],
+      "languages": 1,
+      "feature": "Discovery: You possess an exceptional discovery from your time in isolation. Decide with the DM what you learned and how it affects the campaign.",
+      "equipment": ["Case, map or scroll", "Study or prayer notes", "Blanket", "Clothes, common", "Herbalism Kit", "5 gp"],
+      "source": "standard option, own words"
+    },
+    {
+      "id": "noble",
+      "name": "Noble",
+      "skills": ["history", "persuasion"],
+      "tools": ["One type of gaming set"],
+      "languages": 1,
+      "feature": "Position of Privilege: Your title gains you acceptance in high society, deference from commoners, and recognition as a peer by other nobles. You can obtain a meeting with a local noble when needed.",
+      "equipment": ["Clothes, fine", "Signet ring", "Pedigree scroll", "Pouch", "25 gp"],
+      "source": "standard option, own words"
+    },
+    {
+      "id": "outlander",
+      "name": "Outlander",
+      "skills": ["athletics", "survival"],
+      "tools": ["One type of musical instrument"],
+      "languages": 1,
+      "feature": "Wanderer: You remember maps and the broad layout of places you have seen. Where natural supplies are available, you can gather enough food and fresh water each day for yourself and five others.",
+      "equipment": ["Quarterstaff", "Hunting trap", "Trophy from a hunted animal", "Clothes, traveler's", "Pouch", "10 gp"],
+      "source": "standard option, own words"
+    },
+    {
+      "id": "sage",
+      "name": "Sage",
+      "skills": ["arcana", "history"],
+      "tools": [],
+      "languages": 2,
+      "feature": "Researcher: When a fact escapes you, you often know a person or collection that could supply it. The DM decides whether that source is reachable or the information can be found at all.",
+      "equipment": ["Ink (1 ounce bottle)", "Ink pen", "Small knife", "Letter from a colleague", "Clothes, common", "Pouch", "10 gp"],
+      "source": "standard option, own words"
+    },
+    {
+      "id": "sailor",
+      "name": "Sailor",
+      "skills": ["athletics", "perception"],
+      "tools": ["Navigator's tools", "Vehicles (water)"],
+      "feature": "Ship's Passage: Friendly sailing contacts can arrange free sea travel for you and your companions in return for helping the crew. The ship's route and departure may differ from your plans, and the DM sets the journey's duration.",
+      "equipment": ["Club", "Rope, silk (50 feet)", "Lucky charm or trinket", "Clothes, common", "Pouch", "10 gp"],
+      "source": "standard option, own words"
+    },
+    {
+      "id": "soldier",
+      "name": "Soldier",
+      "skills": ["athletics", "intimidation"],
+      "tools": ["One type of gaming set", "Vehicles (land)"],
+      "feature": "Military Rank: Members of your former military organization recognize your rank, and lower-ranking loyal soldiers defer to you. Where that rank is honored, you can influence soldiers, borrow basic supplies or horses, and usually enter friendly military sites.",
+      "equipment": ["Rank insignia", "Trophy from a defeated enemy", "Dice Set or Playing Card Set", "Clothes, common", "Pouch", "10 gp"],
+      "source": "standard option, own words"
+    },
+    {
+      "id": "urchin",
+      "name": "Urchin",
+      "skills": ["sleight-of-hand", "stealth"],
+      "tools": ["Disguise kit", "Thieves' tools"],
+      "feature": "City Secrets: You can navigate overlooked shortcuts through a city. Outside combat, you and companions you guide can travel between city locations in half the usual time.",
+      "equipment": ["Small knife", "Map of your home city", "Pet mouse", "Keepsake of your parents", "Clothes, common", "Pouch", "10 gp"],
+      "source": "standard option, own words"
+    }
+  ],
   "subspecies": {
     "dwarf": [
       {
