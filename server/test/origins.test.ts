@@ -6,6 +6,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 let rules: (r: 'srd51' | 'srd52') => RulesData;
 let findIn: typeof import('../src/rules/index.js')['findIn'];
+let memoryEntries: typeof import('../src/rules/index.js')['memoryEntries'];
+let searchRules: typeof import('../src/rules/index.js')['searchRules'];
 let lib: typeof import('../src/game/character.js');
 let dataDir: string;
 const originalDataDir = process.env.DATA_DIR;
@@ -21,6 +23,8 @@ beforeAll(async () => {
   process.env.DATA_DIR = dataDir;
   rules = (await import('../src/rules/index.js')).rules;
   findIn = (await import('../src/rules/index.js')).findIn;
+  memoryEntries = (await import('../src/rules/index.js')).memoryEntries;
+  searchRules = (await import('../src/rules/index.js')).searchRules;
   lib = await import('../src/game/character.js');
 });
 
@@ -144,6 +148,20 @@ describe('standard origins, SRD 5.1', () => {
     }
   });
 
+  it.each([
+    { id: 'wood-elf', name: 'Wood Elf', parent: 'Elf', speed: 35, mechanics: ['WIS +1', 'Mask of the Wild'] },
+    { id: 'draconic-ancestry-black', name: 'Draconic Ancestry: Black', parent: 'Dragonborn', speed: 30, mechanics: ['Acid', '5 by 30 ft. line', 'DEX save', 'Damage Resistance: Acid'] },
+  ])('indexes $name mechanics in memory and rules search', ({ id, name, parent, speed, mechanics }) => {
+    const entries = memoryEntries('srd51');
+    const entry = entries.find((e) => e.kind === 'Subspecies' && e.id === id);
+    expect(entry).toBeDefined();
+    expect(entry!.text).toContain(`Parent species: ${parent}`);
+    expect(entry!.text).toContain(`Speed ${speed} feet`);
+    for (const mechanic of mechanics) expect(entry!.text).toContain(mechanic);
+    expect(entries.some((e) => e.kind === 'Species' && e.name === parent)).toBe(true);
+    expect(searchRules('srd51', name)).toContainEqual(expect.objectContaining(entry!));
+  });
+
   it('keeps origins data in plain ASCII', () => {
     expect(readFileSync(new URL('../data/srd51/origins.json', import.meta.url), 'utf8')).not.toMatch(/[^\x09\x0a\x0d\x20-\x7e]/);
   });
@@ -188,7 +206,8 @@ describe('standard origins, SRD 5.2', () => {
     expect(background).toMatchObject({ ...expected, source: 'standard option, own words' });
     expect(background.skills.every((id) => r.skills.some((s) => s.id === id))).toBe(true);
     expect(background.equipment).toHaveLength(1);
-    expect(background.equipment[0]).toMatch(new RegExp(`^Choose A or B: \\(A\\) .+, ${gold} GP; or \\(B\\) 50 GP$`));
+    expect(background.equipment[0]).toContain('50 GP');
+    expect(background.equipment[0]).toContain(`${gold} GP`);
   });
 
   it('loads exactly the six additional origin feats', () => {

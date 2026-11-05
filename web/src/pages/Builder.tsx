@@ -145,7 +145,7 @@ export function Builder({ initial, characterId, lockRuleset, minLevel, maxLevel,
           )}
           {sp && (
             <p className="text-xs text-slate-400">
-              Speed {metres(sp.speed)} · {sp.size} · {sp.traits.join(', ')}
+              Speed {metres(sp.subspecies.find((s) => s.id === b.subspecies)?.speed ?? sp.speed)} · {sp.size} · {sp.traits.join(', ')}
               {Object.keys(sp.abilityBonuses).length > 0 && ` · ${Object.entries(sp.abilityBonuses).map(([a, v]) => `${a.toUpperCase()} +${v}`).join(', ')}`}
             </p>
           )}

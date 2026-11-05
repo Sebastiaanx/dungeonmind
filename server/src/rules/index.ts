@@ -151,7 +151,16 @@ export function memoryEntries(ruleset: Ruleset): { kind: string; id: string; nam
       `Hit die d${c.hitDie}. Saving throws: ${c.saves.join(', ').toUpperCase()}. Skills: choose ${c.skillChoices.choose} from ${c.skillChoices.from.join(', ')}. Proficiencies: ${c.proficiencies.join(', ')}.${c.spellAbility ? ` Spellcasting ability: ${c.spellAbility.toUpperCase()}.` : ''} Subclasses: ${c.subclasses.map((s) => s.name).join(', ')}.\n${c.levels.map((l) => `Level ${l.level}: ${l.features.join(', ') || '-'}`).join('\n')}`,
     );
   for (const f of d.features) add('Feature', f.id, f.name, `${f.owner ? `${f.owner}${f.level ? ` level ${f.level}` : ''}. ` : ''}${f.desc}`);
-  for (const s of d.species) add('Species', s.id, s.name, `Speed ${s.speed}, size ${s.size}. Traits: ${s.traits.join(', ')}.${s.subspecies.length ? ` Subspecies: ${s.subspecies.map((x) => x.name).join(', ')}.` : ''}`);
+  for (const s of d.species) {
+    add('Species', s.id, s.name, `Speed ${s.speed}, size ${s.size}. Traits: ${s.traits.join(', ')}.${s.subspecies.length ? ` Subspecies: ${s.subspecies.map((x) => x.name).join(', ')}.` : ''}`);
+    for (const sub of s.subspecies)
+      add(
+        'Subspecies',
+        sub.id,
+        sub.name,
+        `Parent species: ${s.name}. Additional ability bonuses: ${Object.entries(sub.abilityBonuses).map(([a, v]) => `${a.toUpperCase()} +${v}`).join(', ') || 'none'}. Speed ${sub.speed ?? s.speed} feet. Traits: ${sub.traits.join(', ') || 'none'}.`,
+      );
+  }
   for (const t of d.traits) add('Trait', t.id, t.name, t.desc);
   for (const b of d.backgrounds) add('Background', b.id, b.name, `Skills: ${b.skills.join(', ')}.${b.tools?.length ? ` Tools: ${b.tools.join(', ')}.` : ''}${b.languages ? ` Languages: ${b.languages}.` : ''}${b.abilityOptions ? ` Ability scores: ${b.abilityOptions.join(', ')}.` : ''}${b.feat ? ` Feat: ${b.feat}.` : ''}${b.feature ? ` ${b.feature}` : ''}`);
   for (const f of d.feats) add('Feat', f.id, f.name, f.desc);

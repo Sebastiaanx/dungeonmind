@@ -7,7 +7,7 @@
       "abilityOptions": ["str", "dex", "int"],
       "feat": "Crafter",
       "tools": ["One kind of artisan's tools"],
-      "equipment": ["Choose A or B: (A) Artisan's Tools (your proficient kind), 2 Pouches, Traveler's Clothes, 32 GP; or (B) 50 GP"],
+      "equipment": ["Either take 50 GP, or start with 32 GP plus Traveler's Clothes, 2 Pouches and Artisan's Tools of a kind you are proficient with."],
       "source": "standard option, own words"
     },
     {
@@ -17,7 +17,7 @@
       "abilityOptions": ["dex", "con", "cha"],
       "feat": "Skilled",
       "tools": ["Forgery kit"],
-      "equipment": ["Choose A or B: (A) Forgery Kit, Costume, Fine Clothes, 15 GP; or (B) 50 GP"],
+      "equipment": ["Either take 50 GP, or start with 15 GP plus Fine Clothes, a Costume and a Forgery Kit."],
       "source": "standard option, own words"
     },
     {
@@ -27,7 +27,7 @@
       "abilityOptions": ["str", "dex", "cha"],
       "feat": "Musician",
       "tools": ["One kind of musical instrument"],
-      "equipment": ["Choose A or B: (A) Musical Instrument (your proficient kind), 2 Costumes, Mirror, Perfume, Traveler's Clothes, 11 GP; or (B) 50 GP"],
+      "equipment": ["Either take 50 GP, or start with 11 GP plus Traveler's Clothes, Perfume, a Mirror, 2 Costumes and a Musical Instrument of a kind you are proficient with."],
       "source": "standard option, own words"
     },
     {
@@ -37,7 +37,7 @@
       "abilityOptions": ["str", "con", "wis"],
       "feat": "Tough",
       "tools": ["Carpenter's tools"],
-      "equipment": ["Choose A or B: (A) Sickle, Carpenter's Tools, Healer's Kit, Iron Pot, Shovel, Traveler's Clothes, 30 GP; or (B) 50 GP"],
+      "equipment": ["Either take 50 GP, or start with 30 GP plus Traveler's Clothes, a Shovel, an Iron Pot, a Healer's Kit, Carpenter's Tools and a Sickle."],
       "source": "standard option, own words"
     },
     {
@@ -47,7 +47,7 @@
       "abilityOptions": ["str", "int", "wis"],
       "feat": "Alert",
       "tools": ["One kind of gaming set"],
-      "equipment": ["Choose A or B: (A) Spear, Light Crossbow, 20 Bolts, Gaming Set (your proficient kind), Hooded Lantern, Manacles, Quiver, Traveler's Clothes, 12 GP; or (B) 50 GP"],
+      "equipment": ["Either take 50 GP, or start with 12 GP plus Traveler's Clothes, a Quiver, Manacles, a Hooded Lantern, a Gaming Set of a kind you are proficient with, 20 Bolts, a Light Crossbow and a Spear."],
       "source": "standard option, own words"
     },
     {
@@ -57,7 +57,7 @@
       "abilityOptions": ["dex", "con", "wis"],
       "feat": "Magic Initiate (Druid)",
       "tools": ["Cartographer's tools"],
-      "equipment": ["Choose A or B: (A) Shortbow, 20 Arrows, Cartographer's Tools, Bedroll, Quiver, Tent, Traveler's Clothes, 3 GP; or (B) 50 GP"],
+      "equipment": ["Either take 50 GP, or start with 3 GP plus Traveler's Clothes, a Tent, a Quiver, a Bedroll, Cartographer's Tools, 20 Arrows and a Shortbow."],
       "source": "standard option, own words"
     },
     {
@@ -67,7 +67,7 @@
       "abilityOptions": ["con", "wis", "cha"],
       "feat": "Healer",
       "tools": ["Herbalism kit"],
-      "equipment": ["Choose A or B: (A) Quarterstaff, Herbalism Kit, Bedroll, Book (philosophy), Lamp, Oil (3 flasks), Traveler's Clothes, 16 GP; or (B) 50 GP"],
+      "equipment": ["Either take 50 GP, or start with 16 GP plus Traveler's Clothes, 3 flasks of Oil, a Lamp, a Book on philosophy, a Bedroll, an Herbalism Kit and a Quarterstaff."],
       "source": "standard option, own words"
     },
     {
@@ -77,7 +77,7 @@
       "abilityOptions": ["con", "int", "cha"],
       "feat": "Lucky",
       "tools": ["Navigator's tools"],
-      "equipment": ["Choose A or B: (A) Navigator's Tools, 2 Pouches, Traveler's Clothes, 22 GP; or (B) 50 GP"],
+      "equipment": ["Either take 50 GP, or start with 22 GP plus Traveler's Clothes, 2 Pouches and Navigator's Tools."],
       "source": "standard option, own words"
     },
     {
@@ -87,7 +87,7 @@
       "abilityOptions": ["str", "int", "cha"],
       "feat": "Skilled",
       "tools": ["One kind of gaming set"],
-      "equipment": ["Choose A or B: (A) Gaming Set (your proficient kind), Fine Clothes, Perfume, 29 GP; or (B) 50 GP"],
+      "equipment": ["Either take 50 GP, or start with 29 GP plus Perfume, Fine Clothes and a Gaming Set of a kind you are proficient with."],
       "source": "standard option, own words"
     },
     {
@@ -97,7 +97,7 @@
       "abilityOptions": ["str", "dex", "wis"],
       "feat": "Tavern Brawler",
       "tools": ["Navigator's tools"],
-      "equipment": ["Choose A or B: (A) Dagger, Navigator's Tools, Rope, Traveler's Clothes, 20 GP; or (B) 50 GP"],
+      "equipment": ["Either take 50 GP, or start with 20 GP plus Traveler's Clothes, Rope, Navigator's Tools and a Dagger."],
       "source": "standard option, own words"
     },
     {
@@ -107,7 +107,7 @@
       "abilityOptions": ["dex", "int", "wis"],
       "feat": "Skilled",
       "tools": ["Calligrapher's supplies"],
-      "equipment": ["Choose A or B: (A) Calligrapher's Supplies, Fine Clothes, Lamp, Oil (3 flasks), Parchment (12 sheets), 23 GP; or (B) 50 GP"],
+      "equipment": ["Either take 50 GP, or start with 23 GP plus 12 sheets of Parchment, 3 flasks of Oil, a Lamp, Fine Clothes and Calligrapher's Supplies."],
       "source": "standard option, own words"
     },
     {
@@ -117,7 +117,7 @@
       "abilityOptions": ["dex", "wis", "cha"],
       "feat": "Lucky",
       "tools": ["Thieves' tools"],
-      "equipment": ["Choose A or B: (A) 2 Daggers, Thieves' Tools, Gaming Set (any kind), Bedroll, 2 Pouches, Traveler's Clothes, 16 GP; or (B) 50 GP"],
+      "equipment": ["Either take 50 GP, or start with 16 GP plus Traveler's Clothes, 2 Pouches, a Bedroll, a Gaming Set of any kind, Thieves' Tools and 2 Daggers."],
       "source": "standard option, own words"
     }
   ],
@@ -126,7 +126,7 @@
     {
       "id": "crafter",
       "name": "Crafter",
-      "desc": "Choose three tool proficiencies: carpenter's, leatherworker's, mason's, potter's, smith's, tinker's, weaver's, or woodcarver's tools. Nonmagical purchases cost you 20 percent less. At the end of a long rest, make one item from the feat's fast-crafting options using tools you have and are proficient with. This temporary item falls apart at the end of your next long rest.",
+      "desc": "Gain proficiency with three of the eight tool kinds below; nonmagical purchases cost you 20 percent less. On completing a long rest, you may make one listed item with tools you possess and are proficient with; it falls apart when your next long rest ends. Carpenter's tools can make a torch or ladder; leatherworker's tools a pouch, map or scroll case, or crossbow bolt case; mason's tools a block and tackle; potter's tools a lamp or jug; smith's tools an iron pot, grappling hook, caltrops, bucket or ball bearings; tinker's tools a tinderbox, shovel or bell; weaver's tools a tent, net, rope or basket; woodcarver's tools a quarterstaff, greatclub or club.",
       "source": "standard option, own words"
     },
     {

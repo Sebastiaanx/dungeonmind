@@ -293,70 +293,70 @@
     {
       "id": "dwarven-armor-training",
       "name": "Dwarven Armor Training",
-      "desc": "You have proficiency with light and medium armor.",
+      "desc": "Armor proficiencies: light and medium.",
       "owner": "dwarf",
       "source": "standard option, own words"
     },
     {
       "id": "fleet-of-foot",
       "name": "Fleet of Foot",
-      "desc": "Your base walking speed is 35 feet.",
+      "desc": "Walking speed: 35 feet.",
       "owner": "elf",
       "source": "standard option, own words"
     },
     {
       "id": "mask-of-the-wild",
       "name": "Mask of the Wild",
-      "desc": "You can hide when lightly obscured by natural phenomena.",
+      "desc": "Natural cover that only lightly obscures you is enough to attempt a Stealth check to hide; success follows the normal hiding rules.",
       "owner": "elf",
       "source": "standard option, own words"
     },
     {
       "id": "superior-darkvision",
       "name": "Superior Darkvision",
-      "desc": "Your darkvision extends to 120 feet.",
+      "desc": "Darkvision range: 120 feet.",
       "owner": "elf",
       "source": "standard option, own words"
     },
     {
       "id": "sunlight-sensitivity",
       "name": "Sunlight Sensitivity",
-      "desc": "You have disadvantage on attack rolls and sight-based Perception checks when you, the target, or what you are trying to perceive is in direct sunlight.",
+      "desc": "Direct sunlight imposes disadvantage on your attacks and visual Perception checks if it illuminates either you or the relevant creature or object.",
       "owner": "elf",
       "source": "standard option, own words"
     },
     {
       "id": "drow-magic",
       "name": "Drow Magic",
-      "desc": "You know the dancing lights cantrip. At level 3 you can cast faerie fire once per long rest, and at level 5 darkness once per long rest; Charisma is your spellcasting ability.",
+      "desc": "Innate magic (CHA): dancing lights; from level 3, cast faerie fire once per long rest, and from level 5, cast darkness once per long rest.",
       "owner": "elf",
       "source": "standard option, own words"
     },
     {
       "id": "drow-weapon-training",
       "name": "Drow Weapon Training",
-      "desc": "You have proficiency with rapiers, shortswords, and hand crossbows.",
+      "desc": "Weapon proficiencies: rapier, shortsword, hand crossbow.",
       "owner": "elf",
       "source": "standard option, own words"
     },
     {
       "id": "stout-resilience",
       "name": "Stout Resilience",
-      "desc": "You have advantage on saves against poison and resistance to poison damage.",
+      "desc": "Poison defense: saves against poison have advantage, and poison damage is halved by resistance.",
       "owner": "halfling",
       "source": "standard option, own words"
     },
     {
       "id": "natural-illusionist",
       "name": "Natural Illusionist",
-      "desc": "You know the minor illusion cantrip, using Intelligence as your spellcasting ability.",
+      "desc": "Innate cantrip: minor illusion, cast with INT.",
       "owner": "gnome",
       "source": "standard option, own words"
     },
     {
       "id": "speak-with-small-beasts",
       "name": "Speak with Small Beasts",
-      "desc": "You can communicate simple ideas to Small or smaller beasts through sounds and gestures.",
+      "desc": "Exchange basic messages with beasts no larger than Small, using gestures and noises.",
       "owner": "gnome",
       "source": "standard option, own words"
     }
