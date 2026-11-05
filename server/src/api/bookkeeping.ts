@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { XP_TABLE, type Abilities, type CharacterBuild, type Condition } from '@dungeonmind/shared';
+import { XP_TABLE, classLine, type Abilities, type CharacterBuild, type Condition } from '@dungeonmind/shared';
 import { requireUser } from '../auth/index.js';
 import { db, tx } from '../db.js';
 import { labelTurn, markRerolled } from '../trainer/records.js';
@@ -9,9 +9,10 @@ import { rollDie } from '../game/dice.js';
 import { freeRoll, playerRoll } from '../game/engine.js';
 import { addLog, hideLogFrom } from '../game/log.js';
 import { tally, voters } from '../game/rerolls.js';
+import { titleCase } from '../game/text.js';
 import { broadcast, gameCharacters, loadGame, saveGame, saveGameCharacter } from '../game/store.js';
 import { loadSnapshot, resolveLater } from '../game/turn.js';
-import { rules } from '../rules/index.js';
+import { findIn, rules } from '../rules/index.js';
 import { emitToGame } from '../realtime.js';
 import { gameFor } from './games.js';
 
@@ -170,28 +171,43 @@ export function bookkeepingRoutes(app: FastifyInstance) {
     if (!c || c.userId !== req.user!.id) return reply.code(404).send({ error: 'Not your character' });
     if (!c.levelUpPending) return reply.code(400).send({ error: `${c.name} doesn't have the XP for the next level yet` });
     if (c.level >= g.settings.endLevel) return reply.code(400).send({ error: `This game ends at level ${g.settings.endLevel}` });
-    const body = (req.body ?? {}) as { hp?: 'fixed' | 'roll' | number; asi?: Partial<Abilities>; subclass?: string; cantrips?: string[]; spells?: string[]; skills?: string[] };
-    const hpGain =
-      typeof body.hp === 'number' ? body.hp : body.hp === 'roll' ? rollDie(c.hitDie) : c.hitDie / 2 + 1;
-    if (!Number.isInteger(hpGain) || hpGain < 1 || hpGain > c.hitDie) return reply.code(400).send({ error: `A d${c.hitDie} shows 1-${c.hitDie}` });
+    const body = (req.body ?? {}) as { class?: string; hp?: 'fixed' | 'roll' | number; asi?: Partial<Abilities>; subclass?: string; cantrips?: string[]; spells?: string[]; skills?: string[] };
+    const d = rules(g.ruleset);
+    // The class that gets the level: the first one, one the character has, or a new one (multiclassing).
+    const cls = body.class ? findIn(d.classes, body.class) : findIn(d.classes, c.class);
+    if (!cls) return reply.code(400).send({ error: `Unknown class "${body.class}"` });
+    const die = cls.hitDie;
+    const hpGain = typeof body.hp === 'number' ? body.hp : body.hp === 'roll' ? rollDie(die) : die / 2 + 1;
+    if (!Number.isInteger(hpGain) || hpGain < 1 || hpGain > die) return reply.code(400).send({ error: `A d${die} shows 1-${die}` });
     const prevBuild = buildOf(c);
+    const first = cls.id === c.class;
+    const more = prevBuild.multiclass ?? [];
+    const had = more.find((m) => m.class === cls.id);
+    const firstLevel = c.level - more.reduce((s, m) => s + m.level, 0);
     const next: CharacterBuild = {
       ...prevBuild,
       level: c.level + 1,
-      hpRolls: [...(prevBuild.hpRolls ?? Array(c.level - 1).fill(c.hitDie / 2 + 1)), hpGain],
+      hpRolls: first ? [...(prevBuild.hpRolls ?? Array(firstLevel - 1).fill(c.hitDie / 2 + 1)), hpGain] : prevBuild.hpRolls,
+      multiclass: first
+        ? prevBuild.multiclass
+        : had
+          ? more.map((m) => (m === had ? { ...m, level: m.level + 1, hpRolls: [...(m.hpRolls ?? Array(m.level).fill(die / 2 + 1)), hpGain], subclass: body.subclass ?? m.subclass } : m))
+          : [...more, { class: cls.id, level: 1, hpRolls: [hpGain], ...(body.subclass ? { subclass: body.subclass } : {}) }],
       asi: body.asi ?? prevBuild.asi,
-      subclass: body.subclass ?? prevBuild.subclass,
+      subclass: first ? (body.subclass ?? prevBuild.subclass) : prevBuild.subclass,
+      skills: body.skills ?? prevBuild.skills,
       cantrips: body.cantrips ?? prevBuild.cantrips,
       spells: body.spells ?? prevBuild.spells,
     };
-    const d = rules(g.ruleset);
     const errors = validateBuild(d, next, { maxLevel: g.settings.endLevel, rolled: undefined }).filter((e) => !/server roll/.test(e));
-    if (errors.length) return reply.code(400).send({ error: errors[0], errors, needsSubclass: !next.subclass && next.level >= subclassLevel(g.ruleset, c.class) });
+    const classLevel = first ? firstLevel + 1 : (had?.level ?? 0) + 1;
+    const subclassNow = first ? next.subclass : next.multiclass?.find((m) => m.class === cls.id)?.subclass;
+    if (errors.length) return reply.code(400).send({ error: errors[0], errors, needsSubclass: !subclassNow && classLevel >= subclassLevel(g.ruleset, cls.id) });
     const built = buildCharacter(d, next, { id: c.id, ownerId: c.ownerId, prev: c });
     const leveled = { ...c, ...built, userId: c.userId, seated: c.seated, absent: c.absent, xp: c.xp };
     leveled.levelUpPending = leveled.level < Math.min(20, g.settings.endLevel) && leveled.xp >= XP_TABLE[leveled.level + 1] ? true : undefined;
     saveGameCharacter(g.id, leveled);
-    addLog(g.id, g.state.turn, 'levelup', `${c.name} is now level ${leveled.level} (+${leveled.maxHp - c.maxHp} max HP${typeof body.hp === 'number' ? ', rolled by the player' : body.hp === 'roll' ? `, rolled ${hpGain}` : ''}).`);
+    addLog(g.id, g.state.turn, 'levelup', `${c.name} is now level ${leveled.level}${(leveled.multiclass ?? []).length ? ` (${classLine(leveled, titleCase)})` : ''} (+${leveled.maxHp - c.maxHp} max HP${typeof body.hp === 'number' ? ', rolled by the player' : body.hp === 'roll' ? `, rolled ${hpGain}` : ''}).`);
     broadcast(g);
     return leveled;
   });

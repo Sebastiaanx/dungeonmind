@@ -8,6 +8,8 @@ export interface Counter {
   current: number;
   max: number;
   recharge: Recharge;
+  /** A short rest gives back this many of a long-rest counter (2024 Rage, Wild Shape, Channel Divinity: 1). */
+  regain?: number;
   /** Where it comes from (class, species, item, custom). Custom counters survive a rebuild. */
   source?: string;
 }
@@ -56,6 +58,36 @@ export interface CharacterBuild {
   backstory?: string;
   /** HP gained per level after the first (rolled at level-up); missing levels use the fixed value. */
   hpRolls?: number[];
+  /** Classes taken by multiclassing; `class`/`subclass` are the first class and `level` is the total. */
+  multiclass?: ClassLevels[];
+}
+
+/** One more class: its levels, and the HP rolled for each of them (missing ones use the fixed value). */
+export interface ClassLevels {
+  class: string;
+  subclass?: string;
+  level: number;
+  hpRolls?: number[];
+}
+
+/** Every class of a character with its own level, the first class first (its level is what the others leave). */
+export function classLevels(b: Pick<CharacterBuild, 'class' | 'subclass' | 'level' | 'hpRolls' | 'multiclass'>): ClassLevels[] {
+  const more = b.multiclass ?? [];
+  const first = b.level - more.reduce((s, m) => s + m.level, 0);
+  return [{ class: b.class, subclass: b.subclass, level: first, hpRolls: b.hpRolls }, ...more];
+}
+
+/** What a build may pick (the builder's spell counts): totals over every class, and each class's highest spell level. */
+export interface SpellLimits {
+  cantrips: number;
+  spells: number;
+  classes: { class: string; maxLevel: number }[];
+}
+
+/** "Fighter 3 / Wizard 2", or "Fighter" with `levels: false` and one class. */
+export function classLine(b: Pick<CharacterBuild, 'class' | 'subclass' | 'level' | 'multiclass'>, name: (id: string) => string, levels = true): string {
+  const all = classLevels(b);
+  return all.map((x) => `${name(x.class)}${levels || all.length > 1 ? ` ${x.level}` : ''}`).join(' / ');
 }
 
 export interface Character extends CharacterBuild {

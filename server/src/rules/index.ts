@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { RULESETS, type RulesData, type Ruleset, type SpellEffect } from '@dungeonmind/shared';
+import { RULESETS, type FeatureEffect, type RulesData, type Ruleset, type SpellEffect } from '@dungeonmind/shared';
 import { config } from '../config.js';
 
 const cache = new Map<Ruleset, RulesData>();
@@ -27,6 +27,12 @@ function loadBase(ruleset: Ruleset): RulesData {
     if (existsSync(effects)) {
       const byId = JSON.parse(readFileSync(effects, 'utf8')) as Record<string, SpellEffect>;
       for (const s of d.spells) if (byId[s.id]) s.effect = byId[s.id];
+    }
+    // So are the class features' counters and triggers.
+    const features = join(config.rulesDir, ruleset, 'class-features.json');
+    if (existsSync(features)) {
+      const byId = JSON.parse(readFileSync(features, 'utf8')) as Record<string, FeatureEffect>;
+      for (const f of d.features) if (byId[f.id]) f.effect = byId[f.id];
     }
     base.set(ruleset, d);
   }

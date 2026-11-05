@@ -1,0 +1,240 @@
+{
+  "rage": {
+    "counter": { "name": "Rage", "uses": "rage_count", "recharge": "long" },
+    "grants": { "name": "raging", "rounds": 10 },
+    "while": "raging",
+    "damage": { "dice": "rage_damage_bonus", "type": "weapon", "on": "str-melee" },
+    "advantage": [{ "kind": "check", "ability": "str" }, { "kind": "save", "ability": "str" }],
+    "resist": ["bludgeoning", "piercing", "slashing"],
+    "note": "Not in heavy armor; no spells or concentration while raging; ends early if the barbarian neither attacked a hostile creature nor took damage since their last turn."
+  },
+  "frenzy": {
+    "subclass": "berserker",
+    "note": "Raging in a frenzy: one melee weapon attack as a bonus action on each turn; one level of exhaustion when the rage ends."
+  },
+  "brutal-critical-1-die": {
+    "note": "On a melee critical hit, one more weapon damage die (two at 13th level, three at 17th)."
+  },
+  "intimidating-presence": {
+    "subclass": "berserker",
+    "note": "Action: one creature within 30 feet makes a WIS save (DC 8 + pb + CHA) or is frightened until the end of the barbarian's next turn."
+  },
+  "relentless-rage": {
+    "note": "Dropping to 0 HP while raging: a DC 10 CON save to drop to 1 HP instead; the DC goes up by 5 each use and resets on a short or long rest."
+  },
+  "bardic-inspiration-d6": {
+    "counter": { "name": "Bardic Inspiration", "uses": "max(1, cha)", "recharge": "long" },
+    "note": "Bonus action: one creature within 60 feet gets the \"inspired\" condition with source \"Bardic Inspiration d6\" (d8 from 5th level, d10 from 10th, d12 from 15th) for 10 minutes."
+  },
+  "song-of-rest-d6": {
+    "note": "A short rest with the bard: everyone who spends Hit Dice regains an extra 1d6 HP (1d8 from 9th level, 1d10 from 13th, 1d12 from 17th)."
+  },
+  "font-of-inspiration": {
+    "counter": { "name": "Bardic Inspiration", "recharge": "short" }
+  },
+  "cutting-words": {
+    "subclass": "lore",
+    "note": "Reaction: spend a Bardic Inspiration to subtract the die from a creature's attack roll, ability check or damage roll."
+  },
+  "superior-inspiration": {
+    "note": "Rolling initiative with no Bardic Inspiration left gives back one use."
+  },
+  "channel-divinity-1-rest": {
+    "counter": { "name": "Channel Divinity", "uses": "channel_divinity_charges", "recharge": "short" },
+    "note": "Turn Undead: undead within 30 feet make a WIS save or are turned for 1 minute."
+  },
+  "channel-divinity-2-rest": {
+    "counter": { "name": "Channel Divinity", "uses": "channel_divinity_charges" }
+  },
+  "channel-divinity-3-rest": {
+    "counter": { "name": "Channel Divinity", "uses": "channel_divinity_charges" }
+  },
+  "channel-divinity-preserve-life": {
+    "subclass": "life",
+    "note": "Channel Divinity: share out 5 × cleric level HP among creatures within 30 feet, none above half its HP maximum."
+  },
+  "disciple-of-life": {
+    "subclass": "life",
+    "note": "Healing spells of 1st level or higher heal 2 + the spell's level more."
+  },
+  "divine-strike": {
+    "subclass": "life",
+    "damage": { "dice": { "8": "1d8", "14": "2d8" }, "type": "radiant", "on": "weapon", "once": "turn" }
+  },
+  "divine-intervention": {
+    "note": "Action: roll d100; at or below the cleric level the deity intervenes. After an intervention, not again for 7 days; otherwise again after a long rest."
+  },
+  "wild-shape-cr-1-4-or-below-no-flying-or-swim-speed": {
+    "counter": { "name": "Wild Shape", "uses": 2, "recharge": "short" },
+    "grants": { "name": "wild shape" },
+    "note": "Beast forms up to CR 1/4 without flying or swimming (CR 1/2 without flying from 4th level, CR 1 from 8th) for half the druid level in hours; the beast's HP take damage first."
+  },
+  "archdruid": {
+    "counter": { "name": "Wild Shape", "uses": 99 }
+  },
+  "natural-recovery": {
+    "subclass": "land",
+    "counter": { "name": "Natural Recovery", "uses": 1, "recharge": "long" },
+    "note": "During a short rest: recover spell slots with a combined level up to half the druid level (rounded up), none 6th level or higher."
+  },
+  "second-wind": {
+    "counter": { "name": "Second Wind", "uses": 1, "recharge": "short" },
+    "heal": "1d10+level"
+  },
+  "action-surge-1-use": {
+    "counter": { "name": "Action Surge", "uses": { "2": 1, "17": 2 }, "recharge": "short" },
+    "note": "One more action this turn (only once on the same turn)."
+  },
+  "indomitable-1-use": {
+    "counter": { "name": "Indomitable", "uses": { "9": 1, "13": 2, "17": 3 }, "recharge": "long" },
+    "note": "Reroll a failed saving throw."
+  },
+  "improved-critical": {
+    "subclass": "champion",
+    "critOn": 19
+  },
+  "superior-critical": {
+    "subclass": "champion",
+    "critOn": 18
+  },
+  "survivor": {
+    "subclass": "champion",
+    "note": "At the start of each turn with half HP or less (but above 0), regain 5 + CON modifier HP."
+  },
+  "ki": {
+    "counter": { "name": "Ki", "uses": "ki_points", "recharge": "short" },
+    "note": "Flurry of Blows, Patient Defense, Step of the Wind: 1 ki each; ki save DC 8 + pb + WIS."
+  },
+  "martial-arts": {
+    "note": "Unarmed strikes and monk weapons use DEX or STR and the Martial Arts die (d4, d6 from 5th level, d8 from 11th, d10 from 17th); one unarmed strike as a bonus action after attacking."
+  },
+  "stunning-strike": {
+    "note": "On a melee weapon hit, spend 1 ki: the target makes a CON save or is stunned until the end of the monk's next turn."
+  },
+  "wholeness-of-body": {
+    "subclass": "open-hand",
+    "counter": { "name": "Wholeness of Body", "uses": 1, "recharge": "long" },
+    "heal": "3 * level"
+  },
+  "tranquility": {
+    "subclass": "open-hand",
+    "note": "After a long rest the monk has Sanctuary (DC 8 + WIS + pb) until the next long rest."
+  },
+  "quivering-palm": {
+    "subclass": "open-hand",
+    "note": "3 ki on an unarmed hit; later an action: the target makes a CON save, dropping to 0 HP on a failure or taking 10d10 necrotic on a success."
+  },
+  "divine-sense": {
+    "counter": { "name": "Divine Sense", "uses": "max(1, 1 + cha)", "recharge": "long" }
+  },
+  "lay-on-hands": {
+    "counter": { "name": "Lay on Hands", "uses": "5 * level", "recharge": "long" },
+    "note": "A pool of HP: spend any amount to heal that many; 5 points cure one disease or poison."
+  },
+  "divine-smite": {
+    "damage": { "dice": "2d8", "type": "radiant", "on": "melee-weapon", "ask": true, "slot": { "upcast": "1d8", "max": "5d8" } },
+    "note": "1d8 more against an undead or a fiend."
+  },
+  "channel-divinity": {
+    "counter": { "name": "Channel Divinity", "uses": 1, "recharge": "short" }
+  },
+  "channel-divinity-sacred-weapon": {
+    "subclass": "devotion",
+    "note": "Channel Divinity: + CHA modifier to attack rolls with one weapon for 1 minute; it sheds bright light."
+  },
+  "improved-divine-smite": {
+    "damage": { "dice": "1d8", "type": "radiant", "on": "melee-weapon" }
+  },
+  "cleansing-touch": {
+    "counter": { "name": "Cleansing Touch", "uses": "max(1, cha)", "recharge": "long" },
+    "note": "Action: end one spell on yourself or a willing creature you touch."
+  },
+  "holy-nimbus": {
+    "subclass": "devotion",
+    "counter": { "name": "Holy Nimbus", "uses": 1, "recharge": "long" },
+    "note": "Action, 1 minute: enemies starting their turn within 30 feet take 10 radiant; advantage on saves against fiends' and undead's spells."
+  },
+  "hunters-prey-colossus-slayer": {
+    "subclass": "hunter",
+    "damage": { "name": "Colossus Slayer", "dice": "1d8", "type": "weapon", "on": "weapon", "once": "turn", "ask": true },
+    "note": "Only against a creature below its HP maximum."
+  },
+  "sneak-attack": {
+    "damage": {
+      "dice": { "1": "1d6", "3": "2d6", "5": "3d6", "7": "4d6", "9": "5d6", "11": "6d6", "13": "7d6", "15": "8d6", "17": "9d6", "19": "10d6" },
+      "type": "weapon",
+      "on": "finesse-or-ranged",
+      "once": "turn",
+      "ask": true
+    },
+    "note": "Needs advantage on the attack, or another enemy of the target within 5 feet of it (and no disadvantage)."
+  },
+  "stroke-of-luck": {
+    "counter": { "name": "Stroke of Luck", "uses": 1, "recharge": "short" },
+    "note": "Turn a miss into a hit, or a failed ability check's d20 into a 20."
+  },
+  "font-of-magic": {
+    "counter": { "name": "Sorcery Points", "uses": "sorcery_points", "recharge": "long" },
+    "note": "Bonus action: spend 2/3/5/6/7 points for a level 1-5 spell slot (gone after a long rest), or turn a slot into its level in points."
+  },
+  "flexible-casting-creating-spell-slots": {
+    "note": "Slots made from Sorcery Points vanish after a long rest."
+  },
+  "sorcerous-restoration": {
+    "counter": { "name": "Sorcery Points", "regain": 4 }
+  },
+  "elemental-affinity": {
+    "subclass": "draconic",
+    "note": "A spell of the dragon ancestor's damage type adds the CHA modifier to one damage roll; 1 Sorcery Point gives resistance to that type for 1 hour."
+  },
+  "dark-ones-blessing": {
+    "subclass": "fiend",
+    "note": "Bringing a hostile creature to 0 HP gives temp HP equal to CHA modifier + warlock level."
+  },
+  "dark-ones-own-luck": {
+    "subclass": "fiend",
+    "counter": { "name": "Dark One's Own Luck", "uses": 1, "recharge": "short" },
+    "note": "Add a d10 to an ability check or saving throw after seeing the roll."
+  },
+  "fiendish-resilience": {
+    "subclass": "fiend",
+    "note": "Resistance to one damage type, chosen after each short or long rest (not against magical or silver weapons)."
+  },
+  "hurl-through-hell": {
+    "subclass": "fiend",
+    "counter": { "name": "Hurl Through Hell", "uses": 1, "recharge": "long" },
+    "note": "On an attack hit: the target vanishes until the end of the warlock's next turn and takes 10d10 psychic unless it is a fiend."
+  },
+  "mystic-arcanum-6th-level": {
+    "counter": { "name": "Mystic Arcanum L6", "uses": 1, "recharge": "long" }
+  },
+  "mystic-arcanum-7th-level": {
+    "counter": { "name": "Mystic Arcanum L7", "uses": 1, "recharge": "long" }
+  },
+  "mystic-arcanum-8th-level": {
+    "counter": { "name": "Mystic Arcanum L8", "uses": 1, "recharge": "long" }
+  },
+  "mystic-arcanum-9th-level": {
+    "counter": { "name": "Mystic Arcanum L9", "uses": 1, "recharge": "long" }
+  },
+  "eldritch-master": {
+    "counter": { "name": "Eldritch Master", "uses": 1, "recharge": "long" },
+    "note": "1 minute: regain all Pact Magic slots."
+  },
+  "arcane-recovery": {
+    "counter": { "name": "Arcane Recovery", "uses": 1, "recharge": "long" },
+    "note": "After a short rest: recover spell slots with a combined level up to half the wizard level (rounded up), none 6th level or higher."
+  },
+  "overchannel": {
+    "subclass": "evocation",
+    "counter": { "name": "Overchannel", "uses": 1, "recharge": "long" },
+    "note": "Maximum damage with a 1st-5th level wizard spell. Again before a long rest: 2d12 necrotic per spell level to the wizard (1d12 more each further time), ignoring resistance."
+  },
+  "spell-mastery": {
+    "note": "One 1st-level and one 2nd-level spell can be cast at their lowest level without a slot."
+  },
+  "signature-spell": {
+    "counter": { "name": "Signature Spells", "uses": 2, "recharge": "short" },
+    "note": "Two 3rd-level spells, each cast once at 3rd level without a slot between rests."
+  }
+}

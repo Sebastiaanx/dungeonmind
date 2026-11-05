@@ -63,7 +63,7 @@ If the stage is "form": design a setup form for THIS adventure: the questions th
         json: true,
         numCtx: JSON_CTX,
         temperature: 0.2,
-        jsonSchema: `{"rolls":[{"id":string,"actor":string,"kind":"attack"|"save"|"check"|"damage"|"heal","ability"?:"str"|"dex"|"con"|"int"|"wis"|"cha","skill"?:string,"dc"?:number,"target"?:string,"targetAc"?:number,"adv"?:"adv"|"dis"|"none","dice"?:string,"bonus"?:number,"damageType"?:string,"weapon"?:string,"spell"?:string,"onHit"?:string,"onFail"?:string,"half"?:boolean,"reason":string}],
+        jsonSchema: `{"rolls":[{"id":string,"actor":string,"kind":"attack"|"save"|"check"|"damage"|"heal","ability"?:"str"|"dex"|"con"|"int"|"wis"|"cha","skill"?:string,"dc"?:number,"target"?:string,"targetAc"?:number,"adv"?:"adv"|"dis"|"none","dice"?:string,"bonus"?:number,"damageType"?:string,"weapon"?:string,"spell"?:string,"onHit"?:string,"onFail"?:string,"half"?:boolean,"features"?:[string],"reason":string}],
 "resources":[{"pc":string,"name":string,"amount":number}],
 "refused":[{"pc":string,"reason":string}],
 "notes"?:string}`,
@@ -76,6 +76,7 @@ Rules:
 - Skill checks: kind "check" with "skill" (e.g. "stealth") or "ability", and a "dc".
 - For player characters NEVER give "bonus": the server computes modifiers from the sheet. For NPCs without "attacks" give "bonus".
 - "dice" for damage/heal like "2d6+3" or "8d6". Use the weapon or spell's real dice.
+- Class features that add to a PC's roll (Sneak Attack, Divine Smite, Colossus Slayer, Brutal Strike, Second Wind; see each character's "features"): put their names in "features" on that PC's weapon damage roll (or heal roll), never as a separate roll. The server adds their dice and checks the rules (once per turn, the right weapon). A 2014 Divine Smite also spends a spell slot in "resources".
 - "resources": every limited thing the action spends: "Spell slot L1".."Spell slot L9", class features ("Channel Divinity", "Rage", "Bardic Inspiration", "Ki", "Action Surge", "Second Wind", "Lay on Hands", "Sorcery Points", "Wild Shape"), racial traits, item charges, ammunition ("Arrows"). Cantrips spend nothing. Use the counter names from the party state when they exist.
 - If an action is impossible by the rules (e.g. a spell the character doesn't have, a feature at 0 uses, an action already used), put it in "refused" with a short reason the player sees.
 - Pure roleplay or movement without risk needs no roll. Reply with JSON only.`,

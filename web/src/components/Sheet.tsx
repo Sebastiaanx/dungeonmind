@@ -1,6 +1,6 @@
 import { metres } from '@dungeonmind/shared';
 import { useEffect, useRef, useState } from 'react';
-import { ABILITIES, SKILLS, type Character, type Counter, type Derived } from '@dungeonmind/shared';
+import { ABILITIES, SKILLS, classLine, type Character, type Counter, type Derived } from '@dungeonmind/shared';
 import { signed, titleCase } from '../rules';
 
 export function Pips({ c }: { c: Counter }) {
@@ -75,8 +75,8 @@ export function Sheet({ c, d, compact, children }: { c: Character; d: Derived; c
         <div className="min-w-0">
           <h3 className="truncate font-serif text-lg font-semibold text-indigo-100">{c.name}</h3>
           <p className="text-xs text-slate-400">
-            {titleCase(c.subspecies ?? c.species)} {titleCase(c.class)} {c.level}
-            {c.subclass && ` · ${titleCase(c.subclass)}`}
+            {titleCase(c.subspecies ?? c.species)} {classLine(c, titleCase)}
+            {[c.subclass, ...(c.multiclass ?? []).map((m) => m.subclass)].filter(Boolean).map((x) => ` · ${titleCase(x!)}`)}
           </p>
           <p className="text-xs text-slate-500">
             {titleCase(c.background)} · {c.xp} XP{d.nextLevelXp ? ` / ${d.nextLevelXp}` : ''}

@@ -168,6 +168,9 @@ describe('the full turn loop', () => {
     expect(log.some((e: any) => e.kind === 'levelup' && /Turks reached level 2/.test(e.text))).toBe(true);
     expect((await t.as(t.pl, 'POST', `/api/games/${t.id}/characters/${t.hostChar}/level-up`, { hp: 'fixed' })).statusCode).toBe(404);
     expect((await t.as(t.host, 'POST', `/api/games/${t.id}/characters/${t.hostChar}/level-up`, { hp: 11 })).json().error).toMatch(/d10 shows 1-10/);
+    // Multiclassing: the new class's hit die, and its ability prerequisite (Turks has INT 9).
+    expect((await t.as(t.host, 'POST', `/api/games/${t.id}/characters/${t.hostChar}/level-up`, { class: 'rogue', hp: 9 })).json().error).toMatch(/d8 shows 1-8/);
+    expect((await t.as(t.host, 'POST', `/api/games/${t.id}/characters/${t.hostChar}/level-up`, { class: 'wizard', hp: 'fixed' })).json().error).toMatch(/Wizard needs INT 13/);
     const up = (await t.as(t.host, 'POST', `/api/games/${t.id}/characters/${t.hostChar}/level-up`, { hp: 'fixed' })).json();
     expect(up).toMatchObject({ level: 2, maxHp: turks.maxHp + 6 + Math.floor((turks.abilities.con - 10) / 2) });
     expect(up.levelUpPending).toBeUndefined();

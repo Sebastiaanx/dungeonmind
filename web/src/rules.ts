@@ -26,12 +26,16 @@ export function useBuilderData(ruleset: Ruleset): BuilderData | undefined {
   return d;
 }
 
-export function useSpells(ruleset: Ruleset, cls?: string): RulesSpell[] {
+/** The spells of one class, or of several (a multiclass character), each spell once. */
+export function useSpells(ruleset: Ruleset, cls?: string | string[]): RulesSpell[] {
   const [s, setS] = useState<RulesSpell[]>([]);
+  const key = [cls ?? []].flat().filter(Boolean).join(',');
   useEffect(() => {
-    if (!cls) return setS([]);
-    cached<RulesSpell[]>(`/api/rules/${ruleset}/spells?class=${cls}`).then(setS);
-  }, [ruleset, cls]);
+    if (!key) return setS([]);
+    Promise.all(key.split(',').map((c) => cached<RulesSpell[]>(`/api/rules/${ruleset}/spells?class=${c}`))).then((lists) =>
+      setS(lists.flat().filter((x, i, all) => all.findIndex((y) => y.id === x.id) === i)),
+    );
+  }, [ruleset, key]);
   return s;
 }
 

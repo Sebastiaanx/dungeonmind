@@ -1,6 +1,6 @@
 import { metres } from '@dungeonmind/shared';
 import { useEffect, useMemo, useState } from 'react';
-import { ABILITIES, RULESET_NAMES, type Abilities, type Ability, type Character, type CharacterBuild, type Derived, type Ruleset } from '@dungeonmind/shared';
+import { ABILITIES, RULESET_NAMES, classLevels, type Abilities, type Ability, type Character, type CharacterBuild, type ClassLevels, type Derived, type Ruleset, type SpellLimits } from '@dungeonmind/shared';
 import { api } from '../api';
 import { Sheet } from '../components/Sheet';
 import { navigate } from '../router';
@@ -49,18 +49,23 @@ export function Builder({ initial, characterId, lockRuleset, minLevel, maxLevel,
   onSaved?: (c: Character) => void;
 }) {
   const [b, setB] = useState<CharacterBuild>(initial);
-  const [check, setCheck] = useState<{ errors: string[]; character?: Character; derived?: Derived }>({ errors: [] });
+  const [check, setCheck] = useState<{ errors: string[]; limits?: SpellLimits; character?: Character; derived?: Derived }>({ errors: [] });
   const [rolled, setRolled] = useState<number[]>();
   const [saving, setSaving] = useState(false);
   const data = useBuilderData(b.ruleset);
-  const spells = useSpells(b.ruleset, b.class || undefined);
+  const spells = useSpells(b.ruleset, classLevels(b).map((x) => x.class));
   const set = (patch: Partial<CharacterBuild>) => setB((x) => ({ ...x, ...patch }));
 
+  const more = b.multiclass ?? [];
+  const setMore = (list: ClassLevels[]) => set({ multiclass: list.length ? list : undefined });
+  const firstLevel = b.level - more.reduce((n, m) => n + m.level, 0);
   const cls = data?.classes.find((c) => c.id === b.class);
   const sp = data?.species.find((s) => s.id === b.species);
   const bg = data?.backgrounds.find((x) => x.id === b.background);
-  const lv = cls?.levels.find((l) => l.level === b.level)?.spellcasting;
+  const lv = cls?.levels.find((l) => l.level === firstLevel)?.spellcasting;
   const maxSlot = lv ? lv.slots.reduce((m, n, i) => (n > 0 ? i + 1 : m), 0) : 0;
+  const limits = check.limits ?? (lv ? { cantrips: lv.cantrips ?? 0, spells: lv.known ?? lv.prepared ?? 0, classes: [{ class: b.class, maxLevel: maxSlot }] } : undefined);
+  const castable = (s: { level: number; classes: string[] }) => !!limits?.classes.some((c) => s.classes.includes(c.class) && (s.level === 0 || c.maxLevel >= s.level));
 
   // Debounced server check.
   useEffect(() => {
@@ -173,7 +178,56 @@ export function Builder({ initial, characterId, lockRuleset, minLevel, maxLevel,
               {cls.spellAbility && ` · casts with ${cls.spellAbility.toUpperCase()}`}
             </p>
           )}
-          {cls && <p className="text-xs text-slate-500">Level {b.level}: {cls.levels.filter((l) => l.level <= b.level).flatMap((l) => l.features).join(', ')}</p>}
+          {cls && (
+            <p className="text-xs text-slate-500">
+              {cls.name} {firstLevel}: {cls.levels.filter((l) => l.level <= firstLevel).flatMap((l) => l.features).join(', ')}
+            </p>
+          )}
+          {cls && (more.length > 0 || b.level > 1) && (
+            <div className="space-y-2 border-t border-slate-800 pt-3">
+              <span className="label">Multiclass (13 in each class's main ability, the first class's too)</span>
+              {more.map((m, i) => {
+                const mc = data.classes.find((c) => c.id === m.class);
+                const put = (patch: Partial<ClassLevels>) => setMore(more.map((x, k) => (k === i ? { ...x, ...patch } : x)));
+                return (
+                  <div key={i} className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select className="input w-auto" value={m.class} onChange={(e) => put({ class: e.target.value, subclass: undefined })}>
+                        <option value="">– class –</option>
+                        {data.classes
+                          .filter((c) => c.id === m.class || (c.id !== b.class && !more.some((x) => x.class === c.id)))
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name} (d{c.hitDie})
+                            </option>
+                          ))}
+                      </select>
+                      <input className="input w-20" type="number" min={1} max={19} value={m.level} title="Levels in this class" onChange={(e) => put({ level: Math.max(1, Math.min(19, Number(e.target.value) || 1)) })} />
+                      {mc && mc.subclasses.length > 0 && (
+                        <select className="input w-auto" value={m.subclass ?? ''} onChange={(e) => put({ subclass: e.target.value || undefined })}>
+                          <option value="">– subclass –</option>
+                          {mc.subclasses.map((x) => (
+                            <option key={x.id} value={x.id}>
+                              {x.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <button className="btn-ghost px-2 py-0.5 text-xs" onClick={() => setMore(more.filter((_, k) => k !== i))}>
+                        Remove
+                      </button>
+                    </div>
+                    {mc && <p className="text-xs text-slate-500">{mc.name} {m.level}: {mc.levels.filter((l) => l.level <= m.level).flatMap((l) => l.features).join(', ')}</p>}
+                  </div>
+                );
+              })}
+              {firstLevel > 1 && (
+                <button className="btn-ghost text-xs" onClick={() => setMore([...more, { class: '', level: 1 }])}>
+                  + Add a class
+                </button>
+              )}
+            </div>
+          )}
         </Step>
 
         <Step n={4} title="Background">
@@ -278,7 +332,8 @@ export function Builder({ initial, characterId, lockRuleset, minLevel, maxLevel,
             <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
               {data.skills.map((s) => {
                 const fixed = fixedSkills.has(s.id);
-                const allowed = cls.skillChoices.from.includes(s.id) || ['half-elf', 'human', 'elf'].includes(b.species);
+                const fromMore = more.some((m) => m.class === 'bard' || (['ranger', 'rogue'].includes(m.class) && data.classes.find((c) => c.id === m.class)?.skillChoices.from.includes(s.id)));
+                const allowed = cls.skillChoices.from.includes(s.id) || ['half-elf', 'human', 'elf'].includes(b.species) || fromMore;
                 return (
                   <label key={s.id} className={`flex items-center gap-2 text-sm ${!allowed && !fixed ? 'opacity-40' : ''}`}>
                     <input
@@ -297,17 +352,17 @@ export function Builder({ initial, characterId, lockRuleset, minLevel, maxLevel,
           </Step>
         )}
 
-        {cls && lv && (
+        {cls && limits && (limits.cantrips > 0 || limits.spells > 0) && (
           <Step n={7} title="Spells">
             <SpellPicker
-              title={`Cantrips (${(b.cantrips ?? []).length}/${lv.cantrips ?? 0})`}
-              list={spells.filter((s) => s.level === 0)}
+              title={`Cantrips (${(b.cantrips ?? []).length}/${limits.cantrips})`}
+              list={spells.filter((s) => s.level === 0 && castable(s))}
               value={b.cantrips ?? []}
               onChange={(v) => set({ cantrips: v })}
             />
             <SpellPicker
-              title={`Spells up to level ${maxSlot} (${(b.spells ?? []).length}${lv.known ? `/${lv.known} known` : lv.prepared ? `/${lv.prepared} prepared` : ''})`}
-              list={spells.filter((s) => s.level > 0 && s.level <= maxSlot)}
+              title={`Spells up to level ${Math.max(0, ...limits.classes.map((c) => c.maxLevel))} (${(b.spells ?? []).length}/${limits.spells})`}
+              list={spells.filter((s) => s.level > 0 && castable(s))}
               value={b.spells ?? []}
               onChange={(v) => set({ spells: v })}
             />
