@@ -92,8 +92,8 @@ function Pitches({ g, onChanged }: { g: GameDetail; onChanged: () => void }) {
       >
         {g.settings.pitches ? 'Suggest new pitches' : 'Suggest pitches'}
       </button>
-      {busy === 'pitch' && <Busy text="The DM is dreaming up pitches…" onCancel={cancel} />}
-      {busy === 'form' && <Busy text={`The DM is preparing the setup questions for “${picking}”…`} onCancel={cancel} />}
+      {busy === 'pitch' && <Busy text="Writing a few story pitches from your wishes. Pick one, or write your own below. About 20 s." onCancel={cancel} />}
+      {busy === 'form' && <Busy text={`Writing a few questions about “${picking}” so the DM can shape the adventure. About 20 s.`} onCancel={cancel} />}
       {busy === 'pitch' ? (
         <div className="grid gap-2 sm:grid-cols-2" aria-hidden>
           {[0, 1, 2, 3].map((n) => (
@@ -121,7 +121,7 @@ function Pitches({ g, onChanged }: { g: GameDetail; onChanged: () => void }) {
         <div className="mt-2 space-y-2">
           <input className="input" placeholder="Title" value={own.title} onChange={(e) => setOwn({ ...own, title: e.target.value })} />
           <textarea className="input h-16" placeholder="The hook" value={own.hook} onChange={(e) => setOwn({ ...own, hook: e.target.value })} />
-          <button className="btn-ghost" disabled={!own.title || !!busy} onClick={() => pick(own)}>
+          <button className="btn-ghost" disabled={!own.title || busy === 'form'} onClick={() => { if (busy === 'pitch') cancel(); pick(own); }}>
             Use this pitch
           </button>
         </div>
