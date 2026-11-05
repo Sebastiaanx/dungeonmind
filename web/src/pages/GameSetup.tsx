@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { RULESET_NAMES, classLine, type GameDetail, type Pitch, type SetupField } from '@dungeonmind/shared';
-import { api } from '../api';
+import { api, isCancelled } from '../api';
 import { Busy } from '../components/Busy';
 import { useMe } from '../me';
 import { navigate } from '../router';
@@ -46,16 +46,35 @@ function Pitches({ g, onChanged }: { g: GameDetail; onChanged: () => void }) {
   const [busy, setBusy] = useState('');
   const [picking, setPicking] = useState('');
   const [own, setOwn] = useState<Pitch>({ title: '', hook: '' });
-  const pick = async (p: Pitch) => {
-    setBusy('form');
-    setPicking(p.title);
+  // The running AI request (pitches or setup questions); cancel() stops it, from the button or from code.
+  const running = useRef<AbortController | undefined>(undefined);
+  const cancel = () => {
+    running.current?.abort();
+    running.current = undefined;
+    setBusy('');
+    setPicking('');
+  };
+  /** Runs one AI request; a cancelled one leaves the page as it was, without a toast. */
+  const ask = async (kind: 'pitch' | 'form', path: string, body: unknown) => {
+    const stop = new AbortController();
+    running.current = stop;
+    setBusy(kind);
     try {
-      await api(`/api/games/${g.id}/form`, { body: { pitch: p } });
+      await api(path, { body, signal: stop.signal });
       onChanged();
+    } catch (err) {
+      if (!isCancelled(err)) throw err;
     } finally {
-      setBusy('');
-      setPicking('');
+      if (running.current === stop) {
+        running.current = undefined;
+        setBusy('');
+        setPicking('');
+      }
     }
+  };
+  const pick = (p: Pitch) => {
+    setPicking(p.title);
+    return ask('form', `/api/games/${g.id}/form`, { pitch: p });
   };
   return (
     <section className="card space-y-3">
@@ -64,20 +83,12 @@ function Pitches({ g, onChanged }: { g: GameDetail; onChanged: () => void }) {
       <button
         className="btn"
         disabled={!!busy}
-        onClick={async () => {
-          setBusy('pitch');
-          try {
-            await api(`/api/games/${g.id}/pitches`, { body: { wishes } });
-            onChanged();
-          } finally {
-            setBusy('');
-          }
-        }}
+        onClick={() => ask('pitch', `/api/games/${g.id}/pitches`, { wishes })}
       >
         {g.settings.pitches ? 'Suggest new pitches' : 'Suggest pitches'}
       </button>
-      {busy === 'pitch' && <Busy text="The DM is dreaming up pitches…" />}
-      {busy === 'form' && <Busy text={`The DM is preparing the setup questions for “${picking}”…`} />}
+      {busy === 'pitch' && <Busy text="The DM is dreaming up pitches…" onCancel={cancel} />}
+      {busy === 'form' && <Busy text={`The DM is preparing the setup questions for “${picking}”…`} onCancel={cancel} />}
       {busy === 'pitch' ? (
         <div className="grid gap-2 sm:grid-cols-2" aria-hidden>
           {[0, 1, 2, 3].map((n) => (
