@@ -44,7 +44,7 @@ export function Entry({ e, children }: { e: LogEntry; children?: React.ReactNode
       </p>
     );
   if (e.kind === 'roll') return <RollLine e={e} />;
-  if (e.kind === 'image' && typeof e.data?.url === 'string') return <img src={e.data.url} alt={e.text} className="dm-pop w-full rounded-md border border-[#30363d]" />;
+  if (e.kind === 'image' && typeof e.data?.url === 'string') return <img src={e.data.url} alt={e.text} className="dm-pop max-h-80 w-auto max-w-full rounded-md border border-[#30363d]" />;
   return (
     <p className={`text-xs ${e.kind === 'refused' ? 'text-red-300' : e.kind === 'levelup' ? 'text-amber-300' : e.kind === 'change' ? 'font-mono text-sky-200' : 'text-slate-400'}`}>
       <span className="mr-1">{ICON[e.kind] ?? '·'}</span>

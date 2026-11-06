@@ -124,7 +124,7 @@ function BoardPane({ g }: { g: GameDetail }) {
             ))}
         </ul>
       )}
-      {g.state.sceneImage && <img src={g.state.sceneImage} alt="The scene" className="dm-pop max-h-28 w-full shrink-0 rounded-lg border border-[#30363d] object-cover lg:max-h-72" />}
+      {g.state.sceneImage && <img src={g.state.sceneImage} alt="The scene" className="dm-pop mx-auto max-h-28 w-auto max-w-full shrink-0 rounded-lg border border-[#30363d] object-contain lg:max-h-80" />}
     </div>
   );
 }

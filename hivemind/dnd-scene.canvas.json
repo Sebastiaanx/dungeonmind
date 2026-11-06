@@ -24,8 +24,8 @@
       },
       "config": {
         "batch": 1,
-        "width": 1216,
-        "height": 704,
+        "width": 320,
+        "height": 400,
         "prompt": "Dark fantasy illustration, cinematic, painterly, moody light, no text: {{question}}",
         "negative": "text, watermark, blurry"
       }
