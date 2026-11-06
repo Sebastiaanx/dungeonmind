@@ -127,15 +127,15 @@ Rules:
       node('memory', 'memory', 'campaign memory', 250, { mode: 'search', key: 'dnd:{{vars.tableId}}', query: '{{vars.actions}}', limit: 6 }),
       node('rules', 'memory', 'rules', 250, { mode: 'search', key: 'rules:{{vars.ruleset}}', query: '{{vars.actions}}', limit: 4 }),
       node('narration', 'llm', 'narration', 500, {
-        ...limit(1000),
+        ...limit(400),
         numCtx: STORY_CTX,
         temperature: 0.85,
         system: `You are the Dungeon Master of an ongoing D&D 5e campaign ({{vars.ruleset}}). ${TONE}
 ${NUMBERS}
 - Narrate what happens because of the players' actions, using exactly the dice results given (hits, misses, damage numbers, saves). You may mention numbers ("the blade bites for 7 damage") but never different ones.
 - NPCs act and speak. Put spoken lines in quotes and name the speaker, e.g. The hag hisses, "Closer, little lamb."
-- Keep it to 2-5 short paragraphs. End at a moment where the players must choose.
-- Mode "opening": write the opening scene of the adventure from the campaign file and invite the players to introduce their characters.
+- KEEP IT SHORT: one paragraph of at most 80 words. Plain, punchy sentences; no long descriptions of smells, fog or atmosphere, one vivid detail is enough. End at a moment where the players must choose. Do not write "What do you do?".
+- Mode "opening": at most 2 short paragraphs, 120 words in total. Say where they are, what just happened and what they want, then stop.
 - Never decide for the players what their characters say or feel.`,
         prompt: `Mode: {{vars.mode}}
 
