@@ -109,6 +109,12 @@ export interface Character extends CharacterBuild {
   deathSaves: { success: number; fail: number };
   exhaustion: number;
   portrait?: string;
+  /** Portraits made for this character, newest first, kept until the player deletes them. */
+  portraitOptions?: string[];
+  /** Portraits being painted now: since when, how many, and the place in the picture queue (0 = painting). */
+  portraitJob?: { since: number; count: number; position: number };
+  /** Why the last portraits failed, shown until the next try. */
+  portraitError?: string;
   /** XP reached the next level: the player walks through level-up in the builder. */
   levelUpPending?: boolean;
   notes?: string;

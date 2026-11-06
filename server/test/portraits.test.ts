@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FakeHiveMind, PNG } from './fake-hivemind.js';
-import { CANVASES, freshApp, settle, setupGame } from './helpers.js';
+import { CANVASES, freshApp, setupGame } from './helpers.js';
 
 let app: FastifyInstance;
 const hm = new FakeHiveMind();
@@ -13,11 +13,11 @@ beforeAll(async () => {
   app = await freshApp({ HIVEMIND_URL: hm.url, HIVEMIND_TOKEN: hm.token });
   for (const id of CANVASES) hm.canvases.set(id, { id, nodes: [] });
   hm.onRun = (c) => {
-    if (c.canvasId === 'dnd-portrait' || c.canvasId === 'dnd-scene') {
+    if (c.canvasId.startsWith('dnd-portrait') || c.canvasId === 'dnd-scene') {
       const n = c.canvasId === 'dnd-portrait' ? 4 : 1;
       const files = Array.from({ length: n }, (_, i) => `images/${c.canvasId}-${hm.calls.length}-${i}.png`);
       for (const f of files) hm.files.set(f, PNG);
-      return { outputs: { [c.canvasId === 'dnd-portrait' ? 'portraits' : 'scene']: files.map((f) => `![image](hm-file:${f})`).join('\n') } };
+      return { outputs: { [c.canvasId === 'dnd-scene' ? 'scene' : 'portraits']: files.map((f) => `![image](hm-file:${f})`).join('\n') } };
     }
     if (c.canvasId === 'dnd-narrate') return { outputs: { narration: 'A storm.', state: JSON.stringify({ image: 'A storm over the marsh', choices: {} }) } };
     if (c.canvasId === 'dnd-chronicle') return { outputs: { patches: '{"patches":[]}' } };
@@ -34,16 +34,46 @@ afterAll(async () => {
 describe('portraits', () => {
   let options: string[];
 
-  it('makes 4 options in one HiveMind run and copies them into DungeonMind', async () => {
-    const r = await settle(app, t.host, await t.as(t.host, 'POST', `/api/characters/${libId}/portraits`, { style: 'charcoal sketch' }));
+  const painted = async () => {
+    for (let i = 0; i < 200; i++) {
+      const c = (await t.as(t.host, 'GET', `/api/characters/${libId}`)).json().character;
+      if (!c.portraitJob) return c;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    throw new Error('the portraits never finished');
+  };
+
+  it('makes 4 options in one HiveMind run and keeps them on the character', async () => {
+    const r = await t.as(t.host, 'POST', `/api/characters/${libId}/portraits`, { style: 'charcoal sketch' });
     expect(r.statusCode).toBe(200);
-    options = r.json().options;
+    expect(r.json().portraitJob).toMatchObject({ count: 4 });
+    options = (await painted()).portraitOptions;
     expect(options).toHaveLength(4);
     expect(hm.callsOf('dnd-portrait')[0]).toMatchObject({ vars: { style: 'charcoal sketch' } });
     expect(hm.callsOf('dnd-portrait')[0].question).toContain('Turks');
     const img = await t.as(t.host, 'GET', options[0]);
     expect(img.statusCode).toBe(200);
     expect(img.headers['content-type']).toBe('image/png');
+  });
+
+  it('makes one more, keeps the earlier ones, and deletes one', async () => {
+    await t.as(t.host, 'POST', `/api/characters/${libId}/portraits`, { count: 1, extra: 'a scar over the left eye' });
+    const c = await painted();
+    expect(c.portraitOptions).toHaveLength(5);
+    expect(hm.callsOf('dnd-portrait-one')[0].question).toContain('a scar over the left eye');
+    expect(hm.callsOf('dnd-portrait-one')[0].question).toContain('adults only');
+    const left = (await t.as(t.host, 'DELETE', `/api/characters/${libId}/portraits?url=${encodeURIComponent(c.portraitOptions[0])}`)).json();
+    expect(left.portraitOptions).toHaveLength(4);
+  });
+
+  it('refuses words that would make a picture unsafe', async () => {
+    const r = await t.as(t.host, 'POST', `/api/characters/${libId}/portraits`, { extra: 'naked' });
+    expect(r.statusCode).toBe(400);
+    expect(r.json().error).toMatch(/safe for work/);
+    expect((await t.as(t.host, 'POST', `/api/characters/${libId}/portraits`, { extra: 'as a little girl' })).statusCode).toBe(400);
+    const { withoutUnsafe, unsafeReason } = await import('../src/safety.js');
+    expect(unsafeReason('a grim knight in black armour')).toBeUndefined();
+    expect(withoutUnsafe('a naked child in the snow')).toBe('a in the snow');
   });
 
   it('picks one; the game copy of the character gets it too', async () => {
@@ -67,9 +97,8 @@ describe('portraits', () => {
   it('reports a missing image model clearly', async () => {
     const before = hm.onRun;
     hm.onRun = () => ({ outputs: { portraits: 'No image model selected' } });
-    const r = await settle(app, t.host, await t.as(t.host, 'POST', `/api/characters/${libId}/portraits`, {}));
-    expect(r.statusCode).toBe(502);
-    expect(r.json().error).toMatch(/no images/);
+    await t.as(t.host, 'POST', `/api/characters/${libId}/portraits`, {});
+    expect((await painted()).portraitError).toMatch(/no images/);
     hm.onRun = before;
   });
 });

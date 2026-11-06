@@ -26,8 +26,8 @@
         "batch": 1,
         "width": 320,
         "height": 400,
-        "prompt": "Dark fantasy illustration, cinematic, painterly, moody light, no text: {{question}}",
-        "negative": "text, watermark, blurry"
+        "prompt": "Dark fantasy illustration, cinematic, painterly, moody light, no text, safe for work, fully clothed, adults only: {{question}}",
+        "negative": "text, watermark, blurry, nsfw, nude, naked, nudity, nipples, sexual, explicit, erotic, lingerie, underwear, cleavage, child, children, kid, minor, underage, teen, baby, loli"
       }
     }
   ],

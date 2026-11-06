@@ -10,10 +10,34 @@ const TONE = `Tone: dark, mature, grounded fantasy. Vivid but concise. Always gi
 const STORY_CTX = 16384;
 const JSON_CTX = 12288;
 // A small or thinking model can go on writing forever and hold the GPU: every block has a ceiling and skips thinking.
+// Every picture: safe for work, adults only (server/src/safety.ts checks the words people add).
+const SAFE = 'safe for work, fully clothed, adults only';
+const UNSAFE = 'nsfw, nude, naked, nudity, nipples, sexual, explicit, erotic, lingerie, underwear, cleavage, child, children, kid, minor, underage, teen, baby, loli';
 const limit = (maxTokens) => ({ maxTokens, think: false });
 const node = (id, type, label, x, config = {}) => ({ id, type, label, position: { x, y: id.length * 20 }, config });
 const edge = (source, target) => ({ id: `${source}-${target}`, source, target });
 const canvas = (id, name, description, nodes, edges) => ({ id, name, description, shared: false, nodes, edges });
+
+/** Portrait options: an LLM writes the prompt, the image block paints `batch` of them. */
+const portraitCanvas = (id, name, description, batch) =>
+  canvas(
+    id,
+    name,
+    description,
+    [
+      node('in', 'input', 'input', 0),
+      node('prompt', 'llm', 'prompt', 250, {
+        ...limit(300),
+        temperature: 0.7,
+        system: `You write prompts for an image model. Reply with one paragraph only, no preamble. The picture is always ${SAFE}: never nudity or anything sexual, never a child.`,
+        prompt: `Write an image prompt for a fantasy character portrait: head and shoulders, dramatic painterly lighting, dark fantasy, detailed face, no text, ${SAFE}. Style: {{vars.style}}.
+Character: {{question}}`,
+      }),
+      node('portraits', 'image', 'portraits', 500, { batch, width: 320, height: 400, negative: `text, watermark, blurry, deformed hands, extra limbs, ${UNSAFE}` }),
+    ],
+    [edge('in', 'prompt'), edge('prompt', 'portraits')],
+  );
+
 
 const PARTY_CONTEXT = `## Campaign file
 {{vars.campaign}}
@@ -253,30 +277,15 @@ Reply with JSON only.`,
     ],
     [edge('in', 'rules'), edge('rules', 'sheet')],
   ),
-  canvas(
-    'dnd-portrait',
-    'DungeonMind: portraits',
-    'Four portrait options for a character (DungeonMind).',
-    [
-      node('in', 'input', 'input', 0),
-      node('prompt', 'llm', 'prompt', 250, {
-        ...limit(300),
-        temperature: 0.7,
-        system: 'You write prompts for an image model. Reply with one paragraph only, no preamble.',
-        prompt: `Write an image prompt for a fantasy character portrait: head and shoulders, dramatic painterly lighting, dark fantasy, detailed face, no text. Style: {{vars.style}}.
-Character: {{question}}`,
-      }),
-      node('portraits', 'image', 'portraits', 500, { batch: 4, width: 320, height: 400, negative: 'text, watermark, blurry, deformed hands, extra limbs' }),
-    ],
-    [edge('in', 'prompt'), edge('prompt', 'portraits')],
-  ),
+  portraitCanvas('dnd-portrait', 'DungeonMind: portraits', 'Four portrait options for a character (DungeonMind).', 4),
+  portraitCanvas('dnd-portrait-one', 'DungeonMind: one portrait', 'One more portrait option for a character (DungeonMind).', 1),
   canvas(
     'dnd-scene',
     'DungeonMind: scene image',
     'One illustration of the current scene (DungeonMind).',
     [
       node('in', 'input', 'input', 0),
-      node('scene', 'image', 'scene', 300, { batch: 1, width: 320, height: 400, prompt: 'Dark fantasy illustration, cinematic, painterly, moody light, no text: {{question}}', negative: 'text, watermark, blurry' }),
+      node('scene', 'image', 'scene', 300, { batch: 1, width: 320, height: 400, prompt: `Dark fantasy illustration, cinematic, painterly, moody light, no text, ${SAFE}: {{question}}`, negative: `text, watermark, blurry, ${UNSAFE}` }),
     ],
     [edge('in', 'scene')],
   ),

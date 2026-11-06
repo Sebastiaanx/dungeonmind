@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { requireUser } from './auth/index.js';
 import { config } from './config.js';
 import { newId } from './crypto.js';
-import { fetchFile, putFile } from './hivemind.js';
+import { deleteFile, fetchFile, putFile } from './hivemind.js';
 import { logProblem } from './problems.js';
 
 /** Every image lives in HiveMind, in this folder of its files. DungeonMind only keeps the name and asks over the API. */
@@ -37,6 +37,9 @@ export async function saveImage(data: Buffer, prefix = 'img'): Promise<string> {
   const path = await putFile(`${FOLDER}/${prefix}-${newId()}.${t[0]}`, data);
   return `/api/images/${path.split('/').pop()}`;
 }
+
+/** Removes a picture from HiveMind, by its URL here. */
+export const deleteImage = (url: string) => deleteFile(`${FOLDER}/${url.split('/').pop()}`);
 
 /** An image's bytes, by the file name in its URL. */
 export async function readImage(file: string): Promise<Buffer | undefined> {

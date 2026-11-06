@@ -26,8 +26,8 @@
         "maxTokens": 300,
         "think": false,
         "temperature": 0.7,
-        "system": "You write prompts for an image model. Reply with one paragraph only, no preamble.",
-        "prompt": "Write an image prompt for a fantasy character portrait: head and shoulders, dramatic painterly lighting, dark fantasy, detailed face, no text. Style: {{vars.style}}.\nCharacter: {{question}}"
+        "system": "You write prompts for an image model. Reply with one paragraph only, no preamble. The picture is always safe for work, fully clothed, adults only: never nudity or anything sexual, never a child.",
+        "prompt": "Write an image prompt for a fantasy character portrait: head and shoulders, dramatic painterly lighting, dark fantasy, detailed face, no text, safe for work, fully clothed, adults only. Style: {{vars.style}}.\nCharacter: {{question}}"
       }
     },
     {
@@ -42,7 +42,7 @@
         "batch": 4,
         "width": 320,
         "height": 400,
-        "negative": "text, watermark, blurry, deformed hands, extra limbs"
+        "negative": "text, watermark, blurry, deformed hands, extra limbs, nsfw, nude, naked, nudity, nipples, sexual, explicit, erotic, lingerie, underwear, cleavage, child, children, kid, minor, underage, teen, baby, loli"
       }
     }
   ],

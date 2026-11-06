@@ -1,23 +1,49 @@
 import type { FastifyInstance } from 'fastify';
-import { classLine } from '@dungeonmind/shared';
+import { classLine, type Character } from '@dungeonmind/shared';
 import { requireUser } from '../auth/index.js';
 import { db } from '../db.js';
 import { addLog, readLog } from '../game/log.js';
 import { broadcast, gameCharacters, loadGame, saveGame, saveGameCharacter } from '../game/store.js';
 import { titleCase } from '../game/text.js';
 import { deleteFile, fetchFile, HiveMindError, imagePaths, runCanvas, withRetry } from '../hivemind.js';
-import { saveImage } from '../images.js';
-import { background } from '../jobs.js';
+import { deleteImage, saveImage } from '../images.js';
 import { think } from '../game/queue.js';
 import { logProblem } from '../problems.js';
+import { SAFE_WORDS, unsafeReason, withoutUnsafe } from '../safety.js';
 import { loadCharacter, saveCharacter } from './characters.js';
 import { gameFor } from './games.js';
 
 const STYLES = ['painterly dark fantasy', 'ink and watercolor', 'grim oil painting', 'charcoal sketch', 'heroic illustration'];
 
+/** One picture at a time on the GPU; the ones waiting know their place in the queue. */
+const waiting: { start: () => void; onPosition?: (n: number) => void }[] = [];
+let painting = false;
+function nextPicture() {
+  if (painting) return;
+  const next = waiting.shift();
+  waiting.forEach((w, i) => w.onPosition?.(i + 1));
+  if (!next) return;
+  painting = true;
+  next.start();
+}
+async function inPictureQueue<T>(fn: () => Promise<T>, onPosition?: (n: number) => void): Promise<T> {
+  await new Promise<void>((start) => {
+    waiting.push({ start, onPosition });
+    onPosition?.(painting ? waiting.length : 0);
+    nextPicture();
+  });
+  onPosition?.(0);
+  try {
+    return await fn();
+  } finally {
+    painting = false;
+    nextPicture();
+  }
+}
+
 /** Runs an image canvas and moves every picture into the dungeon folder in HiveMind. */
-export async function generateImages(canvasId: string, label: string, question: string, vars: Record<string, string>, prefix: string): Promise<string[]> {
-  const out = await withRetry(() => runCanvas(canvasId, question, { vars }), { attempts: 2 });
+export async function generateImages(canvasId: string, label: string, question: string, vars: Record<string, string>, prefix: string, onPosition?: (n: number) => void): Promise<string[]> {
+  const out = await inPictureQueue(() => withRetry(() => runCanvas(canvasId, question, { vars }), { attempts: 2 }), onPosition);
   const paths = imagePaths(out.outputs[label]?.text ?? '');
   if (!paths.length) throw new HiveMindError('HiveMind made no images (is an image model set on the canvas?)', 0, false);
   const urls: string[] = [];
@@ -56,7 +82,8 @@ export function portraitRoutes(app: FastifyInstance) {
     const { g } = r;
     if (g.settings.sceneImages === false) return reply.code(409).send({ error: 'The host turned scene pictures off for this game' });
     if (g.state.paintingSince && Date.now() - g.state.paintingSince < PAINTING_MS) return reply.code(409).send({ error: 'A picture is already being painted' });
-    const prompt = g.state.scenePrompt || readLog(g.id, { limit: 20, kinds: ['narration'] }).at(-1)?.text.slice(0, 600);
+    const told = g.state.scenePrompt || readLog(g.id, { limit: 20, kinds: ['narration'] }).at(-1)?.text.slice(0, 600);
+    const prompt = told && withoutUnsafe(told);
     if (!prompt) return reply.code(409).send({ error: 'Nothing has happened yet to paint' });
     g.state.paintingSince = Date.now();
     saveGame(g);
@@ -82,13 +109,57 @@ export function portraitRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
-  /** Four portrait options from HiveMind (dnd-portrait). Not saved until one is picked. */
+  /**
+   * Portrait options (4, or 1 more). They're painted on the server and kept on the character,
+   * so leaving the page loses nothing; the player picks one or deletes the ones they don't want.
+   */
   app.post('/api/characters/:id/portraits', { preHandler: requireUser }, async (req, reply) => {
     const c = loadCharacter((req.params as { id: string }).id);
     if (!c || c.ownerId !== req.user!.id) return reply.code(404).send({ error: 'Not found' });
-    const style = STYLES.includes(String((req.body as { style?: string })?.style)) ? (req.body as { style: string }).style : STYLES[0];
-    const who = `${c.name}, a ${titleCase(c.subspecies ?? c.species)} ${classLine(c, titleCase, false)}${c.appearance ? `. ${c.appearance}` : ''}`;
-    return background(req, reply, async () => ({ options: await generateImages('dnd-portrait', 'portraits', who, { style }, 'option'), styles: STYLES }));
+    if (c.portraitJob && Date.now() - c.portraitJob.since < PAINTING_MS) return reply.code(409).send({ error: 'These portraits are still being painted' });
+    const body = (req.body ?? {}) as { style?: string; count?: number; extra?: string };
+    const style = STYLES.includes(String(body.style)) ? body.style! : STYLES[0];
+    const extra = String(body.extra ?? '').trim().slice(0, 300);
+    const why = unsafeReason(`${extra} ${c.appearance ?? ''}`);
+    if (why) return reply.code(400).send({ error: why });
+    const count = body.count === 1 ? 1 : 4;
+    const who = `${c.name}, a ${titleCase(c.subspecies ?? c.species)} ${classLine(c, titleCase, false)}${c.appearance ? `. ${c.appearance}` : ''}${extra ? `. ${extra}` : ''}. ${SAFE_WORDS}.`;
+    c.portraitJob = { since: Date.now(), count, position: 0 };
+    c.portraitError = undefined;
+    saveCharacter(c);
+    const update = (fn: (x: Character) => void) => {
+      const fresh = loadCharacter(c.id);
+      if (!fresh) return;
+      fn(fresh);
+      saveCharacter(fresh);
+    };
+    void generateImages(count === 1 ? 'dnd-portrait-one' : 'dnd-portrait', 'portraits', who, { style }, 'option', (n) => update((x) => x.portraitJob && (x.portraitJob.position = n)))
+      .then((urls) =>
+        update((x) => {
+          x.portraitOptions = [...urls, ...(x.portraitOptions ?? [])].slice(0, 24);
+          x.portraitJob = undefined;
+        }),
+      )
+      .catch((err) => {
+        logProblem('image', err, `Portraits for ${c.name} (${c.id})`);
+        update((x) => {
+          x.portraitJob = undefined;
+          x.portraitError = (err as Error).message;
+        });
+      });
+    return loadCharacter(c.id);
+  });
+
+  /** Throws away one portrait option; the one in use stays where it is. */
+  app.delete('/api/characters/:id/portraits', { preHandler: requireUser }, async (req, reply) => {
+    const c = loadCharacter((req.params as { id: string }).id);
+    if (!c || c.ownerId !== req.user!.id) return reply.code(404).send({ error: 'Not found' });
+    const url = String((req.query as { url?: string }).url ?? '');
+    if (!c.portraitOptions?.includes(url)) return reply.code(404).send({ error: 'No such portrait option' });
+    c.portraitOptions = c.portraitOptions.filter((x) => x !== url);
+    saveCharacter(c);
+    if (c.portrait !== url) await deleteImage(url).catch(() => {});
+    return c;
   });
 
   app.post('/api/characters/:id/portrait', { preHandler: requireUser }, async (req, reply) => {
