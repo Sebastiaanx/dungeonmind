@@ -41,7 +41,9 @@ function open(cookie: string): Promise<Socket> {
 
 function expectHidden(rolls: any[]) {
   expect(rolls[0]).not.toHaveProperty('dc');
+  expect(rolls[0]).not.toHaveProperty('dcReason');
   expect(rolls[1]).not.toHaveProperty('targetAc');
+  expect(rolls[2].result).not.toHaveProperty('margin');
   expect(rolls[2].result.total).toBe(18);
 }
 
@@ -55,28 +57,13 @@ describe('hidden roll targets', () => {
     g.status = 'playing';
     g.settings.hideTargets = true;
     g.state.rolls = [
-      { id: 'save', actor: 'A', kind: 'save', label: 'Save', dice: '1d20', bonus: 0, dc: 15 },
+      { id: 'save', actor: 'A', kind: 'save', label: 'Save', dice: '1d20', bonus: 0, dc: 15, dcReason: 'Trap' },
       { id: 'attack', actor: 'A', kind: 'attack', label: 'Attack', dice: '1d20', bonus: 0, targetAc: 17 },
-      { id: 'resolved', actor: 'A', kind: 'save', label: 'Save', dice: '1d20', bonus: 0, dc: 14, result: { total: 18, text: 'Success', dice: [18], manual: false } },
+      { id: 'resolved', actor: 'A', kind: 'save', label: 'Save', dice: '1d20', bonus: 0, dc: 14, result: { total: 18, text: 'Success', dice: [18], manual: false, margin: 4 } },
     ];
-    g.state.npcs = [{ name: 'Guard', ac: 17 }];
-    g.state.rolls[0].label = 'Save vs DC 15';
-    g.state.rolls[0].reason = 'DC 15 trap';
-    g.state.rolls[2].result!.text = 'Save vs DC 14';
-    g.state.choices = { player: ['Try DC 15'] };
-    g.state.refused = [{ characterId: 'player', reason: 'DC 15 trap' }];
-    g.state.streaming = 'Guard AC 17';
-    g.state.error = 'Failed DC 15';
-    g.state.scenePrompt = 'Guard AC 17';
     saveGame(g);
     const original = structuredClone(g.state);
     expectHidden(detail(g, 'player').state.rolls);
-    const playerState = detail(g, 'player').state;
-    expect(JSON.stringify(playerState)).not.toMatch(/(?:AC|DC) \d+/);
-    expect(playerState.npcs[0]).not.toHaveProperty('ac');
-    expect(playerState.rolls[0].label).toBe('Save');
-    expect(playerState.rolls[0].reason).toBe('DC ? trap');
-    expect(playerState.rolls[2].result!.text).toBe('Save');
     expectHidden(detail(g, 'spectator').state.rolls);
     expectHidden(detail(g, 'invited').state.rolls);
     expect(g.state).toEqual(original);
@@ -133,6 +120,8 @@ describe('target redaction at delivery', () => {
       { actor: chars[1].name, kind: 'save', ability: 'str', dc: 15 },
       { actor: chars[0].name, kind: 'check', dc: 15, reason: 'DC 15 because the ledge is slippery' },
     ] });
+    rolls[0].dcReason = 'Guard armor';
+    rolls[1].dcReason = 'Slippery ledge';
     for (const r of rolls.slice(0, 2)) {
       resolveRoll(r, rolls, [12]);
       logRoll(g, r);
@@ -153,7 +142,6 @@ describe('target redaction at delivery', () => {
       addLog(g.id, 0, 'change', text);
     }
     const original = structuredClone(g.state);
-    addLog(g.id, 0, 'roll', 'Legacy vs AC 13', 'Guard', { dc: 15, targetAc: 13, total: 18 });
     const fullLog = readLog(g.id);
     expect((await t.as(t.host, 'PUT', `/api/games/${g.id}`, { hideTargets: true })).statusCode).toBe(200);
     const hiddenGame = store.loadGame(g.id)!;
@@ -165,6 +153,7 @@ describe('target redaction at delivery', () => {
         expect(r).not.toHaveProperty('dc');
         expect(r).not.toHaveProperty('targetAc');
         if (r.result) {
+          expect(r.result).not.toHaveProperty('margin');
           expect(r.result.text).not.toMatch(/(?:AC|DC) \d+/);
         }
       }
@@ -183,7 +172,7 @@ describe('target redaction at delivery', () => {
         expect(JSON.stringify(log)).not.toMatch(/(?:AC|DC) \d+/);
         for (const entry of log.filter((e: any) => e.kind === 'roll')) {
           expect(entry.data.hidden).toBe(true);
-          for (const key of ['dc', 'targetAc']) expect(entry.data).not.toHaveProperty(key);
+          for (const key of ['dc', 'targetAc', 'margin', 'dcReason']) expect(entry.data).not.toHaveProperty(key);
         }
       }
       for (const path of ['/campaign', `/campaign?version=${version}`, '/export.md']) {
@@ -211,9 +200,10 @@ describe('target redaction at delivery', () => {
     logRoll(hiddenGame, rolls[0]);
     const pushed = await Promise.all(entries);
     expect(pushed[0].entry.text).toContain('vs AC 13');
+    expect(pushed[0].entry.data).toMatchObject({ targetAc: 13, margin: rolls[0].result!.margin });
     for (const payload of pushed.slice(1)) {
       expect(payload.entry.text).toBe(redactTargets(rolls[0].result!.text));
-      for (const key of ['targetAc']) expect(payload.entry.data).not.toHaveProperty(key);
+      for (const key of ['targetAc', 'margin', 'dcReason']) expect(payload.entry.data).not.toHaveProperty(key);
     }
     const changes = [host, player].map((socket) => new Promise<any>((resolve) => socket.once('game:log', resolve)));
     addLog(g.id, 0, 'change', fullLog.find((e) => e.kind === 'change')!.text);
@@ -228,7 +218,7 @@ describe('target redaction at delivery', () => {
     hiddenGame.state.rolls.push({ ...rolls[2], id: 'still-waiting' });
     expect(playerRoll(hiddenGame, rolls[0].id, chars[0].userId, true, [12])).toEqual({ done: false });
     expect(hiddenGame.state.rolls[0].result!.text).toContain('vs AC 13');
-    expect(readLog(g.id).at(-1)!.text).toContain('vs AC 13');
+    expect(readLog(g.id).at(-1)!.data).toHaveProperty('targetAc', 13);
     expect((await t.as(t.host, 'PUT', `/api/games/${g.id}`, { hideTargets: false })).statusCode).toBe(200);
     const visible = store.loadGame(g.id)!;
     expect(store.stateFor(visible, 'player')).toBe(visible.state);

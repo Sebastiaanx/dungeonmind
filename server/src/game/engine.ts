@@ -1,4 +1,4 @@
-import { SKILLS, type Ability, type GameCharacter, type PendingRoll } from '@dungeonmind/shared';
+import { SKILLS, type Ability, type GameCharacter, type PendingRoll, type RollLogData } from '@dungeonmind/shared';
 import { db, tx } from '../db.js';
 import { outputJson } from '../hivemind.js';
 import { rules } from '../rules/index.js';
@@ -74,7 +74,18 @@ export function logRoll(g: GameRow, r: PendingRoll) {
     c.conditions = c.conditions.filter((x) => !used!.includes(x.name));
     saveGameCharacter(g.id, c);
   }
-  addLog(g.id, g.state.turn, 'roll', r.result!.text, r.actor, { rollId: r.id, kind: r.kind, adv: r.adv, dice: r.result!.dice, faces: r.result!.faces, total: r.result!.total, manual: r.result!.manual, success: r.result!.success, crit: r.result!.crit, fumble: r.result!.fumble });
+  const result = r.result!;
+  const d20 = !result.skipped && !['damage', 'heal', 'hitdie', 'initiative'].includes(r.kind);
+  const data: RollLogData = {
+    rollId: r.id, kind: r.kind, adv: r.adv, dice: result.dice, faces: result.faces,
+    total: result.total, manual: result.manual, success: result.success, crit: result.crit, fumble: result.fumble,
+    ...(d20 ? {
+      natural: result.natural, bonus: r.bonus, parts: r.parts, bonusRolls: result.bonusRolls, advFrom: r.advFrom,
+      dc: r.dc, targetAc: r.targetAc, margin: result.margin, dcReason: r.dcReason,
+    } : {}),
+    ...(!result.skipped ? { timedOut: result.timedOut } : {}),
+  };
+  addLog(g.id, g.state.turn, 'roll', result.text, r.actor, Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)));
 }
 
 export const pendingRolls = (g: GameRow) => g.state.rolls.filter((r) => !r.result);
