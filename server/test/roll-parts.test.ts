@@ -76,3 +76,76 @@ describe('ranged weapon rules', () => {
     }
   });
 });
+
+describe('2024 exhaustion', () => {
+  it('applies 2024 exhaustion to every d20 test, including spell attacks', () => {
+    const tired = { ...caster, exhaustion: 2 };
+    const rolls = build([
+      { kind: 'attack', weapon: 'Rapier' },
+      { kind: 'save', ability: 'str' },
+      { kind: 'check', skill: 'athletics' },
+      { kind: 'check', ability: 'str' },
+      { kind: 'attack', spell: 'Guiding Bolt' },
+    ], tired, rules2024);
+    expect(rolls.map((r) => r.bonus)).toEqual([2, 0, 0, -2, 1]);
+    const [old] = build([{ kind: 'attack', weapon: 'Rapier' }], tired);
+    expect(old.bonus).toBe(6);
+    const [oldSpell] = build([{ kind: 'attack', spell: 'Guiding Bolt' }], tired);
+    expect(oldSpell.bonus).toBe(5);
+    const [save] = build([{ actor: 'Goblin', kind: 'save', spell: 'Sacred Flame', ability: 'dex', dc: 99 }], { ...tired, cantrips: ['sacred-flame'] }, rules2024);
+    expect(save.dc).toBe(13);
+    expect(C.derive(rules2024, tired).spellDc).toBe(13);
+  });
+
+});
+
+describe('advantage sources', () => {
+  it('names Poisoned and keeps both sources when DM advantage cancels it', () => {
+    const pc = { ...hero, conditions: [{ name: 'poisoned' }] };
+    const [poisoned, cancelled] = build([{ kind: 'attack' }, { kind: 'attack', adv: 'adv' }], pc);
+    expect(poisoned.adv).toBe('dis');
+    expect(cancelled.adv).toBe('none');
+  });
+
+  it('cancels all sources together, including Poisoned, Invisible and DM disadvantage', () => {
+    const pc = { ...hero, conditions: [{ name: 'poisoned' }, { name: 'invisible' }, { name: 'hidden' }] };
+    const [r] = build([{ kind: 'attack', adv: 'dis' }], pc);
+    expect(r.adv).toBe('none');
+    expect(R.conditionAdv(pc, 'attack')).toBe('none');
+  });
+
+  it('names each contributing condition, exhaustion and class feature', () => {
+    const pc = { ...hero, class: 'barbarian', exhaustion: 3, conditions: [{ name: 'poisoned' }, { name: 'frightened' }, { name: 'raging' }] };
+    const [r] = build([{ kind: 'check', ability: 'str' }], pc);
+    expect(r.adv).toBe('none');
+    const [save] = build([{ kind: 'save', ability: 'dex' }], { ...hero, conditions: [{ name: 'restrained' }, { name: 'dodging' }] });
+    expect(save.adv).toBe('none');
+  });
+
+  it('records every target condition currently granting advantage; prone alone has no effect today', () => {
+    for (const name of ['blinded', 'paralyzed', 'restrained', 'stunned', 'unconscious', 'petrified', 'prone']) {
+      const target = { ...caster, conditions: [{ name }] };
+      const [r] = R.buildRolls(rules, [hero, target], [], { rolls: [{ actor: hero.name, kind: 'attack', target: target.name }] });
+      expect(r.adv).toBe(name === 'prone' ? 'none' : 'adv');
+      }
+  });
+});
+
+describe('cancellation across source groups', () => {
+  it('does not revive target advantage after actor conditions cancel', () => {
+    const pc = { ...hero, conditions: [{ name: 'poisoned' }, { name: 'invisible' }] };
+    const target = { ...caster, conditions: [{ name: 'restrained' }] };
+    const [r] = R.buildRolls(rules, [pc, target], [], { rolls: [{ actor: pc.name, kind: 'attack', target: target.name }] });
+    expect(r.adv).toBe('none');
+  });
+
+  it('does not revive DM advantage after save conditions cancel', () => {
+    const pc = { ...hero, conditions: [{ name: 'restrained' }, { name: 'dodging' }] };
+    expect(build([{ kind: 'save', ability: 'dex', adv: 'adv' }], pc)[0].adv).toBe('none');
+  });
+
+  it('does not revive feature advantage after check conditions cancel', () => {
+    const pc = { ...hero, class: 'barbarian', conditions: [{ name: 'poisoned' }, { name: 'raging' }] };
+    expect(build([{ kind: 'check', ability: 'str', adv: 'adv' }], pc)[0].adv).toBe('none');
+  });
+});
