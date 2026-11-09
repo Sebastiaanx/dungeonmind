@@ -4,7 +4,7 @@ import { checkManual, combineAdv, DiceError, diceNeeded, parseDice, roll, rollD2
 import { derive, itemByName } from './character.js';
 import { normalizeCounterName } from './bookkeeper.js';
 import { actionNamed, monsterAttack, monsterCheck, monsterOf, monsterSave, type MonsterAction } from './monsters.js';
-import { critOn, damageRiders, featureAdv, featureHeal } from './features.js';
+import { critOn, damageRiders, featureAdv, featureHeal, isRanged } from './features.js';
 import { cantripTier, knownSpell, spellCount, spellDice, spellMod, spellSaveDc } from './spells.js';
 import { clip, sameName } from './text.js';
 
@@ -233,7 +233,7 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
           const item = (r.weapon && pc.inventory.find((it) => sameName(it.name, r.weapon))) || pc.inventory.find((it) => it.equipped && itemByName(rules, it.name)?.damage);
           const w = item ? itemByName(rules, item.name) : undefined;
           const finesse = w?.properties?.some((p) => /finesse/i.test(p));
-          const ranged = /ranged/i.test(w?.category ?? '');
+          const ranged = isRanged(rules, w);
           const m = finesse ? Math.max(d.mods.str, d.mods.dex) : ranged ? d.mods.dex : d.mods.str;
           bonus = m + d.profBonus - exh2024;
           what = item?.name ?? 'unarmed strike';
@@ -286,7 +286,7 @@ export function buildRolls(rules: RulesData, chars: GameCharacter[], npcs: Npc[]
         const item = (r.weapon && pc.inventory.find((it) => sameName(it.name, r.weapon))) || pc.inventory.find((it) => it.equipped && itemByName(rules, it.name)?.damage);
         const w = item ? itemByName(rules, item.name) : undefined;
         const finesse = !!w?.properties?.some((p) => /finesse/i.test(p));
-        const ranged = /ranged/i.test(w?.category ?? '');
+        const ranged = isRanged(rules, w);
         const m = !w ? d.mods.str : finesse ? Math.max(d.mods.str, d.mods.dex) : ranged ? d.mods.dex : d.mods.str;
         if (w?.damage) {
           dice = `${w.damage}${m >= 0 ? '+' : ''}${m}`;
