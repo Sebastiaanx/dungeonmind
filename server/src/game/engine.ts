@@ -9,7 +9,7 @@ import { grantConditions, resistances } from './features.js';
 import { rollInitiative, nextRound, pruneCombat } from './initiative.js';
 import { addLog, readLog } from './log.js';
 import { campaignFor, partyJson, recentTurns } from './prompt.js';
-import { buildRolls, conditionAdv, ready, resolveRoll, rollEffects, type Adjudication } from './rolls.js';
+import { abilityParts, buildRolls, conditionAdv, conditionAdvSources, ready, resolveRoll, rollEffects, type Adjudication } from './rolls.js';
 import { broadcast, gameCharacters, loadGame, saveGame, saveGameCharacter, type GameRow } from './store.js';
 import { clip, sameName } from './text.js';
 import { actionsText, addTurnHooks, dm, orderedActions, playersOf, resolveLater, setPhase, type StateJson } from './turn.js';
@@ -83,7 +83,7 @@ export const pendingRolls = (g: GameRow) => g.state.rolls.filter((r) => !r.resul
 function deathRolls(chars: GameCharacter[], start: number): PendingRoll[] {
   return chars
     .filter((c) => c.seated && c.hp <= 0 && !c.conditions.some((x) => x.name === 'dead' || x.name === 'stable'))
-    .map((c, i) => ({ id: `d${start + i}`, actor: c.name, characterId: c.id, kind: 'death' as const, label: `${c.name} death saving throw`, dice: '1d20', adv: 'none' as const, bonus: 0, dc: 10 }));
+    .map((c, i) => ({ id: `d${start + i}`, actor: c.name, characterId: c.id, kind: 'death' as const, label: `${c.name} death saving throw`, dice: '1d20', adv: 'none' as const, bonus: 0, parts: [], dc: 10 }));
 }
 
 /** M6 step 2-3: adjudicate, check and spend resources, set up the rolls. False = the turn waits (refusal or rolls). */
@@ -270,6 +270,7 @@ export function freeRoll(g: GameRow, user: { id: string; username: string }, bod
     if (!c) return { error: 'Only players with a character at the table can ask for a check' };
     const d = derive(rules(g.ruleset), c);
     const exh2024 = g.ruleset === 'srd52' ? 2 * c.exhaustion : 0;
+    const advFrom = conditionAdvSources(c, 'check', ability, g.ruleset);
     const r: PendingRoll = {
       id: 'asked',
       actor: c.name,
@@ -279,6 +280,8 @@ export function freeRoll(g: GameRow, user: { id: string; username: string }, bod
       dice: '1d20',
       adv: conditionAdv(c, 'check', ability, g.ruleset),
       bonus: skill ? d.skillBonus[skill] : d.mods[ability] - exh2024,
+      parts: skill ? d.skillParts[skill] : abilityParts(ability, d.mods[ability], exh2024),
+      ...(advFrom.length ? { advFrom } : {}),
       ...(c.species === 'halfling' ? { luck: true } : {}),
     };
     resolveRoll(r, [r]);

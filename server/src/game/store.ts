@@ -114,10 +114,11 @@ export function stateFor(g: GameRow, role: GameRole): GameState {
     ...(g.state.streaming !== undefined ? { streaming: redactTargets(g.state.streaming) } : {}),
     ...(g.state.error !== undefined ? { error: redactTargets(g.state.error) } : {}),
     ...(g.state.scenePrompt !== undefined ? { scenePrompt: redactTargets(g.state.scenePrompt) } : {}),
-    rolls: g.state.rolls.map(({ dc, targetAc, result, ...roll }) => {
+    rolls: g.state.rolls.map(({ dc, targetAc, dcReason, result, ...roll }) => {
       const visible = { ...roll, label: redactTargets(roll.label), ...(roll.reason !== undefined ? { reason: redactTargets(roll.reason) } : {}) };
       if (!result) return visible;
-      return { ...visible, result: { ...result, text: redactTargets(result.text) } };
+      const { margin, ...visibleResult } = result;
+      return { ...visible, result: { ...visibleResult, text: redactTargets(result.text) } };
     }),
   };
 }

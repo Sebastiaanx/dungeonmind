@@ -1,4 +1,4 @@
-import { ABILITIES, mod, profBonus, type Abilities, type Ability, type Counter, type FeatureEffect, type GameCharacter, type LevelValue, type RulesClass, type RulesData, type RulesEntry, type RulesItem } from '@dungeonmind/shared';
+import { ABILITIES, mod, profBonus, type Abilities, type Ability, type AdvSource, type Counter, type FeatureEffect, type GameCharacter, type LevelValue, type RulesClass, type RulesData, type RulesEntry, type RulesItem } from '@dungeonmind/shared';
 import { slug } from '../rules/index.js';
 import { classesOf } from './classes.js';
 import { parseDice } from './dice.js';
@@ -150,7 +150,13 @@ export function grantConditions(rules: RulesData, chars: GameCharacter[], spend:
 // ---- Triggers ----
 
 export function featureAdv(rules: RulesData, c: GameCharacter | undefined, kind: string, ability?: Ability, spell = false): boolean {
-  return !!c && activeFeatures(rules, c).some((f) => f.effect.advantage?.some((a) => a.kind === kind && (!a.ability || a.ability === ability) && (!a.spell || spell)));
+  return featureAdvSources(rules, c, kind, ability, spell).length > 0;
+}
+
+export function featureAdvSources(rules: RulesData, c: GameCharacter | undefined, kind: string, ability?: Ability, spell = false): AdvSource[] {
+  return c ? activeFeatures(rules, c)
+    .filter((f) => f.effect.advantage?.some((a) => a.kind === kind && (!a.ability || a.ability === ability) && (!a.spell || spell)))
+    .map((f) => ({ adv: 'adv', from: f.feature.name })) : [];
 }
 
 /** The lowest natural roll that crits with a weapon (20 without a feature). */

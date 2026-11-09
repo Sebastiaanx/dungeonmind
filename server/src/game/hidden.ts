@@ -17,7 +17,7 @@ export function logFor(g: GameRow, role: GameRole, entry: LogEntry): LogEntry {
   if (!hidesTargets(g, role)) return entry;
   const visible = { ...entry, text: redactTargets(entry.text) };
   if (entry.kind === 'roll') {
-    const { dc, targetAc, ...data } = entry.data ?? {};
+    const { dc, targetAc, margin, dcReason, ...data } = entry.data ?? {};
     visible.data = { ...data, hidden: true };
   }
   return visible;
